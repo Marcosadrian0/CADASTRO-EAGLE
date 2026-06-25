@@ -7,7 +7,7 @@
  */
 
 import { neon } from '@neondatabase/serverless';
-import { pbkdf2Sync } from 'crypto';
+import { pbkdf2Sync } from 'node:crypto';
 
 export const config = { maxDuration: 30 };
 
