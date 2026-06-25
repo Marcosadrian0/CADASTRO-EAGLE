@@ -955,21 +955,25 @@ function extrairCampos(txt) {
   // Padrão 2: "Valor da Causa: R$ X" (capa do processo)
   const txtFlat = txt.replace(/\n/g, ' ').replace(/\s{2,}/g, ' ');
   const valPatterns = [
-    // Frase canônica — mais confiável
     /[Dd][áa][\s-]+se\s+[àa]\s+causa\s+o\s+valor\s+de\s+R\$\s*(\d[\d.,]*\d)/,
     /causa\s+o\s+valor\s+de\s+R\$\s*(\d[\d.,]*\d)/i,
     /valor\s+de\s+R\$\s*(\d[\d.,]*\d)\s*\(/i,
-    // Capa: "Valor da Causa: R$ X"
     /[Vv]alor\s+da\s+[Cc]ausa\s*:?\s*R\$\s*(\d[\d.,]*\d)/i,
   ];
+  // Buscar primeiro na metade final (onde fica o valor real, evitando citações no corpo)
+  const txtFlatFinal = txt.substring(Math.floor(txt.length * 0.45)).replace(/\n/g, ' ').replace(/\s{2,}/g, ' ');
+  let valorAchado = false;
   for (const rx of valPatterns) {
-    const m = txtFlat.match(rx);
-    if (m) {
-      // Normalizar: garantir formato X.XXX,XX
-      let v = m[1].trim();
-      campos.valor_causa = 'R$ ' + v;
-      break;
+    const m = txtFlatFinal.match(rx);
+    if (m) { campos.valor_causa = 'R$ ' + m[1].trim(); valorAchado = true; break; }
+  }
+  // Fallback: texto completo
+  if (!valorAchado) {
+    for (const rx of valPatterns) {
+      const m = txtFlat.match(rx);
+      if (m) { campos.valor_causa = 'R$ ' + m[1].trim(); break; }
     }
+  }
   }
 
   // ── VARA / CARTÓRIO ───────────────────────────────────────────────────────
@@ -1163,7 +1167,8 @@ function extrairCampos(txt) {
 
   // ── ADVOGADOS e OAB ────────────────────────────────────────────────────────
   // Âncora em cada "OAB/" e olha 150 chars para trás — captura TODOS os advogados
-  const oabAncora = /OAB\/([A-Z]{2})\s*[Nn]?[.º°]?\s*[º°]?\s*([\d.]{4,9})/gi;
+  // OAB: aceita "OAB/SP nº 377.573" e "OAB/SP n° 015800" e "OAB/SP 015800"
+  const oabAncora = /OAB\/([A-Z]{2})\s*(?:[Nn][.º°ºo]?\s*)?[º°]?\s*([\d.,]{4,10})/gi;
   const seenOabs = new Set();
   const todosAdvs = [];
   for (const mOab of txt.matchAll(oabAncora)) {
@@ -1171,9 +1176,11 @@ function extrairCampos(txt) {
     if (seenOabs.has(oabNum)) continue;
     seenOabs.add(oabNum);
     const ufAdv = mOab[1].toUpperCase();
-    const trecho = txt.substring(Math.max(0, mOab.index - 150), mOab.index);
+    // Olhar até 200 chars antes para capturar nomes com iniciais (ex: "AMANDA T. LENCI PACCOLA")
+    const trecho = txt.substring(Math.max(0, mOab.index - 200), mOab.index);
     const trechoLimpo = trecho.replace(/\s*\n\s*/g, ' ');
-    const nmMatches = [...trechoLimpo.matchAll(/([A-ZÁÉÍÓÚÂÊÔÃÕÇ][A-ZÁÉÍÓÚÂÊÔÃÕÇ\s]{4,55}?)(?:\s*,\s*$|\s*$)/g)];
+    // Aceita letras, espaços E pontos (para iniciais como "T.")
+    const nmMatches = [...trechoLimpo.matchAll(/([A-ZÁÉÍÓÚÂÊÔÃÕÇ][A-ZÁÉÍÓÚÂÊÔÃÕÇ\s.]{4,70}?)(?:\s*,\s*$|\s*$)/g)];
     if (!nmMatches.length) continue;
     let nomeAdv = nmMatches[nmMatches.length - 1][1].trim();
     nomeAdv = nomeAdv.replace(/\d{2,}.*/g, '').replace(/,?\s*[eE]\s*$/, '').replace(/,\s*$/, '').replace(/\s+/g, ' ').trim();
@@ -1187,16 +1194,55 @@ function extrairCampos(txt) {
   campos._todos_advs = todosAdvs;
 
   // ── ESCRITÓRIO DO ADVOGADO ────────────────────────────────────────────────
-  // Padrão 1: "NOME\nADVOGADA/O" na assinatura → "NOME - ADVOGADA"
-  // Padrão 2: capa "NOME SP131591" ou "NOME OAB/SP" → "NOME"
-  // Padrão 3: mesmo nome do advogado principal + cargo
-  const mEscrAssin = txt.match(/\n([A-ZÁÉÍÓÚÂÊÔÃÕÇ][A-Za-záéíóúâêôãõç\s]{4,50})\n(ADVOGAD[AO]S?)\n/);
-  if (mEscrAssin) {
-    campos.advogado_escritorio = `${capitalizar(mEscrAssin[1].trim())} - ${mEscrAssin[2].charAt(0).toUpperCase() + mEscrAssin[2].slice(1).toLowerCase()}`;
-  } else if (campos.advogado_nome) {
-    // Fallback: nome do advogado + "Advogado(a)"
-    const cargo = campos.advogado_uf ? 'Advogado(a)' : 'Advogado(a)';
-    campos.advogado_escritorio = `${campos.advogado_nome} - ${cargo}`;
+  // Ordem de prioridade:
+  // 1. Nome explícito no texto: "PACCOLA & PELEGRINI ADVOGADOS ASSOCIADOS"
+  // 2. "NOME\nADVOGADA/O" na assinatura
+  // 3. Inferido dos sobrenomes dos advogados (ex: Paccola + Pelegrini → "Paccola & Pelegrini")
+  // 4. Fallback: nome do advogado principal
+
+  // Padrão 1: firma explícita no texto
+  const escritorioPatterns = [
+    /([A-ZÁÉÍÓÚÂÊÔÃÕÇ][A-Za-záéíóúâêôãõç\s&.'\-]{3,60}?(?:ADVOGADOS?\s+ASSOCIADOS?|ADVOGADOS?\s+PARCEIROS?|SOCIEDADE\s+DE\s+ADVOGADOS?|ADVOCACIA\s+E\s+CONSULTORIA))/gi,
+    /([A-ZÁÉÍÓÚÂÊÔÃÕÇ][A-Za-záéíóúâêôãõç\s&.'\-]{5,50}?)\s*\n\s*(ADVOGADOS?\s+ASSOCIADOS?|SOCIEDADE\s+DE\s+ADVOGADOS?)/i,
+  ];
+  let escritorioEncontrado = false;
+  for (const rx of escritorioPatterns) {
+    const mE = txt.match(rx);
+    if (mE) {
+      let nomeEscr = (mE[1] || mE[0]).trim().replace(/\s+/g, ' ');
+      // Evitar pegar nomes que são da própria ação
+      if (!/EXCELENT|SENHOR|JUIZ|PODER|ESTADO|BANCO|CRÉDITO/i.test(nomeEscr) && nomeEscr.length > 5) {
+        campos.advogado_escritorio = capitalizar(nomeEscr);
+        escritorioEncontrado = true;
+        break;
+      }
+    }
+  }
+
+  // Padrão 2: "NOME\nADVOGADA/O" na assinatura
+  if (!escritorioEncontrado) {
+    const mEscrAssin = txt.match(/\n([A-ZÁÉÍÓÚÂÊÔÃÕÇ][A-Za-záéíóúâêôãõç\s]{4,50})\n(ADVOGAD[AO]S?)\n/);
+    if (mEscrAssin) {
+      campos.advogado_escritorio = `${capitalizar(mEscrAssin[1].trim())} - ${mEscrAssin[2].charAt(0).toUpperCase() + mEscrAssin[2].slice(1).toLowerCase()}`;
+      escritorioEncontrado = true;
+    }
+  }
+
+  // Padrão 3: inferir dos sobrenomes de múltiplos advogados (ex: Paccola + Pelegrini)
+  if (!escritorioEncontrado && todosAdvs.length >= 2) {
+    const sobrenomes = todosAdvs.slice(0, 2).map(a => {
+      const partes = a.nome.split(' ').filter(p => p.length > 2 && !/^(de|da|do|e|a|o)$/i.test(p));
+      return partes[partes.length - 1] || '';
+    }).filter(Boolean);
+    if (sobrenomes.length === 2) {
+      campos.advogado_escritorio = `${capitalizar(sobrenomes[0])} & ${capitalizar(sobrenomes[1])} Advogados`;
+      escritorioEncontrado = true;
+    }
+  }
+
+  // Fallback: nome do advogado principal
+  if (!escritorioEncontrado && campos.advogado_nome) {
+    campos.advogado_escritorio = `${campos.advogado_nome} - Advogado(a)`;
   }
 
   // ── DESCONTO EM CONTA ─────────────────────────────────────────────────────
@@ -1957,7 +2003,8 @@ REGRAS DE INTERPRETAÇÃO:
 - autor_cpf: CPF do AUTOR (requerente/polo ativo) no formato NNN.NNN.NNN-NN. Buscar próximo ao nome do autor ou "portador do CPF". NUNCA usar CPF de réu/empresa.
 - advogado_nome: nome COMPLETO do advogado do autor (antes de "OAB/" ou após "Dr./Dra."). Nome próprio, não empresa.
 - advogado_uf: UF da OAB (duas letras, ex: SP, AL, RJ).
-- advogado_oab: somente o NÚMERO da OAB com 6 dígitos com zeros à esquerda (ex: 015800). Sem "OAB/" ou letras.
+- advogado_oab: somente o NÚMERO da OAB com 6 dígitos com zeros à esquerda (ex: 015800, 377573). Sem "OAB/" ou letras.
+- advogado_escritorio: nome do escritório de advocacia. Buscar: (a) nome explícito no texto como "PACCOLA & PELEGRINI ADVOGADOS ASSOCIADOS" ou "GARCIA NETO ADVOGADOS"; (b) nome que aparece no rodapé/cabeçalho junto às assinaturas; (c) se houver dois advogados com sobrenomes distintos, inferir pelo padrão "Sobrenome1 & Sobrenome2 Advogados". Retornar null se não identificado.
 - reus: lista completa de réus/requeridos com nome COMPLETO da instituição e CNPJ. Incluir o sufixo societário completo (ex: "Crefisa S.A. Crédito, Financiamento e Investimento S.A.", não apenas "Financiamento e Investimento S.A."). Buscar em "em face de:", polo passivo, qualificação dos réus.
 
 Responda SOMENTE em JSON puro sem markdown:
@@ -1972,6 +2019,7 @@ Responda SOMENTE em JSON puro sem markdown:
   "advogado_nome": "nome completo ou null",
   "advogado_uf": "UF ou null",
   "advogado_oab": "000000 ou null",
+  "advogado_escritorio": "Nome do Escritório ou null",
   "reus": [{"nome": "Nome Completo S.A.", "cnpj": "00.000.000/0001-00"}],
   "confianca": "alta|media|baixa",
   "observacoes": "breve nota sobre campos incertos"
@@ -2040,6 +2088,14 @@ Responda SOMENTE em JSON puro sem markdown:
         for (const opt of elUf.options) {
           if (opt.value === resultado.advogado_uf) { opt.selected = true; elUf.classList.add('auto'); break; }
         }
+      }
+    }
+
+    // Aplicar escritório se IA retornou e campo está vazio
+    if (resultado.advogado_escritorio && resultado.advogado_escritorio !== 'null') {
+      const elEscr = document.getElementById('f_advogado_escritorio');
+      if (elEscr && !elEscr.value.trim()) {
+        elEscr.value = resultado.advogado_escritorio; elEscr.classList.add('auto'); aplicados.push('advogado_escritorio');
       }
     }
 
