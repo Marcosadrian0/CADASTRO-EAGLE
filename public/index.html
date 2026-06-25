@@ -960,18 +960,24 @@ function extrairCampos(txt) {
     /valor\s+de\s+R\$\s*(\d[\d.,]*\d)\s*\(/i,
     /[Vv]alor\s+da\s+[Cc]ausa\s*:?\s*R\$\s*(\d[\d.,]*\d)/i,
   ];
-  // Buscar primeiro na metade final (onde fica o valor real, evitando citações no corpo)
-  const txtFlatFinal = txt.substring(Math.floor(txt.length * 0.45)).replace(/\n/g, ' ').replace(/\s{2,}/g, ' ');
+  // Buscar na parte final do documento (último terço = onde fica o pedido + valor da causa)
+  // Pega a ÚLTIMA ocorrência, não a primeira, para evitar pegar valores citados no corpo
+  const txtFlatFinal = txt.substring(Math.floor(txt.length * 0.55)).replace(/\n/g, ' ').replace(/\s{2,}/g, ' ');
   let valorAchado = false;
   for (const rx of valPatterns) {
-    const m = txtFlatFinal.match(rx);
-    if (m) { campos.valor_causa = 'R$ ' + m[1].trim(); valorAchado = true; break; }
+    const todos = [...txtFlatFinal.matchAll(new RegExp(rx.source, rx.flags + (rx.flags.includes('g') ? '' : 'g')))];
+    if (todos.length > 0) {
+      const ultimo = todos[todos.length - 1];
+      campos.valor_causa = 'R$ ' + ultimo[1].trim();
+      valorAchado = true;
+      break;
+    }
   }
-  // Fallback: texto completo
+  // Fallback: texto completo — também pega a última ocorrência
   if (!valorAchado) {
     for (const rx of valPatterns) {
-      const m = txtFlat.match(rx);
-      if (m) { campos.valor_causa = 'R$ ' + m[1].trim(); break; }
+      const todos = [...txtFlat.matchAll(new RegExp(rx.source, rx.flags + (rx.flags.includes('g') ? '' : 'g')))];
+      if (todos.length > 0) { campos.valor_causa = 'R$ ' + todos[todos.length - 1][1].trim(); break; }
     }
   }
 
@@ -1175,14 +1181,26 @@ function extrairCampos(txt) {
     if (seenOabs.has(oabNum)) continue;
     seenOabs.add(oabNum);
     const ufAdv = mOab[1].toUpperCase();
-    // Olhar até 200 chars antes para capturar nomes com iniciais (ex: "AMANDA T. LENCI PACCOLA")
-    const trecho = txt.substring(Math.max(0, mOab.index - 200), mOab.index);
-    const trechoLimpo = trecho.replace(/\s*\n\s*/g, ' ');
-    // Aceita letras, espaços E pontos (para iniciais como "T.")
-    const nmMatches = [...trechoLimpo.matchAll(/([A-ZÁÉÍÓÚÂÊÔÃÕÇ][A-ZÁÉÍÓÚÂÊÔÃÕÇ\s.]{4,70}?)(?:\s*,\s*$|\s*$)/g)];
-    if (!nmMatches.length) continue;
-    let nomeAdv = nmMatches[nmMatches.length - 1][1].trim();
-    nomeAdv = nomeAdv.replace(/\d{2,}.*/g, '').replace(/,?\s*[eE]\s*$/, '').replace(/,\s*$/, '').replace(/\s+/g, ' ').trim();
+    // Olhar até 300 chars antes para capturar nomes com iniciais (ex: "AMANDA T. LENCI PACCOLA")
+    const trecho = txt.substring(Math.max(0, mOab.index - 300), mOab.index);
+    const trechoLimpo = trecho.replace(/\s*\n\s*/g, ' ').trim();
+    let nomeAdv = '';
+    // Padrão 1: "Dr./Dra. NOME" imediatamente antes de OAB
+    const mDr = trechoLimpo.match(/[Dd]r[a]?\.\s+([A-ZÁÉÍÓÚÂÊÔÃÕÇА-Яa-záéíóúâêôãõç][A-Za-záéíóúâêôãõçÁÉÍÓÚÂÊÔÃÕÇ\s.]{4,70}?)\s*$/);
+    if (mDr) {
+      nomeAdv = mDr[1].trim();
+    } else {
+      // Padrão 2: sequência de palavras maiúsculas (com possíveis iniciais ex: "T.") no final do trecho
+      const nmMatches = [...trechoLimpo.matchAll(/([A-ZÁÉÍÓÚÂÊÔÃÕÇ][A-ZÁÉÍÓÚÂÊÔÃÕÇA-Za-záéíóúâêôãõç\s.]{4,70}?)(?:\s*,\s*$|\s*$)/g)];
+      if (nmMatches.length) nomeAdv = nmMatches[nmMatches.length - 1][1].trim();
+    }
+    nomeAdv = nomeAdv
+      .replace(/\d{2,}.*/g, '')
+      .replace(/,?\s*[eE]\s*$/, '')
+      .replace(/,\s*$/, '')
+      .replace(/\s+/g, ' ')
+      .replace(/^(?:Dr[a]?|ADV|Adv|ADVOGAD[AO])\.\s*/i, '')
+      .trim();
     if (nomeAdv.split(' ').length >= 2) todosAdvs.push({ nome: capitalizar(nomeAdv), uf: ufAdv, oab: oabNum });
   }
   if (todosAdvs.length > 0) {
@@ -1199,21 +1217,37 @@ function extrairCampos(txt) {
   // 3. Inferido dos sobrenomes dos advogados (ex: Paccola + Pelegrini → "Paccola & Pelegrini")
   // 4. Fallback: nome do advogado principal
 
-  // Padrão 1: firma explícita no texto
+  // Padrão 1: firma explícita — buscar prioritariamente no final do doc (assinatura)
+  const txtFimEscritorio = txt.substring(Math.floor(txt.length * 0.6));
   const escritorioPatterns = [
     /([A-ZÁÉÍÓÚÂÊÔÃÕÇ][A-Za-záéíóúâêôãõç\s&.'\-]{3,60}?(?:ADVOGADOS?\s+ASSOCIADOS?|ADVOGADOS?\s+PARCEIROS?|SOCIEDADE\s+DE\s+ADVOGADOS?|ADVOCACIA\s+E\s+CONSULTORIA))/gi,
     /([A-ZÁÉÍÓÚÂÊÔÃÕÇ][A-Za-záéíóúâêôãõç\s&.'\-]{5,50}?)\s*\n\s*(ADVOGADOS?\s+ASSOCIADOS?|SOCIEDADE\s+DE\s+ADVOGADOS?)/i,
   ];
   let escritorioEncontrado = false;
+  // Buscar primeiro no trecho final (onde fica a assinatura com o nome do escritório)
   for (const rx of escritorioPatterns) {
-    const mE = txt.match(rx);
-    if (mE) {
+    const todosEscr = [...txtFimEscritorio.matchAll(new RegExp(rx.source, 'gi'))];
+    if (todosEscr.length > 0) {
+      const mE = todosEscr[todosEscr.length - 1];
       let nomeEscr = (mE[1] || mE[0]).trim().replace(/\s+/g, ' ');
-      // Evitar pegar nomes que são da própria ação
-      if (!/EXCELENT|SENHOR|JUIZ|PODER|ESTADO|BANCO|CRÉDITO/i.test(nomeEscr) && nomeEscr.length > 5) {
+      if (!/EXCELENT|SENHOR|JUIZ|PODER|ESTADO/i.test(nomeEscr) && nomeEscr.length > 5) {
         campos.advogado_escritorio = capitalizar(nomeEscr);
         escritorioEncontrado = true;
         break;
+      }
+    }
+  }
+  // Fallback: buscar no texto completo
+  if (!escritorioEncontrado) {
+    for (const rx of escritorioPatterns) {
+      const mE = txt.match(rx);
+      if (mE) {
+        let nomeEscr = (mE[1] || mE[0]).trim().replace(/\s+/g, ' ');
+        if (!/EXCELENT|SENHOR|JUIZ|PODER|ESTADO/i.test(nomeEscr) && nomeEscr.length > 5) {
+          campos.advogado_escritorio = capitalizar(nomeEscr);
+          escritorioEncontrado = true;
+          break;
+        }
       }
     }
   }
