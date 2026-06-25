@@ -218,6 +218,74 @@ textarea{resize:vertical;min-height:52px}
   .s2,.s3,.s4{grid-column:span 1}
 }
 
+/* LOGIN OVERLAY */
+#loginOverlay{position:fixed;inset:0;background:linear-gradient(135deg,var(--verde-prof) 0%,var(--ciano) 100%);z-index:9999;display:flex;align-items:center;justify-content:center}
+.login-box{background:#fff;border-radius:16px;padding:36px 32px;width:100%;max-width:360px;box-shadow:0 8px 48px rgba(0,0,0,.28)}
+.login-logo{display:flex;align-items:center;gap:10px;margin-bottom:28px}
+.login-brand{font-size:17px;font-weight:600;color:var(--verde)}
+.login-sub{font-size:11px;color:var(--chumbo);font-weight:300}
+.login-field{margin-bottom:14px}
+.login-field label{display:block;font-size:10px;font-weight:600;color:var(--chumbo);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
+.login-field input{width:100%;padding:9px 12px;border:1.5px solid var(--borda);border-radius:var(--r);font-size:13px;font-family:inherit;font-weight:300;outline:none;transition:border-color .15s}
+.login-field input:focus{border-color:var(--ciano);box-shadow:0 0 0 3px rgba(7,80,86,.07)}
+.login-btn{width:100%;padding:11px;background:var(--verde);color:#fff;border:none;border-radius:var(--r);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .15s;margin-top:6px}
+.login-btn:hover{background:var(--ciano)}
+.login-btn:disabled{opacity:.45;cursor:default}
+.login-err{color:var(--err);font-size:11px;margin-top:8px;display:none}
+
+/* TABS */
+.tab-bar{background:#fff;border-bottom:1px solid var(--borda-l);display:flex;align-items:center;padding:0 24px;gap:0;position:sticky;top:54px;z-index:100}
+.tab-btn{padding:12px 18px;font-size:12px;font-weight:600;color:var(--chumbo);border:none;background:none;cursor:pointer;font-family:inherit;border-bottom:2.5px solid transparent;transition:all .15s;white-space:nowrap}
+.tab-btn:hover{color:var(--verde)}
+.tab-btn.active{color:var(--verde);border-bottom-color:var(--ciano)}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+
+/* ABA ACURÁCIA */
+.acuracia-wrap{padding:28px 32px;max-width:1100px;margin:0 auto}
+.acuracia-title{font-size:18px;font-weight:600;color:var(--verde);margin-bottom:6px}
+.acuracia-sub{font-size:12px;color:var(--chumbo);margin-bottom:24px}
+.acc-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:28px}
+.acc-card{background:#fff;border:1px solid var(--borda-l);border-radius:var(--rlg);padding:20px;box-shadow:var(--shadow)}
+.acc-card-ttl{font-size:12px;font-weight:600;color:var(--verde);margin-bottom:14px;text-transform:uppercase;letter-spacing:.4px}
+.acc-bar-row{display:flex;align-items:center;gap:8px;font-size:11px;margin-bottom:7px}
+.acc-bar-label{width:150px;color:var(--chumbo);flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.acc-bar-track{flex:1;background:var(--off);border-radius:4px;height:8px;overflow:hidden}
+.acc-bar-fill{height:100%;border-radius:4px;transition:width .5s}
+.acc-pct{width:42px;text-align:right;font-weight:600;font-size:11px}
+.acc-count{color:var(--chumbo);font-size:10px;width:50px;text-align:right}
+.insumo-upload{background:#fff;border:1px solid var(--borda-l);border-radius:var(--rlg);padding:20px;box-shadow:var(--shadow);margin-bottom:28px}
+.insumo-ttl{font-size:12px;font-weight:600;color:var(--verde);margin-bottom:6px;text-transform:uppercase;letter-spacing:.4px}
+.insumo-sub{font-size:11px;color:var(--chumbo);margin-bottom:14px;line-height:1.5}
+.insumo-row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
+.insumo-row select,.insumo-row input[type=file]{font-size:11px;padding:7px 9px;border:1.5px solid var(--borda);border-radius:var(--r);font-family:inherit;background:#fff;outline:none}
+.insumo-row select{min-width:180px}
+.insumo-btn{padding:8px 16px;background:var(--ciano);color:#fff;border:none;border-radius:var(--r);font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .15s}
+.insumo-btn:hover{background:var(--verde)}
+.insumo-status{font-size:11px;color:var(--chumbo);margin-top:8px}
+
+/* ABA USUÁRIOS */
+.usuarios-wrap{padding:28px 32px;max-width:800px;margin:0 auto}
+.usuarios-title{font-size:18px;font-weight:600;color:var(--verde);margin-bottom:6px}
+.usuarios-sub{font-size:12px;color:var(--chumbo);margin-bottom:24px}
+.usr-table{width:100%;border-collapse:collapse;font-size:12px;background:#fff;border:1px solid var(--borda-l);border-radius:var(--rlg);overflow:hidden;box-shadow:var(--shadow)}
+.usr-table th{padding:10px 12px;background:var(--off);font-weight:600;color:var(--chumbo);text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.4px}
+.usr-table td{padding:9px 12px;border-top:1px solid var(--borda-l);vertical-align:middle}
+.usr-badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600}
+.usr-badge.admin{background:#EDE7F6;color:#5E35B1}
+.usr-badge.operador{background:var(--auto-bg);color:var(--ciano)}
+.usr-inativo{opacity:.45}
+.btn-novo-usr{padding:9px 18px;background:var(--verde);color:#fff;border:none;border-radius:var(--r);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .15s;margin-bottom:16px}
+.btn-novo-usr:hover{background:var(--ciano)}
+.usr-form{background:#fff;border:1px solid var(--borda-l);border-radius:var(--rlg);padding:20px;margin-bottom:20px;box-shadow:var(--shadow)}
+.usr-form h3{font-size:13px;font-weight:600;color:var(--verde);margin-bottom:14px}
+.usr-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px;margin-bottom:14px}
+.usr-form .fg label{font-size:10px;font-weight:600;color:var(--chumbo);text-transform:uppercase;letter-spacing:.4px}
+.usr-save{padding:9px 20px;background:var(--verde);color:#fff;border:none;border-radius:var(--r);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .15s}
+.usr-save:hover{background:var(--ciano)}
+.usr-cancel{padding:9px 16px;border:1.5px solid var(--borda);border-radius:var(--r);background:transparent;color:var(--chumbo);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;margin-left:8px}
+.usr-msg{font-size:11px;color:var(--chumbo);margin-top:8px}
+
   /* Aprendizado */
   #aprendizadoWrap textarea:focus,#aprendizadoWrap input:focus,#aprendizadoWrap select:focus{
     border-color:var(--ciano);outline:none;box-shadow:0 0 0 3px rgba(7,80,86,.07)
@@ -230,6 +298,29 @@ textarea{resize:vertical;min-height:52px}
 </head>
 <body>
 
+<!-- LOGIN OVERLAY -->
+<div id="loginOverlay">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="cards-sym" style="width:22px"><span style="display:block;background:var(--verde);border-radius:2px;height:5px;width:22px;margin-bottom:3px;opacity:.9"></span><span style="display:block;background:var(--verde);border-radius:2px;height:5px;width:14px;margin-bottom:3px;opacity:.55"></span><span style="display:block;background:var(--verde);border-radius:2px;height:5px;width:18px;opacity:.72"></span></div>
+      <div>
+        <div class="login-brand">SBK — EAGLE</div>
+        <div class="login-sub">Cadastro de Processos</div>
+      </div>
+    </div>
+    <div class="login-field">
+      <label>Usuário</label>
+      <input type="text" id="loginUsuario" placeholder="marcos.oliveira" autocomplete="username" onkeydown="if(event.key==='Enter')document.getElementById('loginSenha').focus()">
+    </div>
+    <div class="login-field">
+      <label>Senha</label>
+      <input type="password" id="loginSenha" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')fazerLogin()">
+    </div>
+    <button class="login-btn" id="loginBtn" onclick="fazerLogin()">Entrar</button>
+    <div class="login-err" id="loginErr"></div>
+  </div>
+</div>
+
 <!-- TOPBAR -->
 <header class="topbar">
   <div class="brand">
@@ -239,6 +330,7 @@ textarea{resize:vertical;min-height:52px}
     <span class="brand-sub">EAGLE — Cadastro de Processos</span>
   </div>
   <div class="top-actions">
+    <span id="topUserName" style="color:rgba(255,255,255,.6);font-size:11px;margin-right:4px"></span>
     <button class="tbtn tbtn-ghost" onclick="limparFormulario()">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
       Limpar
@@ -247,9 +339,112 @@ textarea{resize:vertical;min-height:52px}
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
       Exportar campos
     </button>
+    <button class="tbtn tbtn-ghost" id="btnLogout" onclick="fazerLogout()" style="display:none">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      Sair
+    </button>
   </div>
 </header>
 
+<!-- TABS -->
+<div class="tab-bar" id="tabBar" style="display:none">
+  <button class="tab-btn active" id="tab-analise" onclick="mudarAba('analise')">Análise de Petição</button>
+  <button class="tab-btn" id="tab-acuracia" onclick="mudarAba('acuracia')" style="display:none">Acurácia por Campo</button>
+  <button class="tab-btn" id="tab-usuarios" onclick="mudarAba('usuarios')" style="display:none">Usuários</button>
+</div>
+
+<!-- ABA ACURÁCIA -->
+<div class="tab-panel" id="panel-acuracia">
+  <div class="acuracia-wrap">
+    <div class="acuracia-title">Acurácia por Campo</div>
+    <div class="acuracia-sub">Acompanhe a precisão da extração automática em cada campo. Carregado em tempo real do banco de dados.</div>
+    <div class="insumo-upload">
+      <div class="insumo-ttl">Enviar insumo para campo com baixa acurácia</div>
+      <div class="insumo-sub">Selecione o campo problemático, anexe um print de exemplo correto e envie para análise pela IA.</div>
+      <div class="insumo-row">
+        <select id="insumoCampo">
+          <option value="">Selecione o campo...</option>
+          <option value="npu">NPU</option>
+          <option value="valor_causa">Valor da causa</option>
+          <option value="advogado_nome">Nome do advogado</option>
+          <option value="advogado_oab">OAB do advogado</option>
+          <option value="autor_nome">Nome do autor</option>
+          <option value="reus">Réu(s)</option>
+          <option value="comarca">Comarca</option>
+          <option value="vara_cartorio">Vara / Cartório</option>
+          <option value="data_ajuizamento">Data de ajuizamento</option>
+          <option value="objeto_principal">Objeto principal</option>
+        </select>
+        <input type="file" id="insumoFile" accept="image/*,.pdf" style="cursor:pointer">
+        <button class="insumo-btn" onclick="enviarInsumo()">Enviar insumo</button>
+      </div>
+      <div class="insumo-status" id="insumoStatus"></div>
+    </div>
+    <div class="acc-grid" id="accGrid">
+      <div class="acc-card" id="accCardStats">
+        <div class="acc-card-ttl">Acurácia por campo</div>
+        <div id="accStatsContent"><p style="font-size:11px;color:var(--chumbo)">Carregando...</p></div>
+      </div>
+      <div class="acc-card">
+        <div class="acc-card-ttl">Erros mais frequentes</div>
+        <div id="accErrosContent"><p style="font-size:11px;color:var(--chumbo)">Carregando...</p></div>
+      </div>
+    </div>
+    <div class="acc-card" style="margin-bottom:0">
+      <div class="acc-card-ttl">Últimos processos</div>
+      <div id="accProcessosContent"><p style="font-size:11px;color:var(--chumbo)">Carregando...</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- ABA USUÁRIOS -->
+<div class="tab-panel" id="panel-usuarios">
+  <div class="usuarios-wrap">
+    <div class="usuarios-title">Gerenciamento de Usuários</div>
+    <div class="usuarios-sub">Crie e configure o acesso de cada usuário ao sistema.</div>
+    <div class="usr-form" id="usrForm" style="display:none">
+      <h3 id="usrFormTitle">Novo usuário</h3>
+      <div class="usr-form-grid">
+        <div class="fg">
+          <label>Usuário (login)</label>
+          <input type="text" id="usrLogin" placeholder="joao.silva">
+        </div>
+        <div class="fg">
+          <label>Nome completo</label>
+          <input type="text" id="usrNome" placeholder="João Silva">
+        </div>
+        <div class="fg">
+          <label>Senha</label>
+          <input type="password" id="usrSenha" placeholder="Mínimo 4 caracteres">
+        </div>
+        <div class="fg">
+          <label>Perfil</label>
+          <select id="usrPerfil">
+            <option value="operador">Operador</option>
+            <option value="admin">Administrador</option>
+          </select>
+        </div>
+        <div class="fg" style="grid-column:span 2">
+          <label>Abas visíveis</label>
+          <div style="display:flex;gap:12px;margin-top:4px">
+            <label style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:300;text-transform:none;letter-spacing:0;cursor:pointer"><input type="checkbox" id="abaAnalise" value="analise" checked> Análise de Petição</label>
+            <label style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:300;text-transform:none;letter-spacing:0;cursor:pointer"><input type="checkbox" id="abaAcuracia" value="acuracia"> Acurácia por Campo</label>
+            <label style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:300;text-transform:none;letter-spacing:0;cursor:pointer"><input type="checkbox" id="abaUsuarios" value="usuarios"> Usuários</label>
+          </div>
+        </div>
+      </div>
+      <input type="hidden" id="usrEditId">
+      <button class="usr-save" onclick="salvarUsuario()">Salvar</button>
+      <button class="usr-cancel" onclick="fecharFormUsuario()">Cancelar</button>
+      <div class="usr-msg" id="usrMsg"></div>
+    </div>
+    <button class="btn-novo-usr" onclick="abrirFormNovoUsuario()">+ Novo usuário</button>
+    <div id="usrTableWrap"><p style="font-size:12px;color:var(--chumbo)">Carregando...</p></div>
+  </div>
+</div>
+
+<!-- ABA ANÁLISE -->
+<div class="tab-panel active" id="panel-analise">
 <div class="wrap">
 
 <!-- SIDEBAR -->
@@ -385,6 +580,8 @@ textarea{resize:vertical;min-height:52px}
   <span id="cntErr" style="display:none"></span>
   <span id="cntPend" style="display:none"></span>
 </aside>
+
+</div><!-- /panel-analise -->
 
 <!-- MODAL HISTÓRICO -->
 <div id="modalHistorico" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;overflow-y:auto;padding:40px 20px">
@@ -1193,6 +1390,19 @@ function extrairCampos(txt) {
 
       if (ultimaParte.length < 3) continue;
 
+      // Filtrar texto de corpo de petição que não é nome de empresa:
+      // 1. Começa com letra minúscula = trecho de meio de frase
+      if (/^[a-záéíóúâêôãõç]/.test(ultimaParte)) continue;
+      // 2. Muitas palavras minúsculas = prosa jurídica, não razão social
+      const wordsMin = (ultimaParte.match(/\b[a-záéíóúâêôãõç]{4,}\b/g) || []).length;
+      if (wordsMin > 5) continue;
+      // 3. Muito longo: tentar extrair razão social pelo padrão de empresa
+      if (ultimaParte.length > 160) {
+        const mEmp = ultimaParte.match(/([A-ZÁÉÍÓÚÂÊÔÃÕÇ][^\n;,–—]{3,80}?(?:S\.A\.?|LTDA\.?|EIRELI|S\/A|BANCO\b|FINANCEIRA\b|FUNDO\b|CRÉDITO\b|SOCIEDADE\b|CORRETORA\b|SEGUROS?\b))[^A-Z\n]{0,20}$/i);
+        if (mEmp) ultimaParte = mEmp[1].trim();
+        else continue;
+      }
+
       const reuEx = reus.find(r => !r.cnpj && ultimaParte.toLowerCase().startsWith(r.nome.toLowerCase().substring(0,8)));
       if (reuEx) { reuEx.cnpj = cnpj; }
       else reus.push({ nome: ultimaParte, cnpj });
@@ -1203,7 +1413,7 @@ function extrairCampos(txt) {
   // ── ADVOGADOS e OAB ────────────────────────────────────────────────────────
   // Âncora em cada "OAB/" e olha 150 chars para trás — captura TODOS os advogados
   // OAB: aceita "OAB/SP nº 377.573" e "OAB/SP n° 015800" e "OAB/SP 015800"
-  const oabAncora = /OAB\/([A-Z]{2})\s*(?:[Nn][.º°ºo]?\s*)?[º°]?\s*([\d.,]{4,10})/gi;
+  const oabAncora = /OAB[\/\-\s]([A-Z]{2})\s*(?:[Nn][.º°ºo]?\s*)?[º°]?\s*([\d.,]{4,10})/gi;
   const seenOabs = new Set();
   const todosAdvs = [];
   for (const mOab of txt.matchAll(oabAncora)) {
@@ -2477,6 +2687,323 @@ function limparTodosPadroes() {
 document.addEventListener('DOMContentLoaded', () => {
   renderizarPadroesAprendidos();
 });
+
+// ── LOGIN / SESSÃO / ABAS ─────────────────────────────────────────────────────
+
+let sessaoToken = null;
+let sessaoUser = null;
+
+async function verificarSessao() {
+  const token = localStorage.getItem('eagle_token');
+  if (!token) { mostrarLogin(); return; }
+  try {
+    const r = await fetch('/api/session?token=' + token);
+    if (!r.ok) { localStorage.removeItem('eagle_token'); mostrarLogin(); return; }
+    const user = await r.json();
+    sessaoToken = token;
+    sessaoUser = user;
+    aplicarSessao(user);
+  } catch(e) {
+    mostrarLogin();
+  }
+}
+
+function mostrarLogin() {
+  document.getElementById('loginOverlay').style.display = 'flex';
+  document.getElementById('tabBar').style.display = 'none';
+}
+
+function aplicarSessao(user) {
+  document.getElementById('loginOverlay').style.display = 'none';
+  document.getElementById('tabBar').style.display = 'flex';
+  document.getElementById('btnLogout').style.display = 'flex';
+  document.getElementById('topUserName').textContent = user.nome;
+  // Mostrar abas conforme permissão
+  const abas = user.abas || [];
+  document.getElementById('tab-acuracia').style.display = abas.includes('acuracia') ? '' : 'none';
+  document.getElementById('tab-usuarios').style.display = abas.includes('usuarios') ? '' : 'none';
+}
+
+async function fazerLogin() {
+  const usuario = document.getElementById('loginUsuario').value.trim();
+  const senha = document.getElementById('loginSenha').value;
+  const btn = document.getElementById('loginBtn');
+  const err = document.getElementById('loginErr');
+  if (!usuario || !senha) { err.textContent = 'Preencha usuário e senha.'; err.style.display='block'; return; }
+  btn.disabled = true;
+  btn.textContent = 'Entrando...';
+  err.style.display = 'none';
+  try {
+    const r = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ usuario, senha })
+    });
+    const data = await r.json();
+    if (!r.ok) { err.textContent = data.error || 'Erro ao entrar.'; err.style.display='block'; btn.disabled=false; btn.textContent='Entrar'; return; }
+    localStorage.setItem('eagle_token', data.token);
+    sessaoToken = data.token;
+    sessaoUser = data;
+    aplicarSessao(data);
+  } catch(e) {
+    err.textContent = 'Erro de conexão.';
+    err.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Entrar';
+  }
+}
+
+async function fazerLogout() {
+  const token = sessaoToken;
+  sessaoToken = null;
+  sessaoUser = null;
+  localStorage.removeItem('eagle_token');
+  if (token) fetch('/api/login', { method: 'DELETE', headers: {'Content-Type':'application/json'}, body: JSON.stringify({token}) }).catch(()=>{});
+  document.getElementById('btnLogout').style.display = 'none';
+  document.getElementById('topUserName').textContent = '';
+  mostrarLogin();
+  document.getElementById('loginUsuario').value = '';
+  document.getElementById('loginSenha').value = '';
+  document.getElementById('loginBtn').disabled = false;
+  document.getElementById('loginBtn').textContent = 'Entrar';
+}
+
+function mudarAba(aba) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-' + aba).classList.add('active');
+  document.getElementById('panel-' + aba).classList.add('active');
+  if (aba === 'acuracia') carregarAcuracia();
+  if (aba === 'usuarios') carregarUsuarios();
+}
+
+// ── ABA ACURÁCIA ──────────────────────────────────────────────────────────────
+
+async function carregarAcuracia() {
+  try {
+    const r = await fetch('/api/historico');
+    const { processos, stats, erros } = await r.json();
+
+    // Stats
+    let html = '';
+    if (stats && stats.length > 0) {
+      stats.forEach(s => {
+        const cor = s.pct >= 80 ? 'var(--vok)' : s.pct >= 50 ? '#F59E0B' : 'var(--err)';
+        html += `<div class="acc-bar-row">
+          <span class="acc-bar-label">${s.campo}</span>
+          <div class="acc-bar-track"><div class="acc-bar-fill" style="width:${s.pct}%;background:${cor}"></div></div>
+          <span class="acc-pct" style="color:${cor}">${s.pct}%</span>
+          <span class="acc-count">${s.acertos}/${s.total}</span>
+        </div>`;
+      });
+    } else {
+      html = '<p style="font-size:11px;color:var(--chumbo)">Nenhuma validação registrada ainda.</p>';
+    }
+    document.getElementById('accStatsContent').innerHTML = html;
+
+    // Erros
+    let htmlE = '';
+    if (erros && erros.length > 0) {
+      htmlE = '<div style="display:flex;flex-direction:column;gap:5px">';
+      erros.slice(0,12).forEach(e => {
+        htmlE += `<div style="font-size:11px;padding:6px 8px;border-radius:6px;background:var(--err-bg);border:1px solid var(--err-b)">
+          <span style="color:var(--chumbo);font-size:10px;text-transform:uppercase;letter-spacing:.3px">${e.campo}</span>
+          <div style="display:flex;gap:6px;align-items:center;margin-top:3px">
+            <span style="color:var(--err);text-decoration:line-through;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${e.valor_extraido||'(vazio)'}</span>
+            <span style="color:var(--chumbo)">→</span>
+            <span style="color:var(--vok);font-weight:600;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${e.valor_correto}</span>
+            <span style="margin-left:auto;color:var(--chumbo);font-size:10px">${e.ocorrencias}x</span>
+          </div>
+        </div>`;
+      });
+      htmlE += '</div>';
+    } else {
+      htmlE = '<p style="font-size:11px;color:var(--chumbo)">Nenhum erro registrado ainda.</p>';
+    }
+    document.getElementById('accErrosContent').innerHTML = htmlE;
+
+    // Processos
+    let htmlP = '';
+    if (processos && processos.length > 0) {
+      htmlP = `<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:11px">
+        <thead><tr style="background:var(--off)">
+          <th style="padding:6px 8px;text-align:left;color:var(--chumbo);font-size:10px;text-transform:uppercase;letter-spacing:.3px">#</th>
+          <th style="padding:6px 8px;text-align:left;color:var(--chumbo);font-size:10px;text-transform:uppercase;letter-spacing:.3px">NPU</th>
+          <th style="padding:6px 8px;text-align:left;color:var(--chumbo);font-size:10px;text-transform:uppercase;letter-spacing:.3px">Arquivo</th>
+          <th style="padding:6px 8px;text-align:left;color:var(--chumbo);font-size:10px;text-transform:uppercase;letter-spacing:.3px">Data</th>
+          <th style="padding:6px 8px;text-align:center;color:var(--chumbo);font-size:10px;text-transform:uppercase;letter-spacing:.3px">Status</th>
+        </tr></thead><tbody>`;
+      processos.forEach((p, i) => {
+        const bg = i % 2 === 0 ? '#fff' : 'var(--off)';
+        const data = new Date(p.data_upload).toLocaleDateString('pt-BR');
+        const cor = p.status === 'validado' ? 'var(--vok)' : 'var(--amb)';
+        htmlP += `<tr style="background:${bg}">
+          <td style="padding:5px 8px;color:var(--chumbo)">${p.id}</td>
+          <td style="padding:5px 8px;font-family:monospace;font-size:10px">${p.npu||'-'}</td>
+          <td style="padding:5px 8px;color:var(--chumbo);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.arquivo_nome||'-'}</td>
+          <td style="padding:5px 8px;color:var(--chumbo)">${data}</td>
+          <td style="padding:5px 8px;text-align:center;color:${cor};font-weight:600;font-size:10px">${p.status}</td>
+        </tr>`;
+      });
+      htmlP += '</tbody></table></div>';
+    } else {
+      htmlP = '<p style="font-size:11px;color:var(--chumbo)">Nenhum processo salvo ainda.</p>';
+    }
+    document.getElementById('accProcessosContent').innerHTML = htmlP;
+  } catch(e) {
+    document.getElementById('accStatsContent').innerHTML = `<p style="color:var(--err);font-size:11px">Erro: ${e.message}</p>`;
+  }
+}
+
+async function enviarInsumo() {
+  const campo = document.getElementById('insumoCampo').value;
+  const file = document.getElementById('insumoFile').files[0];
+  const status = document.getElementById('insumoStatus');
+  if (!campo) { status.textContent = 'Selecione um campo.'; return; }
+  if (!file) { status.textContent = 'Selecione um arquivo (imagem ou PDF).'; return; }
+  status.textContent = 'Enviando para análise pela IA...';
+  try {
+    const reader = new FileReader();
+    reader.onload = async (ev) => {
+      const base64 = ev.target.result.split(',')[1];
+      const mime = file.type || 'image/png';
+      const r = await fetch('/api/extrair', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tipo: 'extrair_pdf',
+          base64,
+          instrucao: `Você está analisando um print/screenshot enviado como insumo de treinamento para o campo "${campo}". Descreva com precisão onde e como a informação deste campo aparece na imagem, para que possamos melhorar a extração automática. Seja específico sobre posicionamento, formatação e contexto textual.`
+        })
+      });
+      const data = await r.json();
+      if (data.resultado) {
+        status.innerHTML = `<strong>Análise da IA:</strong><br><span style="line-height:1.6">${data.resultado.replace(/\n/g,'<br>')}</span>`;
+      } else {
+        status.textContent = 'Resposta: ' + (data.error || 'Sem resultado.');
+      }
+    };
+    reader.readAsDataURL(file);
+  } catch(e) {
+    status.textContent = 'Erro: ' + e.message;
+  }
+}
+
+// ── ABA USUÁRIOS ──────────────────────────────────────────────────────────────
+
+async function carregarUsuarios() {
+  if (!sessaoToken) return;
+  const wrap = document.getElementById('usrTableWrap');
+  wrap.innerHTML = '<p style="font-size:12px;color:var(--chumbo)">Carregando...</p>';
+  try {
+    const r = await fetch('/api/usuarios?token=' + sessaoToken);
+    if (!r.ok) { wrap.innerHTML = '<p style="font-size:12px;color:var(--err)">Sem permissão.</p>'; return; }
+    const users = await r.json();
+    let html = `<table class="usr-table"><thead><tr>
+      <th>#</th><th>Login</th><th>Nome</th><th>Perfil</th><th>Abas</th><th>Status</th><th></th>
+    </tr></thead><tbody>`;
+    users.forEach(u => {
+      const cls = u.ativo ? '' : ' usr-inativo';
+      html += `<tr class="${cls}">
+        <td style="color:var(--chumbo)">${u.id}</td>
+        <td><strong>${u.usuario}</strong></td>
+        <td>${u.nome}</td>
+        <td><span class="usr-badge ${u.perfil}">${u.perfil}</span></td>
+        <td style="color:var(--chumbo);font-size:11px">${u.abas||'-'}</td>
+        <td><span style="font-size:10px;font-weight:600;color:${u.ativo?'var(--vok)':'var(--err)'}">${u.ativo?'Ativo':'Inativo'}</span></td>
+        <td>
+          <button onclick="editarUsuario(${u.id},'${u.usuario}','${u.nome}','${u.perfil}','${u.abas}')" style="background:none;border:1px solid var(--borda);border-radius:5px;padding:3px 8px;font-size:10px;cursor:pointer;font-family:inherit;color:var(--chumbo)">Editar</button>
+          ${u.ativo ? `<button onclick="desativarUsuario(${u.id})" style="background:none;border:1px solid var(--err-b);border-radius:5px;padding:3px 8px;font-size:10px;cursor:pointer;font-family:inherit;color:var(--err);margin-left:4px">Desativar</button>` : ''}
+        </td>
+      </tr>`;
+    });
+    html += '</tbody></table>';
+    wrap.innerHTML = html;
+  } catch(e) {
+    wrap.innerHTML = `<p style="color:var(--err);font-size:12px">Erro: ${e.message}</p>`;
+  }
+}
+
+function abrirFormNovoUsuario() {
+  document.getElementById('usrFormTitle').textContent = 'Novo usuário';
+  document.getElementById('usrLogin').value = '';
+  document.getElementById('usrNome').value = '';
+  document.getElementById('usrSenha').value = '';
+  document.getElementById('usrPerfil').value = 'operador';
+  document.getElementById('abaAnalise').checked = true;
+  document.getElementById('abaAcuracia').checked = false;
+  document.getElementById('abaUsuarios').checked = false;
+  document.getElementById('usrEditId').value = '';
+  document.getElementById('usrMsg').textContent = '';
+  document.getElementById('usrForm').style.display = 'block';
+}
+
+function editarUsuario(id, login, nome, perfil, abas) {
+  document.getElementById('usrFormTitle').textContent = 'Editar usuário';
+  document.getElementById('usrLogin').value = login;
+  document.getElementById('usrNome').value = nome;
+  document.getElementById('usrSenha').value = '';
+  document.getElementById('usrPerfil').value = perfil;
+  const abaList = (abas||'').split(',');
+  document.getElementById('abaAnalise').checked = abaList.includes('analise');
+  document.getElementById('abaAcuracia').checked = abaList.includes('acuracia');
+  document.getElementById('abaUsuarios').checked = abaList.includes('usuarios');
+  document.getElementById('usrEditId').value = id;
+  document.getElementById('usrMsg').textContent = '';
+  document.getElementById('usrForm').style.display = 'block';
+}
+
+function fecharFormUsuario() {
+  document.getElementById('usrForm').style.display = 'none';
+}
+
+async function salvarUsuario() {
+  const id = document.getElementById('usrEditId').value;
+  const login = document.getElementById('usrLogin').value.trim();
+  const nome = document.getElementById('usrNome').value.trim();
+  const senha = document.getElementById('usrSenha').value;
+  const perfil = document.getElementById('usrPerfil').value;
+  const abasArr = ['analise','acuracia','usuarios'].filter(a => document.getElementById('aba' + a.charAt(0).toUpperCase() + a.slice(1)).checked);
+  const abas = abasArr.join(',');
+  const msg = document.getElementById('usrMsg');
+  if (!nome) { msg.textContent = 'Informe o nome completo.'; return; }
+  if (!id && (!login || !senha)) { msg.textContent = 'Login e senha são obrigatórios para novo usuário.'; return; }
+  try {
+    let r;
+    if (id) {
+      r = await fetch('/api/usuarios', {
+        method: 'PUT',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ token: sessaoToken, id: parseInt(id), nome, perfil, abas, senha: senha||undefined })
+      });
+    } else {
+      r = await fetch('/api/usuarios', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ token: sessaoToken, usuario: login, senha, nome, perfil, abas })
+      });
+    }
+    const data = await r.json();
+    if (!r.ok) { msg.textContent = data.error || 'Erro ao salvar.'; return; }
+    msg.textContent = 'Salvo com sucesso!';
+    setTimeout(() => { fecharFormUsuario(); carregarUsuarios(); }, 800);
+  } catch(e) {
+    msg.textContent = 'Erro: ' + e.message;
+  }
+}
+
+async function desativarUsuario(id) {
+  if (!confirm('Desativar este usuário?')) return;
+  await fetch('/api/usuarios', {
+    method: 'DELETE',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ token: sessaoToken, id })
+  });
+  carregarUsuarios();
+}
+
+// Verificar sessão ao carregar
+document.addEventListener('DOMContentLoaded', verificarSessao);
 
 // ── INTEGRAÇÃO BANCO DE DADOS ─────────────────────────────────────────────────
 
