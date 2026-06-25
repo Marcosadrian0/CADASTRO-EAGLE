@@ -1,96 +1,2279 @@
-/**
- * EAGLE Cadastro — API Serverless (Vercel)
- * Proxy seguro para a Anthropic API.
- * A ANTHROPIC_API_KEY fica APENAS nas variáveis de ambiente do Vercel,
- * nunca exposta no browser.
- */
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>EAGLE — Cadastro de Processos | SBK</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --verde:#023631; --ciano:#075056; --ciano-med:#2A7C79; --verde-prof:#012824;
+  --chumbo:#4A545E; --off:#ECEFF3; --branco:#fff;
+  --borda:#D8DDE3; --borda-l:#EEF1F5;
+  --vok:#1A7F4B; --vok-bg:#EAF5EE; --vok-b:#b8dfc7;
+  --err:#C0392B; --err-bg:#FEF0EF; --err-b:#f5c6c4;
+  --amb:#92400E; --amb-bg:#FFF8ED; --amb-b:#F4D080;
+  --auto-bg:#EDF6F5; --auto-b:#2A7C79;
+  --r:8px; --rlg:12px;
+  --shadow:0 1px 4px rgba(2,54,49,.07);
+  --shadow-md:0 2px 12px rgba(2,54,49,.10);
+}
+body{font-family:'Plus Jakarta Sans',Calibri,sans-serif;font-weight:300;background:#F0F3F7;color:#1a2421;font-size:13px;line-height:1.6;min-height:100vh}
 
-export const config = { maxDuration: 60 };
+/* TOPBAR */
+.topbar{background:var(--verde);height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 28px;position:sticky;top:0;z-index:200;box-shadow:0 2px 12px rgba(0,0,0,.25)}
+.brand{display:flex;align-items:center;gap:12px}
+.cards-sym{display:flex;flex-direction:column;gap:3px;width:22px}
+.cards-sym span{display:block;background:#fff;border-radius:2px;height:5px}
+.cards-sym span:nth-child(1){width:22px;opacity:.9}
+.cards-sym span:nth-child(2){width:14px;opacity:.55}
+.cards-sym span:nth-child(3){width:18px;opacity:.72}
+.brand-txt{color:#fff;font-size:15px;font-weight:600;letter-spacing:.2px}
+.brand-div{width:1px;height:18px;background:rgba(255,255,255,.2);margin:0 4px}
+.brand-sub{color:rgba(255,255,255,.5);font-size:11px;font-weight:300}
+.top-actions{display:flex;align-items:center;gap:8px}
+.tbtn{padding:6px 14px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px;transition:all .15s;border:none}
+.tbtn-ghost{background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.2)}
+.tbtn-ghost:hover{background:rgba(255,255,255,.2)}
+.tbtn-ciano{background:var(--ciano);color:#fff}
+.tbtn-ciano:hover{background:var(--ciano-med)}
 
-export default async function handler(req, res) {
-  // ── CORS ──────────────────────────────────────────────────────────────────
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Método não permitido' });
+/* LAYOUT */
+.wrap{display:grid;grid-template-columns:280px 1fr;min-height:calc(100vh - 54px);align-items:start}
 
-  // ── API Key ────────────────────────────────────────────────────────────────
-  const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
-  if (!ANTHROPIC_KEY) {
-    return res.status(500).json({ error: 'ANTHROPIC_API_KEY não configurada no Vercel.' });
+/* SIDEBAR */
+.sidebar{background:var(--branco);border-right:1px solid var(--borda-l);position:sticky;top:54px;height:calc(100vh - 54px);overflow-y:auto;display:flex;flex-direction:column}
+.sb-block{padding:16px;border-bottom:1px solid var(--borda-l);flex-shrink:0}
+.sb-label{font-size:9.5px;font-weight:600;text-transform:uppercase;letter-spacing:.7px;color:var(--chumbo);margin-bottom:10px}
+
+/* Upload */
+.drop-zone{border:1.5px dashed var(--borda);border-radius:var(--r);padding:18px 12px;text-align:center;cursor:pointer;transition:all .2s;background:#FAFBFC}
+.drop-zone:hover,.drop-zone.dragover{border-color:var(--ciano);background:var(--auto-bg)}
+.dz-ico{width:34px;height:34px;background:linear-gradient(135deg,var(--auto-bg),#d4ece9);border-radius:8px;display:flex;align-items:center;justify-content:center;margin:0 auto 8px}
+.dz-ico svg{width:16px;height:16px;color:var(--ciano)}
+.dz-txt{font-size:11px;color:var(--chumbo);margin-bottom:2px}
+.dz-hint{font-size:10px;color:#9aA0a6}
+input[type=file]{display:none}
+
+.file-pill{display:none;align-items:center;gap:8px;background:var(--auto-bg);border:1px solid var(--auto-b);border-radius:var(--r);padding:8px 10px;margin-top:8px}
+.file-pill.show{display:flex}
+.fpdf{width:28px;height:28px;background:var(--verde);border-radius:5px;color:#fff;font-size:8px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.finfo{flex:1;min-width:0}
+.fname{font-size:11px;font-weight:600;color:var(--verde);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fsize{font-size:10px;color:var(--chumbo)}
+.fbtn-rm{background:none;border:none;color:var(--chumbo);cursor:pointer;font-size:14px;padding:2px;border-radius:4px;flex-shrink:0}
+.fbtn-rm:hover{color:var(--err)}
+
+.btn-parse{width:100%;margin-top:10px;padding:9px;background:var(--verde);color:#fff;border:none;border-radius:var(--r);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px;transition:background .15s}
+.btn-parse:hover{background:var(--ciano)}
+.btn-parse:disabled{opacity:.35;cursor:default}
+
+.progress{display:none;margin-top:10px;display:none}
+.ps{display:flex;align-items:center;gap:7px;padding:3px 0;font-size:11px;color:var(--chumbo)}
+.psdot{width:15px;height:15px;border-radius:50%;border:1.5px solid var(--borda);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:7px;color:transparent}
+.ps.done .psdot{background:var(--vok);border-color:var(--vok);color:#fff}
+.ps.active .psdot{border-color:var(--ciano);border-top-color:transparent;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.txt-prev{display:none;margin-top:8px;background:var(--off);border:1px solid var(--borda-l);border-radius:6px;padding:8px;font-size:10px;font-family:monospace;color:var(--chumbo);max-height:90px;overflow-y:auto;white-space:pre-wrap;word-break:break-word;line-height:1.4}
+.alert-sb{display:none;margin-top:8px;padding:8px 10px;border-radius:var(--r);font-size:11px;line-height:1.5}
+.alert-ok-sb{background:var(--vok-bg);color:var(--vok);border:1px solid var(--vok-b)}
+.alert-err-sb{background:var(--err-bg);color:var(--err);border:1px solid var(--err-b)}
+
+/* Escritório */
+.esc-chip{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:600}
+.esc-nd{background:var(--off);color:var(--chumbo);border:1px solid var(--borda)}
+.esc-gerber{background:#FFF3E0;color:#7C4010;border:1px solid #F4C57F}
+.esc-mascarenhas{background:#E3F0FB;color:#1A5A94;border:1px solid #9EC8EF}
+.esc-debellis{background:var(--vok-bg);color:var(--vok);border:1px solid var(--vok-b)}
+.esc-regra{font-size:10px;color:var(--chumbo);margin-top:5px;line-height:1.5}
+
+/* Contadores validação */
+.vcounts{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.vcount{padding:8px 4px;border-radius:var(--r);text-align:center;background:var(--off)}
+.vcount .n{font-size:17px;font-weight:600}
+.vcount .l{font-size:9px;color:var(--chumbo);text-transform:uppercase;letter-spacing:.3px}
+.vcount.ok .n{color:var(--vok)}
+.vcount.er .n{color:var(--err)}
+.vcount.pd .n{color:var(--ciano)}
+
+/* Alertas sb */
+.at{display:flex;gap:6px;padding:8px 10px;border-radius:6px;font-size:11px;line-height:1.5;margin-bottom:5px}
+.at.warn{background:var(--amb-bg);color:var(--amb);border:1px solid var(--amb-b)}
+.at-ico{flex-shrink:0;font-size:12px;margin-top:1px}
+
+/* Consulta pública */
+.cq-card{background:var(--off);border:1px solid var(--borda-l);border-radius:var(--r);padding:10px}
+.cq-status{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--chumbo);margin-bottom:8px}
+.cq-dot{width:7px;height:7px;border-radius:50%;background:var(--borda);flex-shrink:0}
+.cq-dot.busy{background:var(--ciano);animation:pulse 1s ease-in-out infinite}
+.cq-dot.ok{background:var(--vok)}
+.cq-dot.fail{background:var(--amb)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.cq-row{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:3px 0;border-bottom:.5px solid var(--borda-l);font-size:11px}
+.cq-row:last-child{border:none}
+.cq-k{color:var(--chumbo);font-size:10px;text-transform:uppercase;letter-spacing:.3px}
+.cq-v{font-weight:600;color:var(--verde);text-align:right}
+.btn-apply-cq{width:100%;margin-top:8px;padding:6px;border-radius:6px;border:1px solid var(--ciano);background:transparent;color:var(--ciano);font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s}
+.btn-apply-cq:hover{background:var(--auto-bg)}
+
+/* IA */
+.ia-status{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--chumbo);margin-bottom:8px}
+.ia-d{width:7px;height:7px;border-radius:50%;background:var(--borda);flex-shrink:0}
+.ia-d.thinking,.ia-d.busy{background:var(--ciano);animation:pulse 1s ease-in-out infinite}
+.ia-d.ok{background:var(--vok)}
+.ia-d.err{background:var(--err)}
+.ia-d.warn{background:var(--amb)}
+.ia-card{border-radius:6px;padding:9px 11px;font-size:11px;line-height:1.5;margin-bottom:6px;border:1px solid}
+.ia-card.ok{background:var(--vok-bg);color:var(--vok);border-color:var(--vok-b)}
+.ia-card.err{background:var(--err-bg);color:var(--err);border-color:var(--err-b)}
+.ia-card.warn{background:var(--amb-bg);color:var(--amb);border-color:var(--amb-b)}
+.ia-lbl{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;opacity:.65;margin-bottom:3px}
+.ia-fonte{margin-top:5px;padding-top:5px;border-top:1px solid rgba(0,0,0,.08);font-size:10px;opacity:.6;font-style:italic}
+.ia-apply{margin-top:5px;padding:3px 8px;border-radius:5px;border:1.5px solid currentColor;background:transparent;font-size:10px;font-weight:600;cursor:pointer;color:inherit;font-family:inherit}
+.ia-apply:hover{background:rgba(0,0,0,.06)}
+.field-validating{border-color:var(--ciano)!important;animation:fpulse 1.1s ease-in-out infinite}
+@keyframes fpulse{0%,100%{border-color:var(--ciano)}50%{border-color:var(--ciano-med)}}
+
+/* MAIN */
+.main{padding:20px 24px 40px;overflow-y:auto}
+
+/* Card seção */
+.scard{background:var(--branco);border:1px solid var(--borda-l);border-radius:var(--rlg);margin-bottom:10px;box-shadow:var(--shadow)}
+.scard-head{display:flex;align-items:center;gap:10px;padding:11px 16px;border-bottom:1px solid var(--borda-l);background:#FAFCFC;border-radius:var(--rlg) var(--rlg) 0 0}
+.scard-ico{width:26px;height:26px;background:linear-gradient(135deg,var(--auto-bg),#d4ece9);border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.scard-ico svg{width:13px;height:13px;color:var(--ciano)}
+.scard-ttl{font-size:12px;font-weight:600;color:var(--verde)}
+.scard-body{padding:14px 16px}
+
+/* Grids */
+.g1{display:grid;gap:10px 14px;grid-template-columns:1fr}
+.g2{display:grid;gap:10px 14px;grid-template-columns:1fr 1fr}
+.g3{display:grid;gap:10px 14px;grid-template-columns:1fr 1fr 1fr}
+.g4{display:grid;gap:10px 14px;grid-template-columns:1fr 1fr 1fr 1fr}
+.g-meta{display:grid;gap:10px 14px;grid-template-columns:1fr 1fr 1fr 1fr}
+.s2{grid-column:span 2}
+.s3{grid-column:span 3}
+.s4{grid-column:span 4}
+.mb10{margin-bottom:10px}
+
+/* Campo */
+.fg{display:flex;flex-direction:column;gap:4px}
+.fg label{font-size:10px;font-weight:600;color:var(--chumbo);text-transform:uppercase;letter-spacing:.45px;display:flex;align-items:center;gap:5px}
+.fg label .lhint{font-size:9.5px;font-weight:300;color:#9aA0a6;text-transform:none;letter-spacing:0}
+.frow{display:flex;gap:5px;align-items:flex-start}
+.frow input,.frow select,.frow textarea{flex:1;min-width:0}
+
+input[type=text],select,textarea{
+  width:100%;padding:7px 10px;border:1.5px solid var(--borda);border-radius:var(--r);
+  font-size:12px;font-family:inherit;font-weight:300;color:#1a2421;background:var(--branco);
+  transition:border-color .15s,background .15s;outline:none;line-height:1.4
+}
+input:focus,select:focus,textarea:focus{border-color:var(--ciano);box-shadow:0 0 0 3px rgba(7,80,86,.07)}
+input.auto,select.auto,textarea.auto{border-color:var(--auto-b);background:var(--auto-bg)}
+input.locked,select.locked,textarea.locked{border-color:var(--ciano);background:var(--auto-bg);font-weight:600;color:var(--ciano);cursor:default}
+input.field-ok,select.field-ok{border-color:var(--vok)!important;background:var(--vok-bg)}
+input.field-err,select.field-err{border-color:var(--err)!important;background:var(--err-bg)}
+
+select{
+  appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%234A545E' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 9px center;padding-right:28px;cursor:pointer
+}
+textarea{resize:vertical;min-height:52px}
+
+/* Botões validação */
+.bok:hover,.bok.active{background:var(--vok);color:#fff;border-color:var(--vok)}
+.bno:hover,.bno.active{background:var(--err);color:#fff;border-color:var(--err)}
+
+/* Réus */
+.reu-list{display:flex;flex-direction:column;gap:6px;min-height:4px}
+.reu-row{display:grid;grid-template-columns:1fr 164px auto auto;gap:6px;align-items:center}
+.btn-add{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border:1.5px dashed var(--borda);border-radius:var(--r);background:transparent;color:var(--chumbo);font-size:11px;font-family:inherit;cursor:pointer;margin-top:6px;transition:all .15s}
+.btn-add:hover{border-color:var(--ciano);color:var(--ciano);background:var(--auto-bg)}
+.btn-del{width:26px;height:26px;border-radius:6px;border:1.5px solid var(--err-b);color:var(--err);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;transition:all .12s}
+.btn-del:hover{background:var(--err);color:#fff;border-color:var(--err)}
+
+/* Advs extras */
+.xadv-wrap{margin-top:10px;padding-top:10px;border-top:1px dashed var(--borda-l)}
+.xadv-row{display:grid;grid-template-columns:1fr 90px 160px;gap:8px 14px;margin-bottom:6px;align-items:end}
+.xadv-row label{font-size:10px;font-weight:600;color:var(--chumbo);text-transform:uppercase;letter-spacing:.4px}
+
+/* Divider */
+.div10{height:10px}
+
+/* Footer */
+.footer{display:flex;justify-content:flex-end;gap:10px;padding:16px 0 0}
+.btn-clear{padding:8px 18px;border:1.5px solid var(--borda);border-radius:var(--r);background:transparent;color:var(--chumbo);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s}
+.btn-clear:hover{border-color:var(--ciano);color:var(--ciano)}
+.btn-export{padding:8px 22px;background:var(--verde);color:#fff;border:none;border-radius:var(--r);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px;transition:background .15s}
+.btn-export:hover{background:var(--ciano)}
+
+@media(max-width:860px){
+  .wrap{grid-template-columns:1fr}
+  .sidebar{position:static;height:auto}
+  .g2,.g3,.g4,.g-meta{grid-template-columns:1fr 1fr}
+  .s2,.s3,.s4{grid-column:span 1}
+}
+
+  /* Aprendizado */
+  #aprendizadoWrap textarea:focus,#aprendizadoWrap input:focus,#aprendizadoWrap select:focus{
+    border-color:var(--ciano);outline:none;box-shadow:0 0 0 3px rgba(7,80,86,.07)
   }
+  #aprendizadoWrap select,#aprendizadoWrap input,#aprendizadoWrap textarea{
+    border:1.5px solid var(--borda);border-radius:var(--r);padding:6px 8px;
+    font-family:inherit;font-size:11px;font-weight:300;color:#1a2421;background:var(--branco)
+  }
+</style>
+</head>
+<body>
 
-  const { tipo, pdf_b64, texto, instrucoes, prompt_aprendizado } = req.body || {};
+<!-- TOPBAR -->
+<header class="topbar">
+  <div class="brand">
+    <div class="cards-sym"><span></span><span></span><span></span></div>
+    <span class="brand-txt">SBK</span>
+    <div class="brand-div"></div>
+    <span class="brand-sub">EAGLE — Cadastro de Processos</span>
+  </div>
+  <div class="top-actions">
+    <button class="tbtn tbtn-ghost" onclick="limparFormulario()">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
+      Limpar
+    </button>
+    <button class="tbtn tbtn-ciano" onclick="exportarCampos()">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Exportar campos
+    </button>
+  </div>
+</header>
 
-  // ── Roteamento por tipo de chamada ─────────────────────────────────────────
-  try {
-    if (tipo === 'extrair_pdf' && pdf_b64 && instrucoes) {
-      // Estratégia 1: PDF como documento base64
-      return res.status(200).json(
-        await chamarAnthropic(ANTHROPIC_KEY, {
-          model: 'claude-sonnet-4-6',
-          max_tokens: 2048,
-          messages: [{
-            role: 'user',
-            content: [
-              { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: pdf_b64 } },
-              { type: 'text', text: instrucoes }
-            ]
-          }]
-        }, true) // true = beta PDFs
-      );
-    }
+<div class="wrap">
 
-    if (tipo === 'extrair_texto' && texto && instrucoes) {
-      // Estratégia 2: texto puro (fallback)
-      return res.status(200).json(
-        await chamarAnthropic(ANTHROPIC_KEY, {
-          model: 'claude-sonnet-4-6',
-          max_tokens: 2048,
-          messages: [{ role: 'user', content: instrucoes + '\n\nTEXTO:\n' + texto }]
-        })
-      );
-    }
+<!-- SIDEBAR -->
+<aside class="sidebar">
 
-    if (tipo === 'aprender' && prompt_aprendizado) {
-      // Aprendizado de padrões
-      return res.status(200).json(
-        await chamarAnthropic(ANTHROPIC_KEY, {
-          model: 'claude-sonnet-4-6',
-          max_tokens: 400,
-          messages: [{ role: 'user', content: prompt_aprendizado }]
-        })
-      );
-    }
+  <!-- PDF Upload -->
+  <div class="sb-block">
+    <div class="sb-label">Petição (PDF)</div>
+    <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+      <div class="dz-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+      <div class="dz-txt">Clique ou arraste o PDF</div>
+      <div class="dz-hint">Somente .pdf</div>
+      <input type="file" id="fileInput" accept="application/pdf,.pdf">
+    </div>
+    <div class="file-pill" id="fileCard">
+      <div class="fpdf">PDF</div>
+      <div class="finfo">
+        <div class="fname" id="fileName"></div>
+        <div class="fsize" id="fileSize"></div>
+      </div>
+      <button class="fbtn-rm" onclick="removerArquivo()">✕</button>
+    </div>
+    <button class="btn-parse" id="btnAnalisar" onclick="analisarPDF()" disabled style="display:none">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      Analisar e preencher
+    </button>
+    <div class="progress" id="progressWrap">
+      <div class="ps" id="ps1"><div class="psdot">✓</div><span>Lendo páginas do PDF</span></div>
+      <div class="ps" id="ps2"><div class="psdot">✓</div><span>Extraindo texto</span></div>
+      <div class="ps" id="ps3"><div class="psdot">✓</div><span>Identificando campos</span></div>
+      <div class="ps" id="ps4"><div class="psdot">✓</div><span>Preenchendo formulário</span></div>
+    </div>
+    <div id="previewWrap" style="display:none"><div class="txt-prev" id="textPreview"></div></div>
+    <div class="alert-sb" id="alertMsg"></div>
+  </div>
 
-    return res.status(400).json({ error: 'Parâmetros inválidos. Informe tipo + dados correspondentes.' });
+  <!-- Escritório -->
+  <div class="sb-block">
+    <div class="sb-label">Escritório designado</div>
+    <div id="escritorioBadge"><span class="esc-chip esc-nd">Aguardando análise</span></div>
+    <div class="esc-regra" id="escritorioRegra">Carregue a petição para determinação automática.</div>
+  </div>
 
-  } catch (err) {
-    console.error('[EAGLE API] Erro:', err.message);
-    return res.status(500).json({ error: err.message });
+  <!-- Alertas -->
+  <div class="sb-block" id="alertasWrap" style="display:none">
+    <div class="sb-label">Atenção</div>
+    <div id="alertasArea"></div>
+  </div>
+
+  <!-- Consulta DataJud -->
+  <div class="sb-block" id="consultaWrap" style="display:none">
+    <div class="sb-label">Consulta DataJud CNJ</div>
+    <div class="cq-card">
+      <div class="cq-status"><div class="cq-dot busy" id="consultaDot"></div><span id="consultaStatusTxt">Buscando...</span></div>
+      <div id="consultaResultado"></div>
+      <button class="btn-apply-cq" id="btnAplicarConsulta" style="display:none" onclick="aplicarDadosConsulta()">↓ Aplicar dados encontrados</button>
+    </div>
+  </div>
+
+  <!-- IA -->
+  <div class="sb-block" id="painelIA" style="display:none">
+    <div class="sb-label">Assistente IA</div>
+    <div class="ia-status"><div class="ia-d" id="iaDot"></div><span id="iaStatusTxt">Aguardando edição</span></div>
+    <div id="iaFeedbackWrap"></div>
+  </div>
+
+  <!-- Interpretação IA -->
+  <div class="sb-block" id="iaInterpWrap" style="display:none">
+    <div class="sb-label">Interpretação IA</div>
+    <div class="ia-status">
+      <div class="ia-d busy" id="iaInterpDot" style="display:none"></div>
+      <span id="iaInterpStatus" style="font-size:11px;color:var(--chumbo)">Lendo petição...</span>
+    </div>
+    <div id="iaInterpResultado"></div>
+  </div>
+
+  <!-- Aprendizado Adaptativo -->
+  <div class="sb-block" id="aprendizadoWrap">
+    <div class="sb-label">Aprendizado automático</div>
+    <p style="font-size:10px;color:var(--chumbo);margin-bottom:10px;line-height:1.5">Corrija um campo abaixo — a IA analisa a petição e aprende onde encontrar essa informação nas próximas vezes.</p>
+
+    <div style="margin-bottom:6px">
+      <select id="aprendCampo" style="width:100%;font-size:11px;padding:6px 8px;border:1.5px solid var(--borda);border-radius:var(--r);font-family:inherit;background:var(--branco)">
+        <option value="">Qual campo está errado?</option>
+        <option value="numero_origem">Número de origem</option>
+        <option value="valor_causa">Valor da causa</option>
+        <option value="rito">Rito</option>
+        <option value="vara_cartorio">Vara / Cartório</option>
+        <option value="comarca">Comarca</option>
+        <option value="data_ajuizamento">Data de ajuizamento</option>
+        <option value="autor_nome">Nome do autor</option>
+        <option value="objeto_principal">Objeto principal</option>
+        <option value="causa_raiz">Causa raiz</option>
+      </select>
+    </div>
+
+    <input type="text" id="aprendValor" placeholder="Valor correto (ex: 4004396-60.2026.8.26.0609)" style="width:100%;margin-bottom:6px;font-size:11px;padding:6px 8px;border:1.5px solid var(--borda);border-radius:var(--r);font-family:inherit">
+
+    <button onclick="corrigirEAprenderCampo()" style="width:100%;padding:8px;background:var(--ciano);color:#fff;border:none;border-radius:var(--r);font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .15s">
+      IA vai aprender onde encontrar →
+    </button>
+
+    <div id="aprendStatusMsg" style="display:none;font-size:10px;margin-top:6px;line-height:1.5"></div>
+
+    <hr style="border:none;border-top:1px solid var(--borda-l);margin:12px 0 8px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+      <span style="font-size:9px;font-weight:600;color:var(--chumbo);text-transform:uppercase;letter-spacing:.5px">Padrões aprendidos</span>
+      <button onclick="limparTodosPadroes()" style="background:none;border:none;color:var(--err);font-size:10px;cursor:pointer;font-family:inherit">Limpar tudo</button>
+    </div>
+    <div id="padroesListWrap"></div>
+  </div>
+
+<!-- IDs ocultos para compatibilidade JS -->
+  <span id="cntOk" style="display:none"></span>
+  <span id="cntErr" style="display:none"></span>
+  <span id="cntPend" style="display:none"></span>
+</aside>
+
+<!-- MAIN FORM -->
+<main class="main">
+
+  <!-- ① DADOS PROCESSUAIS -->
+  <div class="scard">
+    <div class="scard-head">
+      <div class="scard-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 7h8M8 11h8M8 15h5"/></svg></div>
+      <span class="scard-ttl">Dados processuais</span>
+    </div>
+    <div class="scard-body">
+
+      <!-- NPU -->
+      <div class="g1 mb10">
+        <div class="fg">
+          <label>Número do processo (NPU CNJ)</label>
+          <input type="text" id="f_npu" placeholder="0000000-00.0000.0.00.0000">
+        </div>
+      </div>
+
+      <!-- UF / Comarca / Data Ajuiz / Data Citação -->
+      <div class="g4 mb10">
+        <div class="fg">
+          <label>UF</label>
+          <select id="f_uf">
+              <option value="">UF</option>
+              <option>AC</option><option>AL</option><option>AM</option><option>AP</option><option>BA</option>
+              <option>CE</option><option>DF</option><option>ES</option><option>GO</option><option>MA</option>
+              <option>MG</option><option>MS</option><option>MT</option><option>PA</option><option>PB</option>
+              <option>PE</option><option>PI</option><option>PR</option><option>RJ</option><option>RN</option>
+              <option>RO</option><option>RR</option><option>RS</option><option>SC</option><option>SE</option>
+              <option>SP</option><option>TO</option>
+            </select>
+        </div>
+        <div class="fg">
+          <label>Comarca</label>
+          <input type="text" id="f_comarca" placeholder="Cidade">
+        </div>
+        <div class="fg">
+          <label>Dt. Ajuizamento</label>
+          <input type="text" id="f_data_ajuizamento" placeholder="DD/MM/AAAA">
+        </div>
+        <div class="fg">
+          <label>Dt. Citação</label>
+          <input type="text" id="f_data_citacao" placeholder="DD/MM/AAAA">
+        </div>
+      </div>
+
+      <!-- Valor / Vara / Nº Origem -->
+      <div class="g3 mb10">
+        <div class="fg">
+          <label>Valor da causa</label>
+          <input type="text" id="f_valor_causa" placeholder="R$ 0,00">
+        </div>
+        <div class="fg">
+          <label>Vara / Cartório</label>
+          <input type="text" id="f_vara_cartorio" placeholder="Ex: 3ª Vara Cível">
+        </div>
+        <div class="fg">
+          <label>Número de origem</label>
+          <input type="text" id="f_numero_origem" placeholder="Se não houver, igual ao NPU">
+        </div>
+      </div>
+
+      <!-- Tipo Justiça / Fase / Rito / Tipo Doc — todos selects com opções -->
+      <div class="g4">
+        <div class="fg">
+          <label>Tipo de justiça</label>
+          <select id="f_tipo_justica">
+              <option value="">Selecione</option>
+              <option>ESTADUAL</option>
+              <option>FEDERAL</option>
+              <option>TRABALHISTA</option>
+              <option>MILITAR</option>
+              <option>ELEITORAL</option>
+            </select>
+        </div>
+
+        <div class="fg">
+          <label>Fase processual</label>
+          <select id="f_fase_processual">
+              <option value="">Selecione</option>
+              <option>Conhecimento</option>
+              <option>Cumprimento de Sentença</option>
+              <option>Execução</option>
+              <option>Inicial</option>
+              <option>Recursal</option>
+            </select>
+        </div>
+
+        <div class="fg">
+          <label>Rito</label>
+          <select id="f_rito">
+              <option value="">Selecione</option>
+              <option>Procedimento Comum Cível</option>
+              <option>Juizado Especial Cível</option>
+              <option>Juizado Especial</option>
+              <option>Cumprimento de Sentença</option>
+              <option>Superendividamento</option>
+              <option>Agravo de Instrumento</option>
+              <option>Execução</option>
+              <option>Mandado de Segurança</option>
+              <option>Ação Civil Pública</option>
+            </select>
+        </div>
+
+        <div class="fg">
+          <label>Tipo de documento</label>
+          <select id="f_tipo_documento">
+              <option value="">Selecione</option>
+              <option>Petição Inicial</option>
+              <option>Contestação</option>
+              <option>Recurso</option>
+              <option>Agravo</option>
+              <option>Embargos</option>
+              <option>Sentença</option>
+              <option>Acórdão</option>
+            </select>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ② CLASSIFICAÇÃO -->
+  <div class="scard">
+    <div class="scard-head">
+      <div class="scard-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+      <span class="scard-ttl">Classificação do processo</span>
+    </div>
+    <div class="scard-body">
+      <div class="g2 mb10">
+        <div class="fg">
+          <label>Objeto principal <span class="lhint">(automático se houver desconto em conta)</span></label>
+          <select id="f_objeto_principal">
+              <option value="">Selecione</option>
+              <option>SUPERENDIVIDAMENTO</option>
+              <option>DÉBITO EM CONTA - ASSISTÊNCIA VERBIN</option>
+              <option>EMPRÉSTIMO CONSIGNADO</option>
+              <option>COBRANÇA INDEVIDA</option>
+              <option>REVISÃO CONTRATUAL</option>
+            </select>
+        </div>
+        <div class="fg">
+          <label>Causa raiz</label>
+          <select id="f_causa_raiz">
+              <option value="">Selecione</option>
+              <option>Superendividamento</option>
+              <option>DÉBITO EM CONTA - ASSISTÊNCIA VERBIN</option>
+              <option>Empréstimo consignado</option>
+              <option>Cobrança indevida de seguro</option>
+              <option>Desconto indevido</option>
+              <option>Revisão contratual</option>
+            </select>
+        </div>
+      </div>
+
+      <div class="g2">
+        <div class="fg">
+          <label>Desconto na conta bancária</label>
+          <select id="f_desconto_conta">
+              <option value="">Selecione</option>
+              <option value="Sim">Sim — há desconto em conta corrente</option>
+              <option value="Não">Não</option>
+            </select>
+        </div>
+        <div class="fg">
+          <label>Pedido <span class="lhint">(campo de opções no sistema — preencher manualmente)</span></label>
+          <select id="f_pedido">
+              <option value="">Selecione</option>
+              <option>Tutela de urgência</option>
+              <option>Liminar</option>
+              <option>Antecipação de tutela</option>
+              <option>Indenização por danos morais</option>
+              <option>Indenização por danos materiais</option>
+              <option>Repetição de indébito</option>
+              <option>Rescisão contratual</option>
+              <option>Cumprimento de obrigação de fazer</option>
+              <option>Declaração de inexistência de relação</option>
+              <option>Revisão de contrato</option>
+              <option>Repactuação de dívidas</option>
+            </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ③ AUTOR -->
+  <div class="scard">
+    <div class="scard-head">
+      <div class="scard-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+      <span class="scard-ttl">Autor</span>
+    </div>
+    <div class="scard-body">
+      <div class="g2">
+        <div class="fg">
+          <label>Nome completo</label>
+          <input type="text" id="f_autor_nome" placeholder="Nome completo do autor">
+        </div>
+        <div class="fg">
+          <label>CPF</label>
+          <input type="text" id="f_autor_cpf" placeholder="000.000.000-00">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ④ RÉUS -->
+  <div class="scard">
+    <div class="scard-head">
+      <div class="scard-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+      <span class="scard-ttl">Réus</span>
+    </div>
+    <div class="scard-body">
+      <div class="reu-list" id="reuList"></div>
+      <button class="btn-add" onclick="addReu()">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Adicionar réu
+      </button>
+    </div>
+  </div>
+
+  <!-- ⑤ ADVOGADO -->
+  <div class="scard">
+    <div class="scard-head">
+      <div class="scard-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-4 0v2"/></svg></div>
+      <span class="scard-ttl">Advogado</span>
+    </div>
+    <div class="scard-body">
+      <!-- Grid: Nome (flex) | UF (80px) | OAB (150px) — tudo na mesma linha -->
+      <div style="display:grid;grid-template-columns:1fr 80px 150px;gap:10px 12px;align-items:end">
+        <div class="fg">
+          <label>Nome completo</label>
+          <input type="text" id="f_advogado_nome" placeholder="Nome do advogado">
+        </div>
+        <div class="fg">
+          <label>UF OAB</label>
+          <select id="f_advogado_uf">
+              <option value="">UF</option>
+              <option>AC</option><option>AL</option><option>AM</option><option>AP</option><option>BA</option>
+              <option>CE</option><option>DF</option><option>ES</option><option>GO</option><option>MA</option>
+              <option>MG</option><option>MS</option><option>MT</option><option>PA</option><option>PB</option>
+              <option>PE</option><option>PI</option><option>PR</option><option>RJ</option><option>RN</option>
+              <option>RO</option><option>RR</option><option>RS</option><option>SC</option><option>SE</option>
+              <option>SP</option><option>TO</option>
+            </select>
+        </div>
+        <div class="fg">
+          <label>Número OAB</label>
+          <input type="text" id="f_advogado_oab" placeholder="015800">
+        </div>
+      <!-- Linha 2: Escritório do advogado -->
+      <div style="margin-top:10px">
+        <div class="fg">
+          <label>Escritório <span class="lhint">(ex: ANGELA MARIA DA SILVA - ADVOGADA)</span></label>
+          <input type="text" id="f_advogado_escritorio" placeholder="Nome do escritório ou advogado responsável">
+        </div>
+      </div>
+      </div>
+      <div id="extraAdvogados"></div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <button class="btn-clear" onclick="limparFormulario()">Limpar tudo</button>
+    <button class="btn-export" onclick="exportarCampos()">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/></svg>
+      Exportar campos
+    </button>
+  </div>
+
+</main>
+</div>
+
+<script>
+
+// Configurar worker do PDF.js — evita o warning "fake worker"
+if (typeof pdfjsLib !== 'undefined') {
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+}
+
+const CAMPOS_VALIDAVEIS = ['npu','uf','comarca','data_ajuizamento','data_citacao','valor_causa','vara_cartorio','numero_origem','tipo_justica','rito','fase_processual','tipo_documento','objeto_principal','causa_raiz','pedido','desconto_conta','autor_nome','autor_cpf','advogado_nome','advogado_oab','advogado_uf'];
+let statusCampos = {};
+CAMPOS_VALIDAVEIS.forEach(k => statusCampos[k] = 'pending');
+
+let reuCount = 0;
+
+function addReu(nome, cnpjCpf) {
+  reuCount++;
+  const id = 'reu_' + reuCount;
+  const div = document.createElement('div');
+  div.className = 'reu-row';
+  div.id = id;
+  div.innerHTML = `
+    <input type="text" placeholder="Nome do réu" value="${nome||''}" style="width:100%">
+    <input type="text" placeholder="CNPJ/CPF" value="${cnpjCpf||''}" style="width:100%">
+    <button class="btn-remove-reu" onclick="removeReu('${id}')" title="Remover">✕</button>
+  `;
+  document.getElementById('reuList').appendChild(div);
+  atualizarSummary();
+}
+
+function removeReu(id) {
+  const el = document.getElementById(id);
+  if (el) el.remove();
+  atualizarSummary();
+}
+
+function marcarReu(id, tipo) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const input = el.querySelector('input');
+  input.className = tipo === 'ok' ? 'ok' : 'err';
+  el.querySelectorAll('.btn-ok, .btn-err').forEach(b => b.classList.remove('active'));
+  el.querySelector(tipo === 'ok' ? '.btn-ok' : '.btn-err').classList.add('active');
+}
+
+addReu();
+
+function marcar(campo, tipo) {
+  statusCampos[campo] = tipo;
+  const inp = document.getElementById('f_' + campo);
+  if (inp) {
+    inp.className = inp.tagName === 'SELECT' ? (tipo === 'ok' ? 'field-ok' : 'field-err') : (tipo === 'ok' ? 'field-ok auto' : 'field-err');
+  }
+  document.querySelectorAll(`[onclick="marcar('${campo}','ok')"], [onclick="marcar('${campo}','err')"]`)
+    .forEach(b => b.classList.remove('active'));
+  const btn = document.querySelector(`[onclick="marcar('${campo}','${tipo}')"]`);
+  if (btn) btn.classList.add('active');
+  atualizarSummary();
+}
+
+function atualizarSummary() {
+  const vals = Object.values(statusCampos);
+  document.getElementById('cntOk').textContent = vals.filter(v => v === 'ok').length;
+  document.getElementById('cntErr').textContent = vals.filter(v => v === 'err').length;
+  document.getElementById('cntPend').textContent = vals.filter(v => v === 'pending').length;
+}
+
+atualizarSummary();
+
+// UPLOAD
+const dropZone = document.getElementById('dropZone');
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault(); dropZone.classList.remove('drag');
+  const f = e.dataTransfer.files[0];
+  if (f && (f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'))) carregarArquivo(f);
+});
+document.getElementById('fileInput').addEventListener('change', function() {
+  if (this.files[0]) carregarArquivo(this.files[0]);
+});
+
+let pdfArrayBuffer = null;
+
+function carregarArquivo(file) {
+  document.getElementById('fileName').textContent = file.name;
+  document.getElementById('fileSize').textContent = (file.size / 1024).toFixed(0) + ' KB';
+  document.getElementById('fileCard').classList.add('show');
+  document.getElementById('dropZone').style.display = 'none';
+  document.getElementById('btnAnalisar').disabled = false;
+  const alertEl = document.getElementById('alertMsg'); if (alertEl) alertEl.style.display = 'none';
+  document.getElementById('previewWrap').style.display = 'none';
+  const reader = new FileReader();
+  reader.onload = ev => {
+    pdfArrayBuffer = ev.target.result;
+    analisarPDF(); // disparo automático após leitura
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function removerArquivo() {
+  pdfArrayBuffer = null;
+  document.getElementById('fileCard').classList.remove('show');
+  document.getElementById('dropZone').style.display = 'block';
+  document.getElementById('btnAnalisar').disabled = true;
+  document.getElementById('fileInput').value = '';
+  document.getElementById('progressWrap').style.display = 'none';
+  document.getElementById('previewWrap').style.display = 'none';
+  const am = document.getElementById('alertMsg');
+  if (am) am.style.display = 'none';
+}
+
+function setStep(n) {
+  const progs = document.getElementById('progressWrap');
+  progs.style.display = 'block';
+  for (let i = 1; i <= 4; i++) {
+    const el = document.getElementById('ps' + i);
+    el.classList.remove('active', 'done');
+    if (i < n) el.classList.add('done');
+    else if (i === n) el.classList.add('active');
   }
 }
 
-async function chamarAnthropic(apiKey, body, usarBetaPDF = false) {
-  const headers = {
-    'Content-Type': 'application/json',
-    'x-api-key': apiKey,
-    'anthropic-version': '2023-06-01',
+async function analisarPDF() {
+  if (!pdfArrayBuffer) return;
+  document.getElementById('btnAnalisar').disabled = true;
+  { const _aw = document.getElementById('alertMsg'); if (_aw) _aw.style.display = 'none'; }
+  setStep(1);
+
+  try {
+    const pdf = await pdfjsLib.getDocument({ data: pdfArrayBuffer }).promise;
+    setStep(2);
+
+    let texto = '';
+    for (let p = 1; p <= Math.min(pdf.numPages, 12); p++) {
+      const page = await pdf.getPage(p);
+      const content = await page.getTextContent();
+      let ultima = null;
+      content.items.forEach(item => {
+        if (ultima !== null && Math.abs(item.transform[5] - ultima) > 4) texto += '\n';
+        texto += item.str + ' ';
+        ultima = item.transform[5];
+      });
+      texto += '\n\n';
+    }
+    texto = texto.replace(/ {3,}/g, '  ').trim();
+
+
+
+    textoPeticaoGlobal = texto;
+    document.getElementById('textPreview').textContent = texto.substring(0, 800) + (texto.length > 800 ? '\n...' : '');
+    document.getElementById('previewWrap').style.display = 'block';
+
+    setStep(3);
+
+    if (texto.length < 80) {
+      // PDF escaneado — envia como base64 para Claude via API
+      setStep(3);
+      mostrarAlerta('ok', 'PDF escaneado detectado — enviando para análise com IA...');
+      try {
+        const bytes = new Uint8Array(pdfArrayBuffer);
+        let binary = '';
+        for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+        const pdf_b64 = btoa(binary);
+        const instrucoesPDF = `Analise esta petição judicial e extraia os dados processuais em JSON puro sem markdown:
+{"npu":"","uf":"","comarca":"","data_ajuizamento":"","valor_causa":"","vara_cartorio":"","numero_origem":"","tipo_justica":"","rito":"","fase_processual":"","tipo_documento":"","objeto_principal":"","causa_raiz":"","desconto_conta":"Sim|Não","autor_nome":"","autor_cpf":"","advogado_nome":"","advogado_uf":"","advogado_oab":"","reus":[{"nome":"","cnpj":""}]}`;
+        const dataIA = await chamarAPI('extrair_pdf', { pdf_b64, instrucoes: instrucoesPDF });
+        const rawIA = (dataIA.content?.[0]?.text || '').replace(/```json|```/g,'').trim();
+        const camposIA = JSON.parse(rawIA);
+        setStep(4);
+        preencherFormulario(camposIA);
+        mostrarAlerta('ok', 'PDF escaneado analisado com IA. Revise os campos preenchidos.');
+        const npuValScan = document.getElementById('f_npu').value;
+        if (npuValScan) tentarConsultaPublica(npuValScan);
+      } catch(e) {
+        console.warn('Extração PDF escaneado falhou:', e);
+        mostrarAlerta('err', 'PDF escaneado — não foi possível extrair texto. Complete os campos manualmente.');
+      }
+      document.getElementById('btnAnalisar').disabled = false;
+      return;
+    }
+
+    // Extrair e preencher campos
+    let campos;
+    try {
+      campos = extrairCamposComAprendizado(texto);
+    } catch(e) {
+      console.error('Erro na extração:', e);
+      campos = extrairCampos(texto); // fallback sem aprendizado
+    }
+
+    setStep(4);
+
+    try {
+      preencherFormulario(campos);
+    } catch(e) {
+      console.error('Erro no preenchimento:', e);
+      mostrarAlerta('err', 'Erro ao preencher formulário: ' + e.message);
+      document.getElementById('btnAnalisar').disabled = false;
+      return;
+    }
+
+    document.getElementById('btnAnalisar').disabled = false;
+    mostrarAlerta('ok', 'Campos preenchidos automaticamente. Revise e ajuste se necessário.');
+    const npuVal = document.getElementById('f_npu').value;
+    if (npuVal) tentarConsultaPublica(npuVal);
+
+  } catch(err) {
+    document.getElementById('btnAnalisar').disabled = false;
+    document.getElementById('progressWrap').style.display = 'none';
+    console.error('analisarPDF error:', err);
+    console.error('Stack:', err.stack);
+    mostrarAlerta('err', 'Erro ao processar o PDF: ' + (err.message || String(err)));
+  }
+}
+
+function extrairCampos(txt) {
+  const campos = {};
+
+  // ── TIPO DE PROCESSO — detectar logo no início (usado em várias seções) ──
+  const ehAgravo = /AGRAVO\s+DE\s+INSTRUMENTO/i.test(txt.substring(0, 2000));
+  const ehCumprimento = /Cumprimento\s+de\s+Sentença/i.test(txt.substring(0, 500));
+
+  // ── NPU CNJ ──────────────────────────────────────────────────────────────
+  // Padrão exato CNJ: NNNNNNN-NN.AAAA.J.TT.OOOO
+  const npuRx = /\b(\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4})\b/g;
+  const todosNpu = [...txt.matchAll(npuRx)];
+  if (todosNpu.length > 0) campos.npu = todosNpu[0][1];
+
+  // Fallback: extrair NPU do nome do arquivo carregado
+  if (!campos.npu) {
+    const nomeArq = document.getElementById('fileName')?.textContent || '';
+    // Suporta separadores . e _ (ex: 0715896-03.2026.8.02.0001.PDF ou 0715896-03_2026_8_02_0001.PDF)
+    const m = nomeArq.match(/(\d{7})[-_](\d{2})[-_.](\d{4})[-_.](\d)[-_.](\d{2})[-_.](\d{4})/);
+    if (m) campos.npu = `${m[1]}-${m[2]}.${m[3]}.${m[4]}.${m[5]}.${m[6]}`;
+  }
+
+  // ── TIPO DE JUSTIÇA via dígito J do NPU ──────────────────────────────────
+  // Formato: NNNNNNN-NN.AAAA.J.TT.OOOO → J é o dígito após o ano
+  if (campos.npu) {
+    const p = campos.npu.match(/\d{7}-\d{2}\.(\d{4})\.(\d)\.(\d{2})\.(\d{4})/);
+    if (p) {
+      if (p[2] === '5') campos.tipo_justica = 'TRABALHISTA';
+      else if (p[2] === '4') campos.tipo_justica = 'FEDERAL';
+      else if (p[2] === '8') campos.tipo_justica = 'ESTADUAL';
+    }
+  }
+
+  // ── UF via código do tribunal (TT no NPU) ─────────────────────────────────
+  const mapaTribunal = {
+    '01':'AC','02':'AL','03':'AM','04':'AP','05':'BA','06':'CE','07':'DF',
+    '08':'ES','09':'GO','10':'MA','11':'MT','12':'MS','13':'MG','14':'PA',
+    '15':'PB','16':'PR','17':'PE','18':'PI','19':'RJ','20':'RN','21':'RS',
+    '22':'RO','23':'RR','24':'SC','25':'SE','26':'SP','27':'TO'
   };
-  if (usarBetaPDF) {
-    headers['anthropic-beta'] = 'pdfs-2024-09-25';
+  if (campos.npu) {
+    const tt = campos.npu.match(/\d{7}-\d{2}\.\d{4}\.\d\.(\d{2})\.\d{4}/);
+    if (tt && mapaTribunal[tt[1]]) campos.uf = mapaTribunal[tt[1]];
   }
 
-  const resp = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(body),
+  // ── COMARCA ───────────────────────────────────────────────────────────────
+  // Padrão: "VARA DA COMARCA DE cidade" ou "COMARCA DE cidade"
+  // Pegar só o nome da cidade (1-3 palavras, parar antes de "ESTADO", UF, hífen etc.)
+  const comarcaPatterns = [
+    /VARA\s+DA\s+COMARCA\s+DE\s+([A-ZÁÉÍÓÚÂÊÔÃÕÇ][A-Za-záéíóúâêôãõç]+(?:\s+[A-Za-záéíóúâêôãõç]+)?)/i,
+    /COMARCA\s+DE\s+([A-ZÁÉÍÓÚÂÊÔÃÕÇ][A-Za-záéíóúâêôãõç]+(?:\s+[A-Za-záéíóúâêôãõç]+)?)\s*[-–.\n,]/i,
+    /da\s+COMARCA\s+de\s+([A-ZÁÉÍÓÚÂÊÔÃÕÇ][A-Za-záéíóúâêôãõç]+)/i,
+    /Juízo\s+da\s+\d+[ªa°]+\s*Vara[^d]{0,40}de\s+([A-ZÁÉÍÓÚÂÊÔÃÕÇ][A-Za-záéíóúâêôãõç]+)/i,
+  ];
+  // Agravo: comarca pode vir de "Comarca de Cidade/UF" no bloco de origem
+  const mComarcaOrig = txt.match(/Comarca\s+de\s+([A-ZÁÉÍÓÚÂÊÔÃÕÇ][A-Za-záéíóúâêôãõç\s]+?)(?:\/[A-Z]{2}|\n|,|$)/i);
+  if (mComarcaOrig) {
+    campos.comarca = mComarcaOrig[1].trim().replace(/\s+(da|de|do)\s*$/i,'').trim();
+  } else {
+    for (const rx of comarcaPatterns) {
+      const m = txt.match(rx);
+      if (m) {
+        let cidade = m[1].trim();
+        cidade = cidade.replace(/\s+(ESTADO|DO\s+ESTADO|[A-Z]{2}$).*/i, '').trim();
+        if (cidade.length > 2) { campos.comarca = cidade; break; }
+      }
+    }
+  }
+
+  // ── DATA DE AJUIZAMENTO ───────────────────────────────────────────────────
+  // REGRA: buscar APENAS próximo à assinatura/encerramento da petição
+  // Marcadores que indicam "fim da petição":
+  const marcadoresFim = ['Pede deferimento', 'Nestes termos', 'Termos em que', 'deferimento'];
+  let posicaoFim = -1;
+  for (const m of marcadoresFim) {
+    const idx = txt.lastIndexOf(m);
+    if (idx > posicaoFim) posicaoFim = idx;
+  }
+  // Se achou marcador de fim, busca a data nos 300 chars seguintes
+  // Se não achou, usa o último 15% do texto
+  const blocoAssinatura = posicaoFim > 0
+    ? txt.substring(posicaoFim, posicaoFim + 400)
+    : txt.substring(Math.floor(txt.length * 0.85));
+
+  // "Cidade, DD de mês de AAAA"
+  // Agravo: data de autuação na capa (mais confiável que "Pede deferimento")
+  const mAutuacao = txt.match(/[Dd]ata\s+de\s+autuação[:\s]+(\d{2}\/\d{2}\/\d{4})/);
+  let mDt = mAutuacao; // Priorizar autuação
+  if (!mDt) mDt = blocoAssinatura.match(/[A-Za-záéíóúâêôãõç]{3,}(?:\/[A-Z]{2})?,\s*(\d{1,2}\s+de\s+[a-záéíóú]+\s+de\s+\d{4})/i);
+  if (!mDt) mDt = blocoAssinatura.match(/\b(\d{2}\/\d{2}\/20(2[0-9]|3[0-9]))\b/);
+
+  if (mDt) campos.data_ajuizamento = mDt[1].trim();
+
+  // ── VALOR DA CAUSA ────────────────────────────────────────────────────────
+  // Fonte: "Dá-se à causa o valor de R$ X" — sempre no final da petição
+  // Valor: buscar em todo o texto, priorizando a frase canônica ao final da petição
+  // Padrão 1: "dá-se à causa o valor de R$ X" (frase padrão CPC art. 292)
+  // Padrão 2: "Valor da Causa: R$ X" (capa do processo)
+  const txtFlat = txt.replace(/\n/g, ' ').replace(/\s{2,}/g, ' ');
+  const valPatterns = [
+    // Frase canônica — mais confiável
+    /[Dd][áa][\s-]+se\s+[àa]\s+causa\s+o\s+valor\s+de\s+R\$\s*(\d[\d.,]*\d)/,
+    /causa\s+o\s+valor\s+de\s+R\$\s*(\d[\d.,]*\d)/i,
+    /valor\s+de\s+R\$\s*(\d[\d.,]*\d)\s*\(/i,
+    // Capa: "Valor da Causa: R$ X"
+    /[Vv]alor\s+da\s+[Cc]ausa\s*:?\s*R\$\s*(\d[\d.,]*\d)/i,
+  ];
+  for (const rx of valPatterns) {
+    const m = txtFlat.match(rx);
+    if (m) {
+      // Normalizar: garantir formato X.XXX,XX
+      let v = m[1].trim();
+      campos.valor_causa = 'R$ ' + v;
+      break;
+    }
+  }
+
+  // ── VARA / CARTÓRIO ───────────────────────────────────────────────────────
+  const varaPatterns = [
+    // Agravo: "Xª Vara Cível da Comarca de Cidade/UF" (linha do processo de origem)
+    /Origem[^\n]{0,50}\n(\d+[ªa°]+\s*Vara[A-Za-záéíóúâêôãõç\s]+?)(?:\/[A-Z]{2}|\n)/i,
+    // Juizo/Juízo da Xª Vara
+    /Juiz[oó]\s+da\s+(\d+[ªa°]+\s*Vara[A-Za-záéíóúâêôãõç\s]{0,30})/i,
+    // Xª Vara Cível/Criminal
+    /(\d+[ªa°\.]+\s*Vara\s+(?:Cível|Criminal|Federal|do\s+Trabalho|de\s+Família|da\s+Fazenda|Empresarial)[A-Za-záéíóúâêôãõç\s]{0,30})/i,
+    /(Vara\s+Única)/i,
+  ];
+  for (const rx of varaPatterns) {
+    const m = txt.match(rx);
+    if (m) {
+      let vara = (m[1] || '').trim().replace(/\s+/g, ' ');
+      // Remover "da Comarca de Cidade" e sufixos
+      vara = vara.replace(/\s+da\s+Comarca\s+de\s+.*/i, '').trim();
+      vara = vara.replace(/\s+(?:Juiz\w*|[A-ZÁÉÍÓÚÂÊÔÃÕÇ]{5,}\w*)\s*$/g, '').trim();
+      if (vara.length > 3) { campos.vara_cartorio = vara.substring(0, 50); break; }
+    }
+  }
+  // Default quando vara não encontrada na petição
+  if (!campos.vara_cartorio) campos.vara_cartorio = '1ª Vara Cível';
+
+  // ── NÚMERO DE ORIGEM ──────────────────────────────────────────────────────
+  let origemEncontrada = null;
+
+  if (ehAgravo) {
+    const txtFlat = txt.replace(/\n/g, ' ');
+
+    // Forma 1 (mais confiável): após "Processos relacionados", extrair NPU com separadores flexíveis
+    // Funciona mesmo se pdfjs inserir espaços em "4004396 - 60.2026.8.26.0609"
+    const mRelac = txtFlat.match(/Processos\s+relacionados[:\s]+(.{5,150})/i);
+    if (mRelac) {
+      const mNpuFlex = mRelac[1].match(/(\d{7})\s*[-–]\s*(\d{2})\s*\.\s*(\d{4})\s*\.\s*(\d)\s*\.\s*(\d{2})\s*\.\s*(\d{4})/);
+      if (mNpuFlex) {
+        origemEncontrada = `${mNpuFlex[1]}-${mNpuFlex[2]}.${mNpuFlex[3]}.${mNpuFlex[4]}.${mNpuFlex[5]}.${mNpuFlex[6]}`;
+      }
+    }
+
+    // Forma 2: "Origem: Processo nº XXXXX" no corpo da petição
+    if (!origemEncontrada) {
+      const mOrig = txtFlat.match(/Origem:\s*Processo\s*n[ºo°]?\.?\s*(\d{7})\s*[-.]\s*(\d{2})\s*[-.]\s*(\d{4})\s*[-.]\s*(\d)\s*[-.]\s*(\d{2})\s*[-.]\s*(\d{4})/i);
+      if (mOrig) origemEncontrada = `${mOrig[1]}-${mOrig[2]}.${mOrig[3]}.${mOrig[4]}.${mOrig[5]}.${mOrig[6]}`;
+    }
+
+    // Forma 3: qualquer NPU distinto do agravo nos primeiros 3000 chars
+    if (!origemEncontrada && campos.npu) {
+      const txtNorm = txtFlat.substring(0, 3000).replace(/\s*-\s*/g,'-').replace(/\s*\.\s*/g,'.');
+      const npusDistintos = [...txtNorm.matchAll(/\b(\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4})\b/g)]
+        .map(m=>m[1]).filter(n => n !== campos.npu);
+      if (npusDistintos.length > 0) origemEncontrada = npusDistintos[0];
+    }
+
+    campos.numero_origem = origemEncontrada || campos.npu || '';
+  } else {
+    campos.numero_origem = campos.npu || '';
+  }
+
+
+  // ── AUTOR e CPF ───────────────────────────────────────────────────────────
+  // Agravo: Autor = AGRAVANTE
+  const mAgravante = txt.match(/AGRAVANTE:\s*([A-ZÁÉÍÓÚÂÊÔÃÕÇ][A-ZÁÉÍÓÚÂÊÔÃÕÇ\s]{3,60}?)(?:\n|AGRAVADO)/i);
+  if (mAgravante) {
+    campos.autor_nome = capitalizar(mAgravante[1].trim().replace(/\s+/g,' '));
+  } else {
+    // Petição comum: nome em maiúsculas antes de "brasileiro/a"
+    const qualifRx = /\n\s*([A-ZÁÉÍÓÚÂÊÔÃÕÇ]{2}[A-ZÁÉÍÓÚÂÊÔÃÕÇ\s]{3,60}?),?\s*(?:brasileiro|brasileira)/gi;
+    for (const m of txt.matchAll(qualifRx)) {
+      const nome = m[1].trim().replace(/\s+/g, ' ');
+      if (/EXCELENTÍSSIMO|SENHOR|JUIZ|VARA|COMARCA|CONSTITUIÇÃO|CÓDIGO|ARTIGO|OUTORGANTE|PODER/i.test(nome)) continue;
+      if (nome.split(' ').length > 6) continue;
+      campos.autor_nome = capitalizar(nome);
+      break;
+    }
+  }
+  // Primeiro CPF no texto
+  const cpfs = [...txt.matchAll(/(\d{3}\.\d{3}\.\d{3}-\d{2})/g)];
+  if (cpfs.length > 0) campos.autor_cpf = cpfs[0][1];
+
+  // ── RÉUS e CNPJ ───────────────────────────────────────────────────────────
+  // Usa o CNPJ como âncora e olha para trás para achar o nome
+  // Aceita "CNPJ" e "CPNJ" (typo comum em petições)
+  const reus = [];
+
+  if (ehAgravo) {
+    // ── AGRAVO: Partes e Representantes (fonte com CNPJs) + AGRAVADOS (nomes)
+    // 1. Nomes do bloco AGRAVADOS separados por ";"
+    const nomesAgr = [];
+    const mAgr = txt.match(/AGRAVADOS?:\s*([\s\S]+?)(?:Origem:|por sua adv|AGRAVO\s+DE\s+INSTRUMENTO\s+COM\s+PEDIDO)/i);
+    if (mAgr) {
+      const blocoAgr = mAgr[1].replace(/\n/g,' ').replace(/[\u2013\u2014\-]{1,2}\s*/g,' ').replace(/\s{2,}/g,' ').trim();
+      blocoAgr.split(';').forEach(p => { const n = p.replace(/^AGRAVADOS?:\s*/i,'').trim(); if (n.length > 3) nomesAgr.push(n); });
+    }
+    // 2. CNPJs do bloco "Partes e Representantes" — NOME (CNPJ) - Pessoa Jurídica
+    const partesMap = [];
+    const blocoPartesM = txt.match(/Partes\s+e\s+Representantes([\s\S]+?)(?=Informações\s+Adicionais|\n\n\n)/i);
+    const blocoPartes = blocoPartesM ? blocoPartesM[1] : '';
+    const parteRx = /([A-ZÁÉÍÓÚÂÊÔÃÕÇ][^\n(]{2,60}?)\s*\(\s*([\d.\-/\s]{10,22})\s*\)/gi;
+    for (const mp of blocoPartes.matchAll(parteRx)) {
+      // Pessoa Física já filtrada pelo padrão ("Pessoa Jur" ao final)
+      const digits = mp[2].replace(/\D/g,'');
+      const digits_all = mp[2].replace(/[^\d]/g,'');
+      const cnpjN = digits_all.length===14 ? `${digits_all.slice(0,2)}.${digits_all.slice(2,5)}.${digits_all.slice(5,8)}/${digits_all.slice(8,12)}-${digits_all.slice(12,14)}` : mp[2];
+      partesMap.push({ nome: mp[1].trim().replace(/\s+/g,' '), cnpj: cnpjN });
+    }
+    // 3. Associar nome do agravado ao CNPJ mais parecido nas Partes
+    function palavrasChave(s) {
+      try {
+        const norm = s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase();
+        return norm.replace(/[^A-Z\s]/g,' ').split(/\s+/).filter(w => w.length > 3 && !['LTDA','SOCI','CRED','EMPR','PESS','DIRE','SERV'].includes(w.slice(0,4)));
+      } catch(e) {
+        return s.toUpperCase().replace(/[^A-Z\s]/g,' ').split(/\s+/).filter(w => w.length > 3);
+      }
+    }
+    // Aliases conhecidos: empresa no polo passivo vs nome no tribunal
+    const aliasMap = {
+      'EAGLE': 'FUTURO',   // Eagle Sociedade de Crédito Direto = Futuro Sociedade de Crédito Direto
+      'FUTURO': 'EAGLE',
+    };
+
+    nomesAgr.forEach(nomeAgr => {
+      const pwAgr = palavrasChave(nomeAgr);
+      let melhorCnpj = ''; let melhorScore = 0;
+      partesMap.forEach(({ nome: nomeParte, cnpj }) => {
+        const pwParte = palavrasChave(nomeParte);
+        // Boost score if agravado name contains alias of parte name
+        const nomeAgrNorm = nomeAgr.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+        const nomeParteNorm = nomeParte.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+        const aliasBoost = Object.entries(aliasMap).some(([a,b]) => nomeAgrNorm.includes(a) && nomeParteNorm.includes(b)) ? 5 : 0;
+        const score = pwAgr.filter(w => pwParte.includes(w)).length + aliasBoost;
+        if (score > melhorScore) { melhorScore = score; melhorCnpj = cnpj; }
+      });
+      let nomeReu = capitalizar(nomeAgr);
+      try {
+        const nomeAgrUpper = nomeAgr.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+        if (nomeAgrUpper.includes('EAGLE') && melhorCnpj === '45.745.537/0001-19') {
+          nomeReu = 'Futuro Sociedade de Crédito Direto S/A';
+        }
+      } catch(e) { /* normalize não suportado */ }
+      reus.push({ nome: nomeReu, cnpj: melhorScore > 0 ? melhorCnpj : '' });
+    });
+    // fallback: usar partesMap direto se sem agravados
+    if (reus.length === 0) partesMap.forEach(({nome,cnpj}) => reus.push({nome:capitalizar(nome),cnpj}));
+    // FUTURO SOCIEDADE sempre primeiro
+    const idxFuturo = reus.findIndex(r => r.cnpj === '45.745.537/0001-19');
+    if (idxFuturo > 0) { const f = reus.splice(idxFuturo, 1)[0]; reus.unshift(f); }
+
+  } else {
+    // ── PETIÇÃO COMUM: âncora no CNPJ ──────────────────────────────────────
+    const nomeEmpRx = /([A-ZÁÉÍÓÚÂÊÔÃÕÇ][A-ZÁÉÍÓÚÂÊÔÃÕÇ\s&.'\-]{2,60}?(?:S\.?\s*A\.?|S\/A|LTDA\.?|BANCO\s+[A-Z]+|PRIVADA|DIRETO\s+S\.?\s*A\.?|FINANCEIRA|SEGURADORA))/gi;
+    for (const m of txt.matchAll(/\b(\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2})\b/g)) {
+      const cnpj = m[1];
+      if (reus.find(r => r.cnpj === cnpj)) continue;
+      const trecho = txt.substring(Math.max(0, m.index - 280), m.index);
+      const nomes = [...trecho.matchAll(nomeEmpRx)];
+      if (!nomes.length) continue;
+      let nome = nomes[nomes.length - 1][1].trim().replace(/\s+/g, ' ');
+      nome = nome.replace(/^.*?(?:em\s+desfavor\s+d[eo]\s+|em\s+face\s+d[eo][:\s]*[\d.]*\s*)/i, '').trim();
+      nome = nome.replace(/^(?:em\s+desfavor\s+d[eo]\s+)/i, '').trim();
+      const reuEx = reus.find(r => !r.cnpj && nome.toLowerCase().includes(r.nome.toLowerCase().substring(0,8)));
+      if (reuEx) { reuEx.cnpj = cnpj; } else if (nome.length > 2) reus.push({ nome, cnpj });
+    }
+  }
+  campos.reus = reus;
+
+  // ── ADVOGADOS e OAB ────────────────────────────────────────────────────────
+  // Âncora em cada "OAB/" e olha 150 chars para trás — captura TODOS os advogados
+  const oabAncora = /OAB\/([A-Z]{2})\s*[Nn]?[.º°]?\s*[º°]?\s*([\d.]{4,9})/gi;
+  const seenOabs = new Set();
+  const todosAdvs = [];
+  for (const mOab of txt.matchAll(oabAncora)) {
+    const oabNum = mOab[2].replace(/\D/g,'').padStart(6,'0');
+    if (seenOabs.has(oabNum)) continue;
+    seenOabs.add(oabNum);
+    const ufAdv = mOab[1].toUpperCase();
+    const trecho = txt.substring(Math.max(0, mOab.index - 150), mOab.index);
+    const trechoLimpo = trecho.replace(/\s*\n\s*/g, ' ');
+    const nmMatches = [...trechoLimpo.matchAll(/([A-ZÁÉÍÓÚÂÊÔÃÕÇ][A-ZÁÉÍÓÚÂÊÔÃÕÇ\s]{4,55}?)(?:\s*,\s*$|\s*$)/g)];
+    if (!nmMatches.length) continue;
+    let nomeAdv = nmMatches[nmMatches.length - 1][1].trim();
+    nomeAdv = nomeAdv.replace(/\d{2,}.*/g, '').replace(/,?\s*[eE]\s*$/, '').replace(/,\s*$/, '').replace(/\s+/g, ' ').trim();
+    if (nomeAdv.split(' ').length >= 2) todosAdvs.push({ nome: capitalizar(nomeAdv), uf: ufAdv, oab: oabNum });
+  }
+  if (todosAdvs.length > 0) {
+    campos.advogado_nome = todosAdvs[0].nome;
+    campos.advogado_uf = todosAdvs[0].uf;
+    campos.advogado_oab = todosAdvs[0].oab;
+  }
+  campos._todos_advs = todosAdvs;
+
+  // ── ESCRITÓRIO DO ADVOGADO ────────────────────────────────────────────────
+  // Padrão 1: "NOME\nADVOGADA/O" na assinatura → "NOME - ADVOGADA"
+  // Padrão 2: capa "NOME SP131591" ou "NOME OAB/SP" → "NOME"
+  // Padrão 3: mesmo nome do advogado principal + cargo
+  const mEscrAssin = txt.match(/\n([A-ZÁÉÍÓÚÂÊÔÃÕÇ][A-Za-záéíóúâêôãõç\s]{4,50})\n(ADVOGAD[AO]S?)\n/);
+  if (mEscrAssin) {
+    campos.advogado_escritorio = `${capitalizar(mEscrAssin[1].trim())} - ${mEscrAssin[2].charAt(0).toUpperCase() + mEscrAssin[2].slice(1).toLowerCase()}`;
+  } else if (campos.advogado_nome) {
+    // Fallback: nome do advogado + "Advogado(a)"
+    const cargo = campos.advogado_uf ? 'Advogado(a)' : 'Advogado(a)';
+    campos.advogado_escritorio = `${campos.advogado_nome} - ${cargo}`;
+  }
+
+  // ── DESCONTO EM CONTA ─────────────────────────────────────────────────────
+  // SIM: débito direto em conta corrente bancária (VERBIN / cobrança indevida na conta)
+  // NÃO: empréstimo consignado descontado em contracheque/folha/INSS (≠ débito em conta)
+  const ehContaCorrente = /d[eé]bito[^.]{0,80}conta\s+corrente|desconto[^.]{0,80}conta\s+corrente|EAGLE[^.]{0,120}conta|conta[^.]{0,120}EAGLE|desconto\s+indevido[^.]{0,80}conta/i.test(txt);
+  const ehConsignado = /empréstimo[s]?\s+consignado[s]?|desconto[^.]{0,60}contracheque|consignado[^.]{0,60}(?:INSS|SIAPE|folha)/i.test(txt);
+  const descontoSim = ehContaCorrente && !ehConsignado;
+  campos.desconto_conta = descontoSim ? 'Sim' : 'Não';
+
+  // ── OBJETO PRINCIPAL e CAUSA RAIZ ─────────────────────────────────────────
+  // Prioridade 1: desconto em conta corrente → VERBIN (bloqueado)
+  // Prioridade 2: superendividamento → preencher com info de superendividamento
+  // Prioridade 3: deixar em branco
+  if (descontoSim) {
+    campos.objeto_principal = 'DÉBITO EM CONTA - ASSISTÊNCIA VERBIN';
+    campos.causa_raiz = 'DÉBITO EM CONTA - ASSISTÊNCIA VERBIN';
+    campos._verbin = true;
+  } else if (!ehAgravo && !ehCumprimento && /superendividamento/i.test(txt.substring(0, Math.floor(txt.length * 0.6)))) {
+    // Superendividamento: só se for petição inicial e palavra aparece antes dos 60% do texto
+    // Evita falso positivo quando agravo menciona superend. no corpo do argumento
+    campos.objeto_principal = 'SUPERENDIVIDAMENTO';
+    campos.causa_raiz = 'Superendividamento';
+    campos._verbin = false;
+  } else {
+    campos.objeto_principal = '';
+    campos.causa_raiz = '';
+    campos._verbin = false;
+  }
+
+  // ── RITO ──────────────────────────────────────────────────────────────────
+  // Busca no texto excluindo seção de jurisprudência (Agravo/Ementa/RECURSO)
+  const idxJurisp = txt.search(/AGRAVO\s+INTERNO|EMENTA:|RECURSO\s+ESPECIAL|APELAÇÃO\s+CÍVEL.*julgamento/i);
+  const txtSemJurisp = idxJurisp > 500 ? txt.substring(0, idxJurisp) : txt;
+  // Para AGRAVO: rito sempre é "Agravo de Instrumento" — não inferir pelo texto
+  if (ehAgravo) {
+    campos.rito = 'Agravo de Instrumento';
+  } else if (!ehAgravo && /superendividamento/i.test(txtSemJurisp)) {
+    // Superendividamento só se NÃO for agravo
+    campos.rito = 'Superendividamento';
+  } else {
+    // Prioridade: "Classe da ação: X" (capa do processo)
+    const classeM = txtSemJurisp.match(/Classe\s+da\s+a[çc][ãa]o\s*:\s*\n?\s*([^\n]+)/i);
+    if (classeM) {
+      const classe = classeM[1].trim();
+      const mapaClasse = {
+        'procedimento comum cível': 'Procedimento Comum Cível',
+        'juizado especial cível': 'Juizado Especial Cível',
+        'juizado especial': 'Juizado Especial',
+        'cumprimento de sentença': 'Cumprimento de Sentença',
+        'agravo de instrumento': 'Agravo de Instrumento',
+        'execução': 'Execução',
+        'mandado de segurança': 'Mandado de Segurança',
+      };
+      campos.rito = mapaClasse[classe.toLowerCase()] || classe;
+    } else {
+      const ritoPatterns = [
+        [/Procedimento\s+Comum\s+Cível/i, 'Procedimento Comum Cível'],
+        [/Juizado\s+Especial\s+Cível/i, 'Juizado Especial Cível'],
+        [/Juizado\s+Especial/i, 'Juizado Especial'],
+        [/Cumprimento\s+de\s+Sentença/i, 'Cumprimento de Sentença'],
+        [/Agravo\s+de\s+Instrumento/i, 'Agravo de Instrumento'],
+      ];
+      for (const [rx, nome] of ritoPatterns) {
+        if (rx.test(txtSemJurisp)) { campos.rito = nome; break; }
+      }
+    }
+  }
+
+  // ── FASE e TIPO DOCUMENTO ─────────────────────────────────────────────────
+  // Fase e tipo já detectados acima (ehAgravo/ehCumprimento declarados no início)
+  if (ehAgravo) {
+    campos.fase_processual = 'Recursal';
+    campos.tipo_documento = 'Recurso';
+  } else if (ehCumprimento) {
+    campos.fase_processual = 'Cumprimento de Sentença';
+    campos.tipo_documento = 'Petição Inicial';
+  } else {
+    campos.fase_processual = 'Conhecimento';
+    campos.tipo_documento = 'Petição Inicial';
+  }
+
+  // ── PEDIDO ────────────────────────────────────────────────────────────────
+  // Sempre em branco — campo de opções no sistema
+  // (trabalhista: preencher manualmente)
+  campos.pedido = '';
+
+  return campos;
+}
+
+function extrairCamposComAprendizado(txt) {
+  const camposBase = extrairCampos(txt);
+  return aplicarPadroesAprendidos(txt, camposBase);
+}
+
+function capitalizar(str) {
+  const minusculas = ['de','da','do','das','dos','e','a','o','as','os','em','na','no','nas','nos','com','por','para','que','um','uma'];
+  return str.toLowerCase().split(' ').map((w, i) => {
+    if (i === 0 || !minusculas.includes(w)) return w.charAt(0).toUpperCase() + w.slice(1);
+    return w;
+  }).join(' ');
+}
+
+function preencherFormulario(c) {
+  const set = (id, val) => {
+    if (!val) return;
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (el.tagName === 'SELECT') {
+      for (const opt of el.options) {
+        const cmp = (opt.value || opt.text || '').trim().toUpperCase(); if (cmp === val.trim().toUpperCase() || (opt.text||'').trim().toUpperCase() === val.trim().toUpperCase()) { opt.selected = true; el.classList.add('auto'); break; }
+      }
+    } else {
+      el.value = val;
+      el.classList.add('auto');
+    }
+  };
+
+  set('f_npu', c.npu);
+  set('f_uf', c.uf);
+  // Comarca: apenas o nome da cidade, sem "Estado do..."
+  if (c.comarca) {
+    let cidadeComarca = c.comarca.replace(/\s+(ESTADO\s+DO|ESTADO\s+DA|ESTADO\s+DE|DO\s+ESTADO|DA\s+ESTADO).*/i, '').trim();
+    cidadeComarca = cidadeComarca.split(/\s+/).slice(0, 3).join(' '); // máximo 3 palavras
+    const elComarca = document.getElementById('f_comarca');
+    if (elComarca) { elComarca.value = cidadeComarca; elComarca.classList.add('auto'); }
+  }
+  set('f_data_ajuizamento', c.data_ajuizamento);
+  set('f_data_citacao', c.data_ajuizamento);
+  set('f_valor_causa', c.valor_causa);
+  set('f_vara_cartorio', c.vara_cartorio);
+  set('f_numero_origem', c.npu);
+  set('f_tipo_justica', c.tipo_justica);
+  set('f_rito', c.rito);
+  set('f_fase_processual', c.fase_processual);
+  set('f_tipo_documento', c.tipo_documento);
+  // Objeto e causa raiz: se VERBIN, fixar e marcar readonly
+  const elObjeto = document.getElementById('f_objeto_principal');
+  const elCausa = document.getElementById('f_causa_raiz');
+  // objeto_principal é agora um SELECT — usar set() para selecionar opção
+  set('f_objeto_principal', c.objeto_principal || '');
+  elObjeto.disabled = false;
+  if (c._verbin) {
+    elObjeto.disabled = true;
+    elObjeto.classList.add('locked');
+  }
+  // causa_raiz é agora um SELECT — usar set() para selecionar opção
+  set('f_causa_raiz', c.causa_raiz || '');
+  elCausa.disabled = false;
+  if (c._verbin) {
+    elCausa.disabled = true;
+    elCausa.classList.add('locked');
+  }
+  // Pedido: campo de opções no sistema — sempre deixar em branco para preenchimento manual
+  document.getElementById('f_pedido').value = '';
+  // Desconto: select Sim/Não
+  const descontoEl = document.getElementById('f_desconto_conta');
+  if (descontoEl && c.desconto_conta) {
+    const val = c.desconto_conta.toLowerCase().startsWith('sim') ? 'Sim' : 'Não';
+    for (const opt of descontoEl.options) {
+      if (opt.value === val) { opt.selected = true; break; }
+    }
+  }
+  set('f_autor_nome', c.autor_nome);
+  set('f_autor_cpf', c.autor_cpf);
+  set('f_advogado_nome', c.advogado_nome);
+  set('f_advogado_oab', c.advogado_oab);
+  if (c.advogado_escritorio) {
+    const elEscr = document.getElementById('f_advogado_escritorio');
+    if (elEscr) { elEscr.value = c.advogado_escritorio; elEscr.classList.add('auto'); }
+  }
+  set('f_advogado_uf', c.advogado_uf);
+
+  // Advogados adicionais: exibir abaixo do campo principal
+  const extraAdvWrap = document.getElementById('extraAdvogados');
+  if (extraAdvWrap) {
+    extraAdvWrap.innerHTML = '';
+    if (c._todos_advs && c._todos_advs.length > 1) {
+      c._todos_advs.slice(1).forEach((a, i) => {
+        extraAdvWrap.innerHTML += `
+          <div style="display:grid;grid-template-columns:1fr 80px 150px;gap:10px 12px;align-items:end;margin-top:10px;padding-top:10px;border-top:1px dashed var(--borda-l)">
+            <div class="fg">
+              <label>Advogado ${i + 2}</label>
+              <input type="text" class="auto" value="${a.nome}" readonly style="width:100%">
+            </div>
+            <div class="fg">
+              <label>UF OAB</label>
+              <input type="text" class="auto" value="${a.uf}" readonly style="width:100%">
+            </div>
+            <div class="fg">
+              <label>Número OAB</label>
+              <input type="text" class="auto" value="${a.oab}" readonly style="width:100%">
+            </div>
+          </div>
+        `;
+      });
+    }
+  }
+
+  // Réus
+  document.getElementById('reuList').innerHTML = '';
+  reuCount = 0;
+  if (c.reus && c.reus.length > 0) {
+    c.reus.forEach(r => addReu(r.nome, r.cnpj));
+  } else {
+    addReu();
+  }
+
+  // Escritório
+  definirEscritorio(c);
+
+  // Interpretação IA — preenche campos faltantes e valida com Claude
+  interpretarComIA(c, textoPeticaoGlobal);
+
+  // Ativar validação IA
+  ativarValidacaoIA();
+
+  // Alertas
+  const alertas = [];
+  if (!c.vara_cartorio) alertas.push({ tipo: 'warn', msg: 'Vara/Cartório não identificado na petição — preencha manualmente.' });
+  if (!c.data_ajuizamento) alertas.push({ tipo: 'warn', msg: 'Data de ajuizamento não identificada — preencha manualmente.' });
+  if (c.reus && c.reus.length === 0) alertas.push({ tipo: 'warn', msg: 'Réus não identificados automaticamente — adicione manualmente.' });
+  if (!c.advogado_oab) alertas.push({ tipo: 'warn', msg: 'OAB não encontrada no formato padrão — verifique e ajuste.' });
+  if (alertas.length === 0) alertas.push({ tipo: 'ok', msg: 'Nenhuma inconsistência crítica detectada. Revise e valide os campos.' });
+  renderAlertas(alertas);
+}
+
+function definirEscritorio(c) {
+  let esc = 'INDEFINIDO', regra = '', cls = 'badge-nd';
+
+  if (c.tipo_justica === 'TRABALHISTA') {
+    esc = 'DE BELLIS';
+    cls = 'esc-debellis';
+    regra = 'Processo trabalhista — DE BELLIS designado automaticamente com prioridade máxima.';
+  } else if (c.desconto_conta === 'Sim' || document.getElementById('f_desconto_conta')?.value === 'Sim') {
+    esc = 'GERBER';
+    cls = 'esc-gerber';
+    regra = 'Processo não trabalhista com desconto em conta bancária identificado — GERBER designado.';
+  } else {
+    esc = 'MASCARENHAS';
+    cls = 'esc-mascarenhas';
+    regra = 'Processo não trabalhista sem marcador VERBIN ou desconto em conta — MASCARENHAS com validação por UF.';
+  }
+
+  document.getElementById('escritorioBadge').innerHTML = `<span class="esc-chip ${cls}">${esc}</span>`;
+  document.getElementById('escritorioRegra').textContent = regra;
+}
+
+function renderAlertas(lista) {
+  const area = document.getElementById('alertasArea');
+  area.innerHTML = lista.map(a => `
+    <div class="at ${a.tipo === 'ok' ? 'warn' : 'warn'}" style="${a.tipo === 'ok' ? 'background:var(--vok-bg);color:var(--vok);border:1px solid var(--vok-b)' : ''}">
+      <span class="at-ico">${a.tipo === 'warn' ? '⚠' : '✓'}</span>
+      <span>${a.msg}</span>
+    </div>
+  `).join('');
+  document.getElementById('alertasWrap').style.display = 'block';
+}
+
+function mostrarAlerta(tipo, msg) {
+  const el = document.getElementById('alertMsg');
+  if (!el) return;
+  el.style.display = 'block';
+  el.className = 'alert-sb ' + (tipo === 'ok' ? 'alert-ok-sb' : 'alert-err-sb');
+  el.textContent = msg;
+}
+
+function limparFormulario() {
+  ['npu','comarca','data_ajuizamento','data_citacao','valor_causa','vara_cartorio','numero_origem','rito','fase_processual','tipo_documento','objeto_principal','causa_raiz','pedido','desconto_conta','autor_nome','autor_cpf','advogado_nome','advogado_oab'].forEach(k => {
+    const el = document.getElementById('f_' + k);
+    if (el) { el.value = ''; el.className = el.tagName === 'SELECT' ? '' : ''; }
   });
+  ['uf','tipo_justica','advogado_uf'].forEach(k => {
+    const el = document.getElementById('f_' + k);
+    if (el) el.selectedIndex = 0;
+  });
+  document.getElementById('reuList').innerHTML = '';
+  reuCount = 0;
+  addReu();
+  statusCampos = {};
+  CAMPOS_VALIDAVEIS.forEach(k => statusCampos[k] = 'pending');
+  // Reset disabled nos campos VERBIN (agora são selects)
+  ['f_objeto_principal','f_causa_raiz'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.disabled = false; el.className = ''; el.value = ''; }
+  });
+  document.querySelectorAll('.btn-ok, .btn-err').forEach(b => b.classList.remove('active'));
+  atualizarSummary();
+  document.getElementById('escritorioBadge').innerHTML = '<span class="esc-chip esc-nd">Aguardando análise</span>';
+  document.getElementById('escritorioRegra').textContent = 'Carregue e analise a petição para determinar o escritório automaticamente.';
+  document.getElementById('alertasArea').innerHTML = '';
+}
 
+function exportarCampos() {
+  const reus = Array.from(document.querySelectorAll('.reu-row')).map(r => {
+    const inputs = r.querySelectorAll('input');
+    return inputs[0].value + (inputs[1] && inputs[1].value ? ' (' + inputs[1].value + ')' : '');
+  }).filter(Boolean).join('; ');
+
+  const linhas = [
+    '=== EAGLE — CADASTRO DE PROCESSO ===',
+    '',
+    '--- DADOS PROCESSUAIS ---',
+    `NPU CNJ: ${document.getElementById('f_npu').value}`,
+    `UF: ${document.getElementById('f_uf').value}`,
+    `Comarca: ${document.getElementById('f_comarca').value}`,
+    `Data ajuizamento: ${document.getElementById('f_data_ajuizamento').value}`,
+    `Data citação: ${document.getElementById('f_data_citacao').value}`,
+    `Valor da causa: ${document.getElementById('f_valor_causa').value}`,
+    `Vara/Cartório: ${document.getElementById('f_vara_cartorio').value}`,
+    `Número origem: ${document.getElementById('f_numero_origem').value}`,
+    `Tipo de justiça: ${document.getElementById('f_tipo_justica').value}`,
+    `Rito: ${document.getElementById('f_rito').value}`,
+    `Fase processual: ${document.getElementById('f_fase_processual').value}`,
+    `Tipo de documento: ${document.getElementById('f_tipo_documento').value}`,
+    `Objeto principal: ${document.getElementById('f_objeto_principal').value}`,
+    `Causa raiz: ${document.getElementById('f_causa_raiz').value}`,
+    `Pedido: ${document.getElementById('f_pedido').value}`,
+    `Desconto conta: ${document.getElementById('f_desconto_conta').value}`,
+    '',
+    '--- PARTES ---',
+    `Autor: ${document.getElementById('f_autor_nome').value}`,
+    `CPF autor: ${document.getElementById('f_autor_cpf').value}`,
+    `Réus: ${reus}`,
+    '',
+    '--- ADVOGADO ---',
+    `Advogado: ${document.getElementById('f_advogado_nome').value}`,
+    `OAB: ${document.getElementById('f_advogado_oab').value} (somente número)`,
+    `UF OAB: ${document.getElementById('f_advogado_uf').value}`,
+    '',
+    '--- EAGLE ---',
+    `Escritório: ${document.getElementById('escritorioBadge').textContent.trim()}`,
+    '',
+    '--- VALIDAÇÃO ---',
+    `Aprovados: ${document.getElementById('cntOk').textContent}`,
+    `Com erro: ${document.getElementById('cntErr').textContent}`,
+    `Pendentes: ${document.getElementById('cntPend').textContent}`,
+  ].join('\n');
+
+  const blob = new Blob([linhas], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'eagle_cadastro_' + Date.now() + '.txt';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// =============================================
+// SISTEMA DE VALIDAÇÃO IA POR CAMPO
+// =============================================
+let textoPeticaoGlobal = '';
+let iaTimers = {};
+let iaAtiva = false;
+
+const ROTULOS_CAMPOS = {
+  f_npu: 'NPU CNJ',
+  f_uf: 'UF',
+  f_comarca: 'Comarca',
+  f_data_ajuizamento: 'Data de ajuizamento',
+  f_data_citacao: 'Data de citação',
+  f_valor_causa: 'Valor da causa',
+  f_vara_cartorio: 'Vara / Cartório',
+  f_numero_origem: 'Número de origem',
+  f_tipo_justica: 'Tipo de justiça',
+  f_rito: 'Rito',
+  f_fase_processual: 'Fase processual',
+  f_tipo_documento: 'Tipo de documento',
+  f_objeto_principal: 'Objeto principal',
+  f_causa_raiz: 'Causa raiz',
+  f_pedido: 'Pedido',
+  f_desconto_conta: 'Desconto em conta bancária',
+  f_autor_nome: 'Nome do autor',
+  f_autor_cpf: 'CPF do autor',
+  f_advogado_nome: 'Nome do advogado',
+  f_advogado_oab: 'OAB',
+  f_advogado_uf: 'UF da OAB'
+};
+
+async function chamarAPI(tipo, payload) {
+  const resp = await fetch('/api/extrair', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ tipo, ...payload })
+  });
   const data = await resp.json();
-  if (!resp.ok || data.error) {
-    throw new Error(data.error?.message || `HTTP ${resp.status}`);
-  }
+  if (!resp.ok) throw new Error(data.error || `HTTP ${resp.status}`);
   return data;
 }
+
+function ativarValidacaoIA() {
+  iaAtiva = true;
+  document.getElementById('painelIA').style.display = 'block';
+  
+  Object.keys(ROTULOS_CAMPOS).forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const evento = (el.tagName === 'SELECT') ? 'change' : 'blur';
+    el.addEventListener(evento, () => {
+      if (!textoPeticaoGlobal || !el.value.trim()) return;
+      clearTimeout(iaTimers[id]);
+      iaTimers[id] = setTimeout(() => validarCampoIA(id, el.value.trim()), 400);
+    });
+  });
+}
+
+function setIAStatus(estado, txt) {
+  const dot = document.getElementById('iaDot');
+  const statusTxt = document.getElementById('iaStatusTxt');
+  dot.className = 'ia-dot ' + estado;
+  statusTxt.textContent = txt;
+}
+
+async function validarCampoIA(fieldId, valor) {
+  const rotulo = ROTULOS_CAMPOS[fieldId] || fieldId;
+  const el = document.getElementById(fieldId);
+  
+  setIAStatus('thinking', 'Verificando ' + rotulo + '...');
+  if (el && el.tagName !== 'SELECT') el.classList.add('field-validating');
+
+  const trechoTexto = textoPeticaoGlobal.substring(0, 6000);
+
+  const prompt = `Você é um especialista em análise de petições judiciais para o sistema EAGLE-IILEX da SBK.
+
+TEXTO DA PETIÇÃO:
+${trechoTexto}
+
+CAMPO SENDO VALIDADO: "${rotulo}"
+VALOR INFORMADO: "${valor}"
+
+REGRAS DE VALIDAÇÃO POR CAMPO:
+
+NPU CNJ: formato obrigatório NNNNNNN-NN.NNNN.N.NN.NNNN. Encontrar no início do texto.
+
+Tipo de justiça: extrair do dígito J no NPU (formato NNNNNNN-NN.AAAA.J.TT.OOOO):
+- J=8 → ESTADUAL | J=4 → FEDERAL | J=5 → TRABALHISTA
+
+UF e Comarca: buscar no cabeçalho "VARA DA COMARCA DE [cidade]-UF" ou "COMARCA DE [cidade]/UF".
+
+Data de ajuizamento: buscar no FINAL da petição, próximo à assinatura e ao "Pede deferimento".
+Formato: "Cidade, DD de mês de AAAA" ou "DD/MM/AAAA". NUNCA usar datas de leis (1988, 1916, etc).
+
+Valor da causa: buscar a frase exata "Dá-se à causa o valor de R$ X" no final da petição.
+
+Vara/Cartório: buscar "Xª Vara Cível/Criminal/Federal" no cabeçalho. Se não tiver número, usar 1.
+Vara Única é válida sem numeração.
+
+Número de origem: igual ao NPU se for 1ª instância. Diferente se for Agravo, Cumprimento ou 2ª instância.
+
+Autor: primeiro nome em maiúsculas antes de "brasileiro" ou "brasileira" na qualificação.
+CPF: primeiro CPF no formato NNN.NNN.NNN-NN encontrado no texto.
+
+Réus: empresas no polo passivo com CNPJ. Buscar após "em face de:".
+
+Advogado: primeiro nome antes de "OAB/XX nº XXXXX" na petição.
+OAB: somente o número com 6 dígitos (zeros à esquerda). Ex: 015800, não OAB/AL-15800.
+
+Rito: classe processual. Buscar "Procedimento Comum Cível", "Juizado Especial", etc.
+
+Desconto em conta: SIM se o autor mencionar desconto em conta corrente, contracheque ou benefício.
+NÃO caso contrário.
+
+Objeto principal: título da ação em maiúsculas após "propor:" e antes de "em face de".
+
+Causa raiz: resumo do motivo da ação. Se mencionar superendividamento, usar isso.
+
+Com base nessas regras, analise o valor informado para "${rotulo}".
+Responda SOMENTE em JSON puro sem markdown:
+{
+  "status": "ok" | "erro" | "atencao",
+  "mensagem": "explicação direta em 1-2 frases do que está certo ou errado",
+  "sugestao": "valor correto (null se já estiver correto ou se não conseguir determinar)",
+  "fonte": "trecho exato do texto onde encontrou a informação (máximo 80 caracteres, null se não encontrou)"
+}
+`;
+
+  try {
+    const data = await chamarAPI('extrair_texto', { texto: trechoTexto, instrucoes: prompt });
+
+    const raw = data.content.find(b => b.type === 'text')?.text || '{}';
+    const clean = raw.replace(/```json|```/g, '').trim();
+    const resultado = JSON.parse(clean);
+    
+    if (el && el.tagName !== 'SELECT') el.classList.remove('field-validating');
+    renderFeedbackIA(fieldId, rotulo, valor, resultado);
+    
+  } catch(err) {
+    if (el && el.tagName !== 'SELECT') el.classList.remove('field-validating');
+    setIAStatus('', 'Pronto');
+    // silently fail, don't block the user
+    console.warn('IA validation error:', err.message);
+  }
+}
+
+function renderFeedbackIA(fieldId, rotulo, valorAtual, r) {
+  const wrap = document.getElementById('iaFeedbackWrap');
+  
+  // Remove card anterior do mesmo campo se houver
+  const anterior = document.getElementById('iacard_' + fieldId);
+  if (anterior) anterior.remove();
+
+  const cls = r.status === 'ok' ? 'ok' : r.status === 'erro' ? 'err' : 'warn';
+  const icone = r.status === 'ok' ? '✓' : r.status === 'erro' ? '✕' : '⚠';
+  const statusLabel = r.status === 'ok' ? 'Correto' : r.status === 'erro' ? 'Erro encontrado' : 'Atenção';
+
+  let sugestaoBtn = '';
+  if (r.sugestao && r.sugestao !== valorAtual && r.sugestao !== 'null') {
+    sugestaoBtn = `<button class="ia-sugestao-btn" onclick="aplicarSugestao('${fieldId}', ${JSON.stringify(r.sugestao)})">
+      ↩ Aplicar: ${r.sugestao.length > 40 ? r.sugestao.substring(0,40)+'...' : r.sugestao}
+    </button>`;
+  }
+
+  const fonte = r.fonte && r.fonte !== 'null' ? `<div class="ia-card-fonte">Fonte: "${r.fonte}"</div>` : '';
+
+  const card = document.createElement('div');
+  card.className = 'ia-card ' + cls;
+  card.id = 'iacard_' + fieldId;
+  card.innerHTML = `
+    <div class="ia-card-label">${icone} ${rotulo} — ${statusLabel}</div>
+    <div class="ia-card-msg">${r.mensagem}</div>
+    ${fonte}
+    ${sugestaoBtn}
+  `;
+
+  // Prepend (mais novo primeiro)
+  wrap.insertBefore(card, wrap.firstChild);
+
+  // Manter máximo 5 cards
+  const cards = wrap.querySelectorAll('.ia-card');
+  if (cards.length > 5) cards[cards.length - 1].remove();
+
+  const statusEstado = r.status === 'ok' ? 'ok' : r.status === 'erro' ? 'err' : 'warn';
+  const statusMsg = r.status === 'ok' ? 'Campo verificado — correto' : r.status === 'erro' ? 'Erro detectado — veja o feedback' : 'Atenção — revise o campo';
+  setIAStatus(statusEstado, statusMsg);
+}
+
+function aplicarSugestao(fieldId, valor) {
+  const el = document.getElementById(fieldId);
+  if (!el) return;
+  if (el.tagName === 'SELECT') {
+    for (const opt of el.options) {
+      if (opt.value.toUpperCase() === valor.toUpperCase()) { opt.selected = true; break; }
+    }
+  } else {
+    el.value = valor;
+    el.classList.add('auto');
+  }
+  // Revalidar após aplicar
+  clearTimeout(iaTimers[fieldId]);
+  iaTimers[fieldId] = setTimeout(() => validarCampoIA(fieldId, valor), 600);
+}
+
+// =============================================
+// CONSULTA PÚBLICA — Portal CNJ / Tribunais
+// =============================================
+let dadosConsulta = null;
+
+async function tentarConsultaPublica(npu) {
+  if (!npu) return;
+  document.getElementById('consultaWrap').style.display = 'block';
+  document.getElementById('consultaDot').className = 'cq-dot busy';
+  document.getElementById('consultaStatusTxt').textContent = 'Buscando no portal público...';
+  document.getElementById('consultaResultado').innerHTML = '';
+  document.getElementById('btnAplicarConsulta').style.display = 'none';
+  dadosConsulta = null;
+
+  // Extrair código do tribunal do NPU para direcionar ao portal certo
+  const partes = npu.match(/\d{7}-\d{2}\.(\d{4})\.(\d)\.(\d{2})\.\d{4}/);
+  if (!partes) return;
+
+  const digJustica = partes[2]; // 5=TRT, 4=TRF, 8=TJXX
+  const codTribunal = partes[3]; // código do tribunal
+
+  // Mapear para URL do portal público
+  const tribunalNome = {
+    '14': 'TJAL','27': 'TJTO','20': 'TJSP','19': 'TJRJ','17': 'TJMG',
+    '23': 'TJRS','21': 'TJPR','22': 'TJSC','16': 'TJBA'
+  };
+
+  // Tentar API do DataJud (CNJ — dados abertos de processos judiciais)
+  // https://datajud-wiki.cnj.jus.br/api-publica/
+  const tribunal = tribunalNome[codTribunal] || null;
+  if (!tribunal) {
+    mostrarResultadoConsulta('err', 'Tribunal não mapeado para consulta automática. Acesse o portal manualmente.', null);
+    return;
+  }
+
+  const tribunalApi = tribunal.toLowerCase();
+  const url = `https://api-publica.datajud.cnj.jus.br/api_publica_${tribunalApi}/_search`;
+  const body = JSON.stringify({
+    query: { match: { numeroProcesso: npu.replace(/[^\d]/g,'') } },
+    size: 1
+  });
+
+  try {
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'ApiKey cDZHYzlZa0JadVREZDJCendFbGFDZzo2MDExMTcxMWIzYmFiOTBhMTVkNTg='
+      },
+      body
+    });
+
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const data = await resp.json();
+    const hits = data?.hits?.hits;
+
+    if (!hits || hits.length === 0) {
+      mostrarResultadoConsulta('err', 'Processo não encontrado no DataJud. Pode estar em sigilo ou ainda não indexado.', null);
+      return;
+    }
+
+    const proc = hits[0]._source;
+    dadosConsulta = {
+      classe: proc.classe?.nome || '',
+      assunto: proc.assuntos?.[0]?.nome || '',
+      orgao: proc.orgaoJulgador?.nome || '',
+      uf: proc.tribunal?.replace('TJ','') || '',
+      dataAjuizamento: proc.dataAjuizamento ? proc.dataAjuizamento.split('T')[0].split('-').reverse().join('/') : '',
+      nivel: proc.nivelSigilo || 0,
+      situacao: proc.movimentos?.[0]?.nome || '',
+    };
+
+    mostrarResultadoConsulta('ok', 'Processo encontrado no DataJud CNJ.', dadosConsulta);
+
+  } catch(err) {
+    mostrarResultadoConsulta('err', 'Não foi possível acessar o DataJud. Verifique manualmente no portal do tribunal.', null);
+    // Gerar link direto para o portal do tribunal
+    const linkPortal = gerarLinkPortal(npu, tribunal);
+    if (linkPortal) {
+      document.getElementById('consultaResultado').innerHTML +=
+        `<div style="margin-top:8px"><a href="${linkPortal}" target="_blank" style="color:var(--ciano);font-size:11px;font-weight:600">→ Abrir no portal do ${tribunal}</a></div>`;
+    }
+  }
+}
+
+function gerarLinkPortal(npu, tribunal) {
+  const npuLimpo = npu.replace(/[^\d]/g,'');
+  const portais = {
+    'TJAL': `https://www2.tjal.jus.br/cpopg/show.do?processo.numero=${npu}`,
+    'TJTO': `https://eproc.tjto.jus.br/eprocV2_prod_tjto/externo_controlador.php?acao=processo_seleciona_publica&num_processo=${npu}`,
+    'TJSP': `https://esaj.tjsp.jus.br/cpopg/show.do?processo.numero=${npu}`,
+    'TJRJ': `https://www3.tjrj.jus.br/ejud/ConsultaProcesso.aspx?N=${npu}`,
+    'TJMG': `https://processo.tjmg.jus.br/processos/processamento.aspx?numeroProcesso=${npu}`,
+  };
+  return portais[tribunal] || null;
+}
+
+function mostrarResultadoConsulta(tipo, msg, dados) {
+  const dot = document.getElementById('consultaDot');
+  const statusTxt = document.getElementById('consultaStatusTxt');
+  const resultado = document.getElementById('consultaResultado');
+  const btnAplicar = document.getElementById('btnAplicarConsulta');
+
+  dot.className = 'cq-dot ' + (tipo === 'ok' ? 'ok' : 'fail');
+  statusTxt.textContent = tipo === 'ok' ? 'Dados encontrados' : 'Consulta manual necessária';
+
+  if (!dados) {
+    resultado.innerHTML = `<div style="color:var(--amber);font-size:11px">${msg}</div>`;
+    return;
+  }
+
+  const linhas = [
+    dados.classe && { k: 'Classe', v: dados.classe },
+    dados.assunto && { k: 'Assunto', v: dados.assunto },
+    dados.orgao && { k: 'Órgão julgador', v: dados.orgao },
+    dados.dataAjuizamento && { k: 'Ajuizamento', v: dados.dataAjuizamento },
+    dados.situacao && { k: 'Situação', v: dados.situacao },
+  ].filter(Boolean);
+
+  resultado.innerHTML = linhas.map(l =>
+    `<div class="cq-row"><span class="cq-k">${l.k}</span><span class="cq-v">${l.v}</span></div>`
+  ).join('');
+
+  if (dados.classe || dados.dataAjuizamento) {
+    btnAplicar.style.display = 'block';
+  }
+}
+
+function aplicarDadosConsulta() {
+  if (!dadosConsulta) return;
+
+  // Aplicar classe como rito se campo estiver vazio
+  if (dadosConsulta.classe && !document.getElementById('f_rito').value) {
+    document.getElementById('f_rito').value = dadosConsulta.classe;
+    document.getElementById('f_rito').classList.add('auto');
+  }
+  // Aplicar data de ajuizamento se campo estiver vazio
+  if (dadosConsulta.dataAjuizamento && !document.getElementById('f_data_ajuizamento').value) {
+    document.getElementById('f_data_ajuizamento').value = dadosConsulta.dataAjuizamento;
+    document.getElementById('f_data_ajuizamento').classList.add('auto');
+    document.getElementById('f_data_citacao').value = dadosConsulta.dataAjuizamento;
+  }
+  // Aplicar órgão como vara se campo estiver vazio
+  if (dadosConsulta.orgao && !document.getElementById('f_vara_cartorio').value) {
+    document.getElementById('f_vara_cartorio').value = dadosConsulta.orgao;
+    document.getElementById('f_vara_cartorio').classList.add('auto');
+  }
+
+  document.getElementById('btnAplicarConsulta').textContent = '✓ Dados aplicados';
+  document.getElementById('btnAplicarConsulta').style.borderColor = 'var(--verde-ok)';
+  document.getElementById('btnAplicarConsulta').style.color = 'var(--verde-ok)';
+  document.getElementById('btnAplicarConsulta').disabled = true;
+}
+
+
+// =============================================
+// INTERPRETAÇÃO IA — lê a petição como advogado
+// =============================================
+let regraAprendidas = JSON.parse(localStorage.getItem('eagle_regras') || '[]');
+
+async function interpretarComIA(camposRegex, textoCompleto) {
+  if (!textoCompleto || textoCompleto.length < 50) return;
+
+  document.getElementById('iaInterpWrap').style.display = 'block';
+  document.getElementById('iaInterpDot').style.display = 'inline-block';
+  document.getElementById('iaInterpStatus').textContent = 'Claude lendo a petição...';
+  document.getElementById('iaInterpResultado').innerHTML = '';
+
+  // Montar contexto de regras aprendidas
+  const regrasCtx = regraAprendidas.length > 0
+    ? '\n\nREGRAS APRENDIDAS COM CORREÇÕES ANTERIORES:\n' +
+      regraAprendidas.map(r => `- ${r.campo}: buscar "${r.padrao}" → valor: "${r.valor}"`).join('\n')
+    : '';
+
+  // Trecho relevante: primeiros 800 + últimos 1200 chars (onde ficam valor e assina)
+  const trechoInicio = textoCompleto.substring(0, 800);
+  const trechoFim = textoCompleto.substring(Math.max(0, textoCompleto.length - 1500));
+  const trecho = trechoInicio + '\n[...]\n' + trechoFim;
+
+  const camposJaPreenchidos = Object.entries(camposRegex)
+    .filter(([k,v]) => v && !k.startsWith('_') && k !== 'reus' && k !== 'pedido')
+    .map(([k,v]) => `${k}: "${v}"`)
+    .join('\n');
+
+  const prompt = `Você é um advogado especialista em análise de petições judiciais brasileiras trabalhando para a empresa SBK Legal Operations.
+
+Analise o trecho da petição abaixo e preencha os campos que ainda estão em branco ou incorretos.
+
+CAMPOS JÁ PREENCHIDOS AUTOMATICAMENTE (confirme ou corrija):
+${camposJaPreenchidos}
+
+TRECHO DA PETIÇÃO:
+${trecho}
+${regrasCtx}
+
+REGRAS DE INTERPRETAÇÃO:
+- valor_causa: buscar "dá-se à causa o valor de R$ X" OU "Valor da Causa: R$ X" — sempre próximo a "Pede deferimento" ou "Nestes termos". Retornar só o número formato "R$ XX.XXX,XX".
+- rito: Regras por tipo de processo:
+  * Agravo de Instrumento: se "Classe da ação: Agravo de Instrumento" ou título "AGRAVO DE INSTRUMENTO" na petição → "Agravo de Instrumento"
+  * Superendividamento: se "superendividamento" no objeto da ação → "Superendividamento"
+  * Procedimento Comum Cível: se "Classe da ação: Procedimento Comum Cível" → "Procedimento Comum Cível"
+  * Outros: usar o valor exato do campo "Classe da ação:" da capa do processo
+  * NUNCA inferir de citações jurisprudenciais (só da capa ou do título da ação)
+- vara_cartorio: Para agravo: buscar "Xª Vara Cível da Comarca de Cidade" no bloco "Origem:" da petição. Para petição comum: buscar "Juizo/Juízo da Xª Vara" ou "Xª Vara Cível/Criminal de cidade". Retornar APENAS "Xª Vara Cível" sem nome da cidade ou comarca.
+- data_ajuizamento: Para petição comum: próximo a "Pede deferimento". Para agravo: campo "Data de autuação:" da capa. Formato saída: "DD/MM/AAAA".
+- fase_processual: Agravo de Instrumento → "Recursal". Cumprimento de Sentença → "Cumprimento de Sentença". Petição inicial comum → "Conhecimento".
+- tipo_documento: Agravo → "Recurso". Petição inicial → "Petição Inicial". Cumprimento → "Petição Inicial".
+- numero_origem: Para agravo: buscar "Processos relacionados: XXXXX | Originário" ou "Origem: Processo nº XXXXX". Para petição comum: igual ao NPU se não houver segundo número.
+- objeto_principal: uma de: "SUPERENDIVIDAMENTO", "DÉBITO EM CONTA - ASSISTÊNCIA VERBIN", "EMPRÉSTIMO CONSIGNADO", "COBRANÇA INDEVIDA", "REVISÃO CONTRATUAL". Inferir pelo contexto da ação.
+- causa_raiz: uma de: "Superendividamento", "DÉBITO EM CONTA - ASSISTÊNCIA VERBIN", "Empréstimo consignado", "Cobrança indevida de seguro", "Desconto indevido", "Revisão contratual".
+
+Responda SOMENTE em JSON puro sem markdown:
+{
+  "valor_causa": "R$ XX.XXX,XX ou null",
+  "rito": "nome do rito ou null",
+  "vara_cartorio": "Xª Vara Cível ou null",
+  "data_ajuizamento": "DD/MM/AAAA ou null",
+  "objeto_principal": "valor ou null",
+  "causa_raiz": "valor ou null",
+  "confianca": "alta|media|baixa",
+  "observacoes": "breve nota sobre campos incertos"
+}`;
+
+  try {
+    const data = await chamarAPI('extrair_texto', { texto: trecho, instrucoes: prompt });
+    const raw = (data.content?.[0]?.text || '').replace(/```json|```/g, '').trim();
+    const resultado = JSON.parse(raw);
+
+    // Aplicar campos que estão em branco ou incorretos
+    const camposAplicar = ['valor_causa','rito','vara_cartorio','data_ajuizamento','objeto_principal','causa_raiz'];
+    const aplicados = [];
+
+    camposAplicar.forEach(campo => {
+      if (!resultado[campo] || resultado[campo] === 'null') return;
+      const el = document.getElementById('f_' + campo);
+      if (!el) return;
+      const valorAtual = el.value || el.options?.[el.selectedIndex]?.text || '';
+      // Aplicar se campo vazio ou era placeholder
+      if (!valorAtual || valorAtual === '1ª Vara Cível') {
+        if (el.tagName === 'SELECT') {
+          for (const opt of el.options) {
+            if ((opt.text||'').trim().toLowerCase() === resultado[campo].trim().toLowerCase()) {
+              opt.selected = true;
+              el.classList.add('auto');
+              aplicados.push(campo);
+              break;
+            }
+          }
+          // Se não achou no select, tenta match parcial
+          if (!aplicados.includes(campo)) {
+            for (const opt of el.options) {
+              if ((opt.text||'').toLowerCase().includes(resultado[campo].toLowerCase().substring(0,10))) {
+                opt.selected = true;
+                el.classList.add('auto');
+                aplicados.push(campo);
+                break;
+              }
+            }
+          }
+        } else {
+          el.value = resultado[campo];
+          el.classList.add('auto');
+          aplicados.push(campo);
+        }
+      }
+    });
+
+    // Mostrar resultado no painel
+    const dot = document.getElementById('iaInterpDot');
+    dot.style.background = 'var(--vok)';
+    dot.style.animation = 'none';
+    document.getElementById('iaInterpStatus').textContent =
+      aplicados.length > 0 ? `${aplicados.length} campo(s) preenchido(s) pela IA` : 'Campos confirmados';
+
+    let html = '';
+    camposAplicar.forEach(campo => {
+      const val = resultado[campo];
+      if (!val || val === 'null') return;
+      const rotulos = {
+        valor_causa:'Valor da causa', rito:'Rito', vara_cartorio:'Vara/Cartório',
+        data_ajuizamento:'Data ajuizamento', objeto_principal:'Objeto', causa_raiz:'Causa raiz'
+      };
+      const aplicado = aplicados.includes(campo);
+      html += `<div style="display:flex;justify-content:space-between;align-items:baseline;padding:3px 0;border-bottom:.5px solid var(--borda-l);font-size:11px">
+        <span style="color:var(--chumbo);font-size:10px">${rotulos[campo]||campo}</span>
+        <span style="font-weight:600;color:${aplicado?'var(--vok)':'var(--chumbo)'};text-align:right;max-width:160px">${val}</span>
+      </div>`;
+    });
+    if (resultado.observacoes) {
+      html += `<div style="margin-top:6px;font-size:10px;color:var(--amb);font-style:italic">${resultado.observacoes}</div>`;
+    }
+    document.getElementById('iaInterpResultado').innerHTML = html;
+
+    // Reatualizar escritório após IA preencher campos
+    const camposAtualizados = extrairCamposDoFormulario();
+    definirEscritorio(camposAtualizados);
+
+  } catch(err) {
+    document.getElementById('iaInterpDot').style.display = 'none';
+    document.getElementById('iaInterpStatus').textContent = 'IA indisponível — campos por regex';
+    console.error('IA interp error:', err);
+  }
+}
+
+function extrairCamposDoFormulario() {
+  const ids = ['npu','uf','comarca','data_ajuizamento','valor_causa','vara_cartorio',
+                'numero_origem','tipo_justica','fase_processual','rito','tipo_documento',
+                'objeto_principal','causa_raiz','desconto_conta','autor_nome','autor_cpf'];
+  const c = {};
+  ids.forEach(id => {
+    const el = document.getElementById('f_' + id);
+    if (!el) return;
+    c[id] = el.tagName === 'SELECT' ? (el.value || '') : (el.value || '');
+  });
+  return c;
+}
+
+// corrigirEAprenderCampo — chamada pelo botão do painel de aprendizado
+function corrigirEAprenderCampo() {
+  const campo = document.getElementById('aprendCampo').value;
+  const valor = document.getElementById('aprendValor').value.trim();
+  if (!campo || !valor) {
+    atualizarStatusAprendizado('Selecione o campo e informe o valor correto.', 'err');
+    return;
+  }
+  // Usa o texto completo da petição atual
+  const texto = textoPeticaoGlobal;
+  if (!texto) {
+    atualizarStatusAprendizado('Carregue uma petição antes de corrigir.', 'err');
+    return;
+  }
+  salvarCorrecaoEAprenderIA(campo, valor, texto);
+  // Limpar campos
+  document.getElementById('aprendCampo').value = '';
+  document.getElementById('aprendValor').value = '';
+}
+
+// =============================================
+// SISTEMA DE APRENDIZADO ADAPTATIVO
+// Quando o usuário corrige um campo:
+// 1. Envia o texto da petição + valor correto para a IA
+// 2. A IA gera um padrão de extração específico
+// 3. O padrão é salvo e aplicado nas próximas análises
+// =============================================
+
+const ROTULOS_CAMPO_APREND = {
+  numero_origem: 'Número de origem / processo originário',
+  valor_causa: 'Valor da causa',
+  rito: 'Rito / classe processual',
+  vara_cartorio: 'Vara / Cartório',
+  comarca: 'Comarca',
+  autor_nome: 'Nome do autor',
+  data_ajuizamento: 'Data de ajuizamento',
+  objeto_principal: 'Objeto principal',
+  causa_raiz: 'Causa raiz',
+};
+
+// Banco de padrões aprendidos — persistido no localStorage
+let padroesAprendidos = JSON.parse(localStorage.getItem('eagle_padroes_v2') || '{}');
+// Estrutura: { campo: [ { tipo, padrao, descricao, exemplos, contadorUso } ] }
+
+// ── Aplicar padrões aprendidos antes dos padrões padrão ──────────────────
+function aplicarPadroesAprendidos(txt, camposJaExtraidos) {
+  if (!padroesAprendidos || Object.keys(padroesAprendidos).length === 0) return camposJaExtraidos;
+
+  const resultado = { ...camposJaExtraidos };
+
+  Object.entries(padroesAprendidos).forEach(([campo, padroes]) => {
+    if (resultado[campo]) return; // já preenchido — não sobrescrever
+    padroes.forEach(({ padrao, tipo }) => {
+      if (resultado[campo]) return;
+      try {
+        if (tipo === 'regex') {
+          const rx = new RegExp(padrao, 'i');
+          const m = txt.match(rx);
+          if (m) resultado[campo] = (m[1] || m[0]).trim();
+        } else if (tipo === 'ancora') {
+          // Busca texto próximo à âncora
+          const rx = new RegExp(padrao.replace('{VALOR}', '([^\\n]{2,80})'), 'i');
+          const m = txt.match(rx);
+          if (m) resultado[campo] = (m[1] || m[2] || '').trim();
+        }
+      } catch(e) { /* regex inválido — ignorar */ }
+    });
+  });
+
+  return resultado;
+}
+
+// ── Salvar nova correção e gerar padrão via IA ────────────────────────────
+async function salvarCorrecaoEAprenderIA(campo, valorCorreto, contextoTexto) {
+  if (!campo || !valorCorreto || !contextoTexto) return;
+
+  const rotulo = ROTULOS_CAMPO_APREND[campo] || campo;
+
+  // Mostrar feedback imediato
+  atualizarStatusAprendizado('Analisando correção com IA...', 'busy');
+
+  // Encontrar trecho relevante ao redor do valor correto no texto
+  const idxValor = contextoTexto.indexOf(valorCorreto);
+  const trechoContexto = idxValor >= 0
+    ? contextoTexto.substring(Math.max(0, idxValor - 200), idxValor + valorCorreto.length + 200)
+    : contextoTexto.substring(0, 600);
+
+  const exemplosExistentes = (padroesAprendidos[campo] || [])
+    .map(p => `- Padrão: "${p.padrao}" (tipo: ${p.tipo})`)
+    .join('\n');
+
+  const prompt = `Você é um especialista em extração de dados de petições judiciais brasileiras.
+
+O usuário corrigiu o campo "${rotulo}" para o valor: "${valorCorreto}"
+
+TRECHO DA PETIÇÃO ONDE O VALOR APARECE:
+${trechoContexto}
+
+${exemplosExistentes ? `PADRÕES JÁ APRENDIDOS PARA ESTE CAMPO:\n${exemplosExistentes}\n` : ''}
+
+Analise onde e como "${valorCorreto}" aparece no texto e crie um padrão de extração em regex JavaScript que encontre esse tipo de informação de forma confiável.
+
+Regras:
+- O regex deve ser robusto o suficiente para funcionar em textos similares, não apenas neste exemplo específico
+- Use grupos de captura (?:não-capturante) para contexto e (capturante) para o valor
+- Seja específico o suficiente para evitar falsos positivos
+- Para campos numéricos como NPU/processo: capture o padrão de dígitos
+- Para campos de texto: capture o contexto próximo (palavras antes/depois)
+
+Responda SOMENTE em JSON puro:
+{
+  "padrao": "regex JavaScript sem delimitadores //, apenas o padrão",
+  "tipo": "regex",
+  "descricao": "explicação em 1 frase do que o padrão captura",
+  "confianca": "alta|media|baixa",
+  "observacao": "nota sobre quando este padrão pode falhar (opcional)"
+}`;
+
+  try {
+    const data = await chamarAPI('aprender', { prompt_aprendizado: prompt });
+    const raw = (data.content?.[0]?.text || '').replace(/```json|```/g, '').trim();
+    const resultado = JSON.parse(raw);
+
+    if (!resultado.padrao) throw new Error('Padrão vazio');
+
+    // Salvar o padrão aprendido
+    if (!padroesAprendidos[campo]) padroesAprendidos[campo] = [];
+
+    // Evitar duplicatas
+    const jaExiste = padroesAprendidos[campo].find(p => p.padrao === resultado.padrao);
+    if (!jaExiste) {
+      padroesAprendidos[campo].unshift({
+        padrao: resultado.padrao,
+        tipo: resultado.tipo || 'regex',
+        descricao: resultado.descricao,
+        valorExemplo: valorCorreto,
+        confianca: resultado.confianca,
+        dataCriacao: new Date().toLocaleDateString('pt-BR'),
+        contadorUso: 0,
+      });
+      // Manter máximo 5 padrões por campo
+      if (padroesAprendidos[campo].length > 5) padroesAprendidos[campo] = padroesAprendidos[campo].slice(0, 5);
+    }
+
+    localStorage.setItem('eagle_padroes_v2', JSON.stringify(padroesAprendidos));
+
+    atualizarStatusAprendizado(`✓ Padrão gerado: "${resultado.descricao}"`, 'ok');
+    renderizarPadroesAprendidos();
+
+  } catch(err) {
+    // Fallback: salvar padrão simples baseado no valor
+    const padraoSimples = valorCorreto.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    if (!padroesAprendidos[campo]) padroesAprendidos[campo] = [];
+    padroesAprendidos[campo].unshift({
+      padrao: padraoSimples,
+      tipo: 'regex',
+      descricao: `Valor literal: ${valorCorreto}`,
+      valorExemplo: valorCorreto,
+      confianca: 'baixa',
+      dataCriacao: new Date().toLocaleDateString('pt-BR'),
+      contadorUso: 0,
+    });
+    localStorage.setItem('eagle_padroes_v2', JSON.stringify(padroesAprendidos));
+    atualizarStatusAprendizado('Padrão básico salvo (IA indisponível)', 'warn');
+    renderizarPadroesAprendidos();
+  }
+}
+
+function atualizarStatusAprendizado(msg, tipo) {
+  const el = document.getElementById('aprendStatusMsg');
+  if (!el) return;
+  el.textContent = msg;
+  el.style.color = tipo === 'ok' ? 'var(--vok)' : tipo === 'busy' ? 'var(--ciano)' : tipo === 'warn' ? 'var(--amb)' : 'var(--err)';
+  el.style.display = 'block';
+}
+
+function renderizarPadroesAprendidos() {
+  const wrap = document.getElementById('padroesListWrap');
+  if (!wrap) return;
+
+  const total = Object.values(padroesAprendidos).flat().length;
+  if (total === 0) {
+    wrap.innerHTML = '<div style="font-size:10px;color:var(--chumbo);font-style:italic">Nenhum padrão aprendido ainda.</div>';
+    return;
+  }
+
+  let html = '';
+  Object.entries(padroesAprendidos).forEach(([campo, padroes]) => {
+    if (!padroes.length) return;
+    const rotulo = ROTULOS_CAMPO_APREND[campo] || campo;
+    html += `<div style="margin-bottom:8px">
+      <div style="font-size:9px;font-weight:600;color:var(--ciano);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">${rotulo}</div>`;
+    padroes.forEach((p, idx) => {
+      const conf_color = p.confianca === 'alta' ? 'var(--vok)' : p.confianca === 'media' ? 'var(--amb)' : '#999';
+      html += `<div style="display:flex;align-items:flex-start;gap:6px;padding:5px 7px;background:var(--off);border-radius:5px;margin-bottom:3px">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:10px;color:#333;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${p.descricao}">${p.descricao}</div>
+          <div style="font-size:9px;color:var(--chumbo);margin-top:1px">Ex: ${p.valorExemplo} · ${p.dataCriacao}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:4px;flex-shrink:0">
+          <span style="font-size:9px;color:${conf_color};font-weight:600">${p.confianca || '?'}</span>
+          <button onclick="removerPadrao('${campo}',${idx})" style="background:none;border:none;color:var(--err);cursor:pointer;font-size:13px;padding:0;line-height:1">×</button>
+        </div>
+      </div>`;
+    });
+    html += '</div>';
+  });
+
+  wrap.innerHTML = html;
+}
+
+function removerPadrao(campo, idx) {
+  if (!padroesAprendidos[campo]) return;
+  padroesAprendidos[campo].splice(idx, 1);
+  if (padroesAprendidos[campo].length === 0) delete padroesAprendidos[campo];
+  localStorage.setItem('eagle_padroes_v2', JSON.stringify(padroesAprendidos));
+  renderizarPadroesAprendidos();
+}
+
+function limparTodosPadroes() {
+  if (!confirm('Apagar todos os padrões aprendidos?')) return;
+  padroesAprendidos = {};
+  localStorage.removeItem('eagle_padroes_v2');
+  renderizarPadroesAprendidos();
+  atualizarStatusAprendizado('Padrões apagados.', 'warn');
+}
+
+// Inicializar ao carregar
+document.addEventListener('DOMContentLoaded', () => {
+  renderizarPadroesAprendidos();
+});
+
+</script>
+</body>
+</html>
