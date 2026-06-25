@@ -1,12 +1,12 @@
 {
-  "name": "eagle-cadastro",
-  "version": "1.0.0",
-  "description": "EAGLE — Sistema de cadastro automatizado de processos judiciais | SBK Legal Operations",
-  "private": true,
-  "engines": {
-    "node": "20.x"
+  "version": 2,
+  "functions": {
+    "api/extrair.js": {
+      "maxDuration": 60
+    }
   },
-  "scripts": {
-    "dev": "vercel dev"
-  }
+  "routes": [
+    { "src": "/api/(.*)", "dest": "/api/$1" },
+    { "src": "/(.*)", "dest": "/public/$1" }
+  ]
 }
