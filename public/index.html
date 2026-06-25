@@ -242,18 +242,22 @@ textarea{resize:vertical;min-height:52px}
 .tab-panel.active{display:block}
 
 /* ABA ACURÁCIA */
-.acuracia-wrap{padding:28px 32px;max-width:1100px;margin:0 auto}
+.acuracia-wrap{padding:28px 32px;max-width:1200px;margin:0 auto}
 .acuracia-title{font-size:18px;font-weight:600;color:var(--verde);margin-bottom:6px}
 .acuracia-sub{font-size:12px;color:var(--chumbo);margin-bottom:24px}
-.acc-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:28px}
+.acc-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+.acc-kpi{background:#fff;border:1px solid var(--borda-l);border-radius:var(--rlg);padding:18px 20px;box-shadow:var(--shadow);text-align:center}
+.acc-kpi-val{font-size:28px;font-weight:600;line-height:1.1;margin-bottom:4px}
+.acc-kpi-lbl{font-size:10px;color:var(--chumbo);text-transform:uppercase;letter-spacing:.5px}
+.acc-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px}
 .acc-card{background:#fff;border:1px solid var(--borda-l);border-radius:var(--rlg);padding:20px;box-shadow:var(--shadow)}
-.acc-card-ttl{font-size:12px;font-weight:600;color:var(--verde);margin-bottom:14px;text-transform:uppercase;letter-spacing:.4px}
-.acc-bar-row{display:flex;align-items:center;gap:8px;font-size:11px;margin-bottom:7px}
-.acc-bar-label{width:150px;color:var(--chumbo);flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.acc-bar-track{flex:1;background:var(--off);border-radius:4px;height:8px;overflow:hidden}
-.acc-bar-fill{height:100%;border-radius:4px;transition:width .5s}
-.acc-pct{width:42px;text-align:right;font-weight:600;font-size:11px}
-.acc-count{color:var(--chumbo);font-size:10px;width:50px;text-align:right}
+.acc-card-ttl{font-size:11px;font-weight:600;color:var(--verde);margin-bottom:14px;text-transform:uppercase;letter-spacing:.5px;display:flex;align-items:center;justify-content:space-between}
+.acc-bar-row{display:flex;align-items:center;gap:8px;font-size:11px;margin-bottom:8px}
+.acc-bar-label{width:150px;color:#1a2421;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px}
+.acc-bar-track{flex:1;background:var(--off);border-radius:6px;height:10px;overflow:hidden;position:relative}
+.acc-bar-fill{height:100%;border-radius:6px;transition:width .6s cubic-bezier(.4,0,.2,1)}
+.acc-pct{width:38px;text-align:right;font-weight:700;font-size:12px}
+.acc-count{color:var(--chumbo);font-size:10px;width:46px;text-align:right}
 .insumo-upload{background:#fff;border:1px solid var(--borda-l);border-radius:var(--rlg);padding:20px;box-shadow:var(--shadow);margin-bottom:28px}
 .insumo-ttl{font-size:12px;font-weight:600;color:var(--verde);margin-bottom:6px;text-transform:uppercase;letter-spacing:.4px}
 .insumo-sub{font-size:11px;color:var(--chumbo);margin-bottom:14px;line-height:1.5}
@@ -374,11 +378,47 @@ textarea{resize:vertical;min-height:52px}
 <!-- ABA ACURÁCIA -->
 <div class="tab-panel" id="panel-acuracia">
   <div class="acuracia-wrap">
-    <div class="acuracia-title">Acurácia por Campo</div>
-    <div class="acuracia-sub">Acompanhe a precisão da extração automática em cada campo. Carregado em tempo real do banco de dados.</div>
-    <div class="insumo-upload">
-      <div class="insumo-ttl">Enviar insumo para campo com baixa acurácia</div>
-      <div class="insumo-sub">Selecione o campo problemático, anexe um print de exemplo correto e envie para análise pela IA.</div>
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px">
+      <div>
+        <div class="acuracia-title">Eficiência da extração automática</div>
+        <div class="acuracia-sub" style="margin:0">Campos aceitos sem alteração aumentam a eficiência. Campos corrigidos pelo operador reduzem.</div>
+      </div>
+      <button onclick="carregarAcuracia()" style="padding:8px 16px;border:1.5px solid var(--borda);border-radius:var(--r);background:#fff;font-size:11px;font-weight:600;color:var(--chumbo);cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
+        Atualizar
+      </button>
+    </div>
+
+    <!-- KPIs -->
+    <div class="acc-kpis" id="accKpis">
+      <div class="acc-kpi"><div class="acc-kpi-val" id="kpiEficiencia" style="color:var(--vok)">--</div><div class="acc-kpi-lbl">Eficiência geral</div></div>
+      <div class="acc-kpi"><div class="acc-kpi-val" id="kpiProcessos" style="color:var(--ciano)">--</div><div class="acc-kpi-lbl">Processos salvos</div></div>
+      <div class="acc-kpi"><div class="acc-kpi-val" id="kpiAceitos" style="color:var(--vok)">--</div><div class="acc-kpi-lbl">Campos aceitos</div></div>
+      <div class="acc-kpi"><div class="acc-kpi-val" id="kpiAlterados" style="color:var(--err)">--</div><div class="acc-kpi-lbl">Campos alterados</div></div>
+    </div>
+
+    <!-- Gráficos -->
+    <div class="acc-grid">
+      <div class="acc-card">
+        <div class="acc-card-ttl">
+          <span>Eficiência por campo</span>
+          <span style="font-size:10px;color:var(--chumbo);font-weight:400;text-transform:none;letter-spacing:0">% de vezes que a IA acertou sem correção</span>
+        </div>
+        <div id="accStatsContent"><p style="font-size:11px;color:var(--chumbo)">Salve processos para ver os dados.</p></div>
+      </div>
+      <div class="acc-card">
+        <div class="acc-card-ttl">
+          <span>Campos mais corrigidos</span>
+          <span style="font-size:10px;color:var(--chumbo);font-weight:400;text-transform:none;letter-spacing:0">onde a IA erra com mais frequência</span>
+        </div>
+        <div id="accErrosContent"><p style="font-size:11px;color:var(--chumbo)">Salve processos para ver os dados.</p></div>
+      </div>
+    </div>
+
+    <!-- Insumo -->
+    <div class="insumo-upload" style="margin-bottom:24px">
+      <div class="insumo-ttl">Enviar exemplo para treinar campo com baixa eficiência</div>
+      <div class="insumo-sub">Selecione o campo problemático, anexe um print mostrando onde a informação aparece no documento e envie para análise pela IA.</div>
       <div class="insumo-row">
         <select id="insumoCampo">
           <option value="">Selecione o campo...</option>
@@ -394,23 +434,17 @@ textarea{resize:vertical;min-height:52px}
           <option value="objeto_principal">Objeto principal</option>
         </select>
         <input type="file" id="insumoFile" accept="image/*,.pdf" style="cursor:pointer">
-        <button class="insumo-btn" onclick="enviarInsumo()">Enviar insumo</button>
+        <button class="insumo-btn" onclick="enviarInsumo()">Analisar com IA</button>
       </div>
       <div class="insumo-status" id="insumoStatus"></div>
     </div>
-    <div class="acc-grid" id="accGrid">
-      <div class="acc-card" id="accCardStats">
-        <div class="acc-card-ttl">Acurácia por campo</div>
-        <div id="accStatsContent"><p style="font-size:11px;color:var(--chumbo)">Carregando...</p></div>
-      </div>
-      <div class="acc-card">
-        <div class="acc-card-ttl">Erros mais frequentes</div>
-        <div id="accErrosContent"><p style="font-size:11px;color:var(--chumbo)">Carregando...</p></div>
-      </div>
-    </div>
+
+    <!-- Processos -->
     <div class="acc-card" style="margin-bottom:0">
-      <div class="acc-card-ttl">Últimos processos</div>
-      <div id="accProcessosContent"><p style="font-size:11px;color:var(--chumbo)">Carregando...</p></div>
+      <div class="acc-card-ttl">
+        <span>Histórico de processos</span>
+      </div>
+      <div id="accProcessosContent"><p style="font-size:11px;color:var(--chumbo)">Salve processos para ver o histórico.</p></div>
     </div>
   </div>
 </div>
@@ -864,10 +898,18 @@ textarea{resize:vertical;min-height:52px}
   <!-- FOOTER -->
   <div class="footer">
     <button class="btn-clear" onclick="limparFormulario()">Limpar tudo</button>
-    <button class="btn-export" onclick="exportarCampos()">
+    <button class="btn-export" onclick="exportarCampos()" style="background:var(--ciano)">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/></svg>
       Exportar campos
     </button>
+    <button class="btn-export" id="btnSalvarProcesso" onclick="salvarEContabilizar()" style="display:none;background:var(--vok);gap:7px">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+      Salvar processo
+    </button>
+  </div>
+  <div id="salvarStatusBar" style="display:none;padding:12px 16px;background:var(--vok-bg);border:1px solid var(--vok-b);border-radius:var(--r);margin-top:10px;font-size:12px;color:var(--vok);display:flex;align-items:center;gap:10px">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+    <span id="salvarStatusMsg"></span>
   </div>
 
 </main>
@@ -892,7 +934,17 @@ if (typeof pdfjsLib !== 'undefined') {
 
 const CAMPOS_VALIDAVEIS = ['npu','uf','comarca','data_ajuizamento','data_citacao','valor_causa','vara_cartorio','numero_origem','tipo_justica','rito','fase_processual','tipo_documento','objeto_principal','causa_raiz','pedido','desconto_conta','autor_nome','autor_cpf','advogado_nome','advogado_oab','advogado_uf'];
 let statusCampos = {};
+let valoresIA = {}; // snapshot dos valores preenchidos pela IA
 CAMPOS_VALIDAVEIS.forEach(k => statusCampos[k] = 'pending');
+
+function capturarValoresIA() {
+  const get = id => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
+  CAMPOS_VALIDAVEIS.forEach(campo => {
+    valoresIA[campo] = get('f_' + campo);
+  });
+  // Mostrar botão Salvar após análise
+  document.getElementById('btnSalvarProcesso').style.display = 'inline-flex';
+}
 
 let reuCount = 0;
 
@@ -1750,6 +1802,9 @@ function preencherFormulario(c) {
   // Ativar validação IA
   ativarValidacaoIA();
 
+  // Capturar snapshot dos valores preenchidos pela IA para comparação no salvar
+  setTimeout(capturarValoresIA, 300);
+
   // Alertas
   const alertas = [];
   if (!c.vara_cartorio) alertas.push({ tipo: 'warn', msg: 'Vara/Cartório não identificado na petição — preencha manualmente.' });
@@ -1813,7 +1868,14 @@ function limparFormulario() {
   reuCount = 0;
   addReu();
   statusCampos = {};
+  valoresIA = {};
   CAMPOS_VALIDAVEIS.forEach(k => statusCampos[k] = 'pending');
+  // Ocultar botão Salvar e barra de status
+  const btnSalvar = document.getElementById('btnSalvarProcesso');
+  if (btnSalvar) { btnSalvar.style.display = 'none'; btnSalvar.disabled = false; btnSalvar.textContent = 'Salvar processo'; btnSalvar.style.background = 'var(--vok)'; btnSalvar.style.cursor = ''; }
+  const sb = document.getElementById('salvarStatusBar');
+  if (sb) { sb.style.display = 'none'; sb.style.background = 'var(--vok-bg)'; sb.style.borderColor = 'var(--vok-b)'; sb.style.color = 'var(--vok)'; }
+  processoIdBanco = null;
   // Reset disabled nos campos VERBIN (agora são selects)
   ['f_objeto_principal','f_causa_raiz'].forEach(id => {
     const el = document.getElementById(id);
@@ -2811,79 +2873,120 @@ function mudarAba(aba) {
 
 // ── ABA ACURÁCIA ──────────────────────────────────────────────────────────────
 
+const CAMPO_LABELS = {
+  npu: 'NPU', uf: 'UF', comarca: 'Comarca', data_ajuizamento: 'Data ajuizamento',
+  data_citacao: 'Data citação', valor_causa: 'Valor da causa', vara_cartorio: 'Vara / Cartório',
+  numero_origem: 'Nº origem', tipo_justica: 'Tipo de justiça', rito: 'Rito',
+  fase_processual: 'Fase processual', tipo_documento: 'Tipo documento',
+  objeto_principal: 'Objeto principal', causa_raiz: 'Causa raiz', pedido: 'Pedido',
+  desconto_conta: 'Desconto em conta', autor_nome: 'Nome do autor', autor_cpf: 'CPF do autor',
+  advogado_nome: 'Advogado', advogado_oab: 'OAB', advogado_uf: 'UF OAB'
+};
+
 async function carregarAcuracia() {
   try {
     const r = await fetch('/api/historico');
     const { processos, stats, erros } = await r.json();
 
-    // Stats
-    let html = '';
+    // KPIs
+    const totalAcertos = (stats || []).reduce((s, x) => s + x.acertos, 0);
+    const totalVal = (stats || []).reduce((s, x) => s + x.total, 0);
+    const eficienciaGeral = totalVal > 0 ? Math.round(100 * totalAcertos / totalVal) : null;
+    const corEf = eficienciaGeral >= 80 ? 'var(--vok)' : eficienciaGeral >= 60 ? '#F59E0B' : 'var(--err)';
+    document.getElementById('kpiEficiencia').textContent = eficienciaGeral !== null ? eficienciaGeral + '%' : '--';
+    document.getElementById('kpiEficiencia').style.color = corEf;
+    document.getElementById('kpiProcessos').textContent = processos ? processos.length : '--';
+    document.getElementById('kpiAceitos').textContent = totalAcertos || '--';
+    document.getElementById('kpiAlterados').textContent = totalVal - totalAcertos || '--';
+
+    // Gráfico de barras — eficiência por campo (ordena do pior para o melhor)
+    let htmlS = '';
     if (stats && stats.length > 0) {
-      stats.forEach(s => {
-        const cor = s.pct >= 80 ? 'var(--vok)' : s.pct >= 50 ? '#F59E0B' : 'var(--err)';
-        html += `<div class="acc-bar-row">
-          <span class="acc-bar-label">${s.campo}</span>
-          <div class="acc-bar-track"><div class="acc-bar-fill" style="width:${s.pct}%;background:${cor}"></div></div>
+      const sorted = [...stats].sort((a, b) => a.pct - b.pct);
+      sorted.forEach(s => {
+        const cor = s.pct >= 80 ? '#16a34a' : s.pct >= 60 ? '#d97706' : '#dc2626';
+        const label = CAMPO_LABELS[s.campo] || s.campo;
+        htmlS += `<div class="acc-bar-row">
+          <span class="acc-bar-label" title="${label}">${label}</span>
+          <div class="acc-bar-track">
+            <div class="acc-bar-fill" style="width:${s.pct}%;background:${cor}"></div>
+          </div>
           <span class="acc-pct" style="color:${cor}">${s.pct}%</span>
           <span class="acc-count">${s.acertos}/${s.total}</span>
         </div>`;
       });
     } else {
-      html = '<p style="font-size:11px;color:var(--chumbo)">Nenhuma validação registrada ainda.</p>';
+      htmlS = `<div style="text-align:center;padding:24px 0">
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--borda)" stroke-width="1.5" style="margin-bottom:8px"><path d="M3 3v18h18"/><path d="M18.4 9l-4-4-4 4-3.4-3.4"/></svg>
+        <p style="font-size:11px;color:var(--chumbo)">Salve processos para ver a eficiência por campo.</p>
+      </div>`;
     }
-    document.getElementById('accStatsContent').innerHTML = html;
+    document.getElementById('accStatsContent').innerHTML = htmlS;
 
-    // Erros
+    // Campos mais corrigidos
     let htmlE = '';
     if (erros && erros.length > 0) {
-      htmlE = '<div style="display:flex;flex-direction:column;gap:5px">';
-      erros.slice(0,12).forEach(e => {
-        htmlE += `<div style="font-size:11px;padding:6px 8px;border-radius:6px;background:var(--err-bg);border:1px solid var(--err-b)">
-          <span style="color:var(--chumbo);font-size:10px;text-transform:uppercase;letter-spacing:.3px">${e.campo}</span>
-          <div style="display:flex;gap:6px;align-items:center;margin-top:3px">
-            <span style="color:var(--err);text-decoration:line-through;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${e.valor_extraido||'(vazio)'}</span>
-            <span style="color:var(--chumbo)">→</span>
-            <span style="color:var(--vok);font-weight:600;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${e.valor_correto}</span>
-            <span style="margin-left:auto;color:var(--chumbo);font-size:10px">${e.ocorrencias}x</span>
+      htmlE = '<div style="display:flex;flex-direction:column;gap:6px">';
+      erros.slice(0, 10).forEach(e => {
+        const label = CAMPO_LABELS[e.campo] || e.campo;
+        htmlE += `<div style="padding:8px 10px;border-radius:8px;background:var(--off);border:1px solid var(--borda-l)">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+            <span style="font-size:10px;font-weight:600;color:var(--chumbo);text-transform:uppercase;letter-spacing:.3px">${label}</span>
+            <span style="font-size:10px;background:var(--err-bg);color:var(--err);padding:1px 6px;border-radius:8px;font-weight:600">${e.ocorrencias}x</span>
+          </div>
+          <div style="display:flex;gap:4px;align-items:center;font-size:11px">
+            <span style="color:var(--err);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:line-through" title="${e.valor_extraido||''}">${e.valor_extraido||'(vazio)'}</span>
+            <span style="color:var(--chumbo);flex-shrink:0">→</span>
+            <span style="color:var(--vok);font-weight:600;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${e.valor_correto}">${e.valor_correto}</span>
           </div>
         </div>`;
       });
       htmlE += '</div>';
     } else {
-      htmlE = '<p style="font-size:11px;color:var(--chumbo)">Nenhum erro registrado ainda.</p>';
+      htmlE = `<div style="text-align:center;padding:24px 0">
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--borda)" stroke-width="1.5" style="margin-bottom:8px"><circle cx="12" cy="12" r="10"/><polyline points="16 12 12 8 8 12"/><line x1="12" y1="16" x2="12" y2="8"/></svg>
+        <p style="font-size:11px;color:var(--chumbo)">Nenhuma correção registrada.</p>
+      </div>`;
     }
     document.getElementById('accErrosContent').innerHTML = htmlE;
 
-    // Processos
+    // Tabela de processos
     let htmlP = '';
     if (processos && processos.length > 0) {
       htmlP = `<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:11px">
         <thead><tr style="background:var(--off)">
-          <th style="padding:6px 8px;text-align:left;color:var(--chumbo);font-size:10px;text-transform:uppercase;letter-spacing:.3px">#</th>
-          <th style="padding:6px 8px;text-align:left;color:var(--chumbo);font-size:10px;text-transform:uppercase;letter-spacing:.3px">NPU</th>
-          <th style="padding:6px 8px;text-align:left;color:var(--chumbo);font-size:10px;text-transform:uppercase;letter-spacing:.3px">Arquivo</th>
-          <th style="padding:6px 8px;text-align:left;color:var(--chumbo);font-size:10px;text-transform:uppercase;letter-spacing:.3px">Data</th>
-          <th style="padding:6px 8px;text-align:center;color:var(--chumbo);font-size:10px;text-transform:uppercase;letter-spacing:.3px">Status</th>
+          <th style="padding:8px 10px;text-align:left;color:var(--chumbo);font-size:10px;text-transform:uppercase;letter-spacing:.4px;font-weight:600">#</th>
+          <th style="padding:8px 10px;text-align:left;color:var(--chumbo);font-size:10px;text-transform:uppercase;letter-spacing:.4px;font-weight:600">NPU</th>
+          <th style="padding:8px 10px;text-align:left;color:var(--chumbo);font-size:10px;text-transform:uppercase;letter-spacing:.4px;font-weight:600">Arquivo</th>
+          <th style="padding:8px 10px;text-align:left;color:var(--chumbo);font-size:10px;text-transform:uppercase;letter-spacing:.4px;font-weight:600">Data</th>
+          <th style="padding:8px 10px;text-align:center;color:var(--chumbo);font-size:10px;text-transform:uppercase;letter-spacing:.4px;font-weight:600">Status</th>
         </tr></thead><tbody>`;
       processos.forEach((p, i) => {
-        const bg = i % 2 === 0 ? '#fff' : 'var(--off)';
+        const bg = i % 2 === 0 ? '#fff' : '#fafbfc';
         const data = new Date(p.data_upload).toLocaleDateString('pt-BR');
-        const cor = p.status === 'validado' ? 'var(--vok)' : 'var(--amb)';
-        htmlP += `<tr style="background:${bg}">
-          <td style="padding:5px 8px;color:var(--chumbo)">${p.id}</td>
-          <td style="padding:5px 8px;font-family:monospace;font-size:10px">${p.npu||'-'}</td>
-          <td style="padding:5px 8px;color:var(--chumbo);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.arquivo_nome||'-'}</td>
-          <td style="padding:5px 8px;color:var(--chumbo)">${data}</td>
-          <td style="padding:5px 8px;text-align:center;color:${cor};font-weight:600;font-size:10px">${p.status}</td>
+        const cor = p.status === 'validado' ? 'var(--vok)' : '#d97706';
+        const badge = p.status === 'validado'
+          ? `<span style="background:var(--vok-bg);color:var(--vok);padding:2px 8px;border-radius:8px;font-size:10px;font-weight:600">Salvo</span>`
+          : `<span style="background:var(--amb-bg);color:var(--amb);padding:2px 8px;border-radius:8px;font-size:10px;font-weight:600">Pendente</span>`;
+        htmlP += `<tr style="background:${bg};border-top:1px solid var(--borda-l)">
+          <td style="padding:7px 10px;color:var(--chumbo)">${p.id}</td>
+          <td style="padding:7px 10px;font-family:monospace;font-size:10px;color:var(--verde)">${p.npu||'-'}</td>
+          <td style="padding:7px 10px;color:var(--chumbo);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.arquivo_nome||'-'}</td>
+          <td style="padding:7px 10px;color:var(--chumbo);white-space:nowrap">${data}</td>
+          <td style="padding:7px 10px;text-align:center">${badge}</td>
         </tr>`;
       });
       htmlP += '</tbody></table></div>';
     } else {
-      htmlP = '<p style="font-size:11px;color:var(--chumbo)">Nenhum processo salvo ainda.</p>';
+      htmlP = `<div style="text-align:center;padding:32px 0">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--borda)" stroke-width="1.5" style="margin-bottom:10px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        <p style="font-size:12px;color:var(--chumbo)">Nenhum processo salvo ainda.</p>
+        <p style="font-size:11px;color:#9aA0a6;margin-top:4px">Analise um PDF e clique em "Salvar processo".</p>
+      </div>`;
     }
     document.getElementById('accProcessosContent').innerHTML = htmlP;
   } catch(e) {
-    document.getElementById('accStatsContent').innerHTML = `<p style="color:var(--err);font-size:11px">Erro: ${e.message}</p>`;
+    document.getElementById('accStatsContent').innerHTML = `<p style="color:var(--err);font-size:11px">Erro ao carregar: ${e.message}</p>`;
   }
 }
 
@@ -3063,7 +3166,7 @@ function coletarCamposFormulario() {
   };
 }
 
-// Salva processo no banco após análise (silencioso, em background)
+// Salva processo no banco de forma silenciosa (chamado internamente pelo salvarEContabilizar)
 async function salvarProcessoBanco(nomeArquivo) {
   try {
     const campos = coletarCamposFormulario();
@@ -3073,70 +3176,85 @@ async function salvarProcessoBanco(nomeArquivo) {
       body: JSON.stringify({ arquivo_nome: nomeArquivo, campos })
     });
     const data = await resp.json();
-    if (data.id) {
-      processoIdBanco = data.id;
-      document.getElementById('feedbackDbWrap').style.display = 'block';
-      document.getElementById('feedbackDbStatus').textContent = `Processo #${data.id} salvo no banco. Marque os campos e envie o feedback.`;
-    }
+    if (data.id) processoIdBanco = data.id;
+    return data.id || null;
   } catch (e) {
     console.warn('[EAGLE DB] Erro ao salvar processo:', e.message);
+    return null;
   }
 }
 
-// Envia feedback campo-a-campo para o banco
-async function enviarFeedbackBanco() {
-  if (!processoIdBanco) {
-    document.getElementById('feedbackDbStatus').textContent = 'Nenhum processo salvo nesta sessão.';
-    return;
-  }
-  const btn = document.getElementById('btnEnviarFeedback');
+// Salva o processo E contabiliza eficiência automaticamente
+async function salvarEContabilizar() {
+  const btn = document.getElementById('btnSalvarProcesso');
+  const statusBar = document.getElementById('salvarStatusBar');
+  const statusMsg = document.getElementById('salvarStatusMsg');
   btn.disabled = true;
-  btn.textContent = 'Enviando...';
+  btn.textContent = 'Salvando...';
 
   try {
-    // Coletar status de cada campo (ok ou err)
-    const validacoes = [];
-    CAMPOS_VALIDAVEIS.forEach(campo => {
-      const status = statusCampos[campo];
-      if (status === 'ok' || status === 'err') {
-        const el = document.getElementById('f_' + campo);
-        const valorAtual = el ? el.value.trim() : '';
-        validacoes.push({
-          campo,
-          valor_extraido: valorAtual,
-          valor_correto: status === 'ok' ? valorAtual : '',
-          acertou: status === 'ok'
-        });
-      }
-    });
+    const campos = coletarCamposFormulario();
+    const nomeArq = document.getElementById('fileName')?.textContent || 'petição.pdf';
 
-    if (validacoes.length === 0) {
-      document.getElementById('feedbackDbStatus').textContent = 'Marque pelo menos um campo como OK ou Errado antes de enviar.';
-      btn.disabled = false;
-      btn.textContent = 'Enviar feedback ao banco';
-      return;
-    }
-
-    const resp = await fetch('/api/validar', {
+    // 1. Salvar processo no banco
+    const resp = await fetch('/api/salvar', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ processo_id: processoIdBanco, validacoes })
+      body: JSON.stringify({ arquivo_nome: nomeArq, campos })
     });
     const data = await resp.json();
+    if (!data.id) throw new Error(data.error || 'Falha ao salvar');
+    processoIdBanco = data.id;
 
-    if (data.ok) {
-      document.getElementById('feedbackDbStatus').textContent = `Feedback de ${validacoes.length} campos enviado com sucesso.`;
-      btn.textContent = 'Feedback enviado';
-      btn.style.background = 'var(--ciano)';
-    } else {
-      throw new Error(data.error || 'Erro desconhecido');
+    // 2. Comparar campos atuais com valores que a IA preencheu
+    const validacoes = [];
+    CAMPOS_VALIDAVEIS.forEach(campo => {
+      const valorIA = valoresIA[campo] || '';
+      const el = document.getElementById('f_' + campo);
+      const valorAtual = el ? el.value.trim() : '';
+      if (!valorIA && !valorAtual) return; // campo vazio dos dois lados — ignorar
+      const acertou = valorIA !== '' && valorIA === valorAtual;
+      validacoes.push({
+        campo,
+        valor_extraido: valorIA,
+        valor_correto: acertou ? valorIA : valorAtual,
+        acertou
+      });
+    });
+
+    // 3. Enviar validações
+    if (validacoes.length > 0) {
+      await fetch('/api/validar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ processo_id: processoIdBanco, validacoes })
+      });
     }
+
+    // 4. Feedback visual
+    const aceitos = validacoes.filter(v => v.acertou).length;
+    const alterados = validacoes.filter(v => !v.acertou && v.valor_extraido).length;
+    const pct = validacoes.length > 0 ? Math.round(100 * aceitos / validacoes.length) : 0;
+
+    statusBar.style.display = 'flex';
+    statusMsg.textContent = `Processo #${processoIdBanco} salvo. Eficiência da IA neste cadastro: ${pct}% (${aceitos} campos aceitos, ${alterados} alterados).`;
+    btn.textContent = 'Salvo';
+    btn.style.background = 'var(--ciano)';
+    btn.style.cursor = 'default';
+
   } catch (e) {
-    document.getElementById('feedbackDbStatus').textContent = 'Erro ao enviar: ' + e.message;
+    statusBar.style.background = 'var(--err-bg)';
+    statusBar.style.borderColor = 'var(--err-b)';
+    statusBar.style.color = 'var(--err)';
+    statusBar.style.display = 'flex';
+    statusMsg.textContent = 'Erro ao salvar: ' + e.message;
     btn.disabled = false;
-    btn.textContent = 'Tentar novamente';
+    btn.textContent = 'Salvar processo';
   }
 }
+
+// Legado — mantido para compatibilidade com referências existentes
+async function enviarFeedbackBanco() { await salvarEContabilizar(); }
 
 // Abre modal com histórico e estatísticas
 async function abrirHistorico() {
