@@ -436,6 +436,7 @@ textarea{resize:vertical;min-height:52px}
         <input type="file" id="insumoFile" accept="image/*,.pdf" style="cursor:pointer">
         <button class="insumo-btn" onclick="enviarInsumo()">Analisar com IA</button>
       </div>
+      <textarea id="insumoContexto" placeholder="Informações adicionais (opcional): descreva onde a informação aparece no documento, o formato esperado, exemplos de valores corretos..." style="width:100%;margin-top:10px;padding:8px 10px;border:1.5px solid var(--borda);border-radius:var(--r);font-size:11px;font-family:inherit;font-weight:300;resize:vertical;min-height:64px;outline:none;line-height:1.5"></textarea>
       <div class="insumo-status" id="insumoStatus"></div>
     </div>
 
@@ -712,19 +713,21 @@ textarea{resize:vertical;min-height:52px}
 
         <div class="fg">
           <label>Fase processual</label>
-          <select id="f_fase_processual">
+          <select id="f_fase_processual" onchange="selectOutro(this,'f_fase_processual_outro')">
               <option value="">Selecione</option>
               <option>Conhecimento</option>
               <option>Cumprimento de Sentença</option>
               <option>Execução</option>
               <option>Inicial</option>
               <option>Recursal</option>
+              <option value="__outro__">Outro (digitar)...</option>
             </select>
+          <input type="text" id="f_fase_processual_outro" placeholder="Digite a fase processual" style="display:none;margin-top:5px" oninput="sincronizarOutro(this,'f_fase_processual')">
         </div>
 
         <div class="fg">
           <label>Rito</label>
-          <select id="f_rito">
+          <select id="f_rito" onchange="selectOutro(this,'f_rito_outro')">
               <option value="">Selecione</option>
               <option>Procedimento Comum Cível</option>
               <option>Juizado Especial Cível</option>
@@ -735,12 +738,14 @@ textarea{resize:vertical;min-height:52px}
               <option>Execução</option>
               <option>Mandado de Segurança</option>
               <option>Ação Civil Pública</option>
+              <option value="__outro__">Outro (digitar)...</option>
             </select>
+          <input type="text" id="f_rito_outro" placeholder="Digite o rito" style="display:none;margin-top:5px" oninput="sincronizarOutro(this,'f_rito')">
         </div>
 
         <div class="fg">
           <label>Tipo de documento</label>
-          <select id="f_tipo_documento">
+          <select id="f_tipo_documento" onchange="selectOutro(this,'f_tipo_documento_outro')">
               <option value="">Selecione</option>
               <option>Petição Inicial</option>
               <option>Contestação</option>
@@ -749,7 +754,9 @@ textarea{resize:vertical;min-height:52px}
               <option>Embargos</option>
               <option>Sentença</option>
               <option>Acórdão</option>
+              <option value="__outro__">Outro (digitar)...</option>
             </select>
+          <input type="text" id="f_tipo_documento_outro" placeholder="Digite o tipo de documento" style="display:none;margin-top:5px" oninput="sincronizarOutro(this,'f_tipo_documento')">
         </div>
       </div>
 
@@ -766,18 +773,25 @@ textarea{resize:vertical;min-height:52px}
       <div class="g2 mb10">
         <div class="fg">
           <label>Objeto principal <span class="lhint">(automático se houver desconto em conta)</span></label>
-          <select id="f_objeto_principal">
+          <select id="f_objeto_principal" onchange="selectOutro(this,'f_objeto_principal_outro')">
               <option value="">Selecione</option>
               <option>SUPERENDIVIDAMENTO</option>
               <option>DÉBITO EM CONTA - ASSISTÊNCIA VERBIN</option>
               <option>EMPRÉSTIMO CONSIGNADO</option>
               <option>COBRANÇA INDEVIDA</option>
               <option>REVISÃO CONTRATUAL</option>
+              <option>DANO MORAL</option>
+              <option>NEGATIVAÇÃO INDEVIDA</option>
+              <option>FRAUDE / GOLPE</option>
+              <option>PORTABILIDADE DE CRÉDITO</option>
+              <option>SEGURO PRESTAMISTA</option>
+              <option value="__outro__">Outro (digitar)...</option>
             </select>
+          <input type="text" id="f_objeto_principal_outro" placeholder="Digite o objeto principal" style="display:none;margin-top:5px" oninput="sincronizarOutro(this,'f_objeto_principal')">
         </div>
         <div class="fg">
           <label>Causa raiz</label>
-          <select id="f_causa_raiz">
+          <select id="f_causa_raiz" onchange="selectOutro(this,'f_causa_raiz_outro')">
               <option value="">Selecione</option>
               <option>Superendividamento</option>
               <option>DÉBITO EM CONTA - ASSISTÊNCIA VERBIN</option>
@@ -785,7 +799,14 @@ textarea{resize:vertical;min-height:52px}
               <option>Cobrança indevida de seguro</option>
               <option>Desconto indevido</option>
               <option>Revisão contratual</option>
+              <option>Dano moral</option>
+              <option>Negativação indevida</option>
+              <option>Fraude / Golpe</option>
+              <option>Portabilidade de crédito</option>
+              <option>Seguro prestamista</option>
+              <option value="__outro__">Outro (digitar)...</option>
             </select>
+          <input type="text" id="f_causa_raiz_outro" placeholder="Digite a causa raiz" style="display:none;margin-top:5px" oninput="sincronizarOutro(this,'f_causa_raiz')">
         </div>
       </div>
 
@@ -930,6 +951,37 @@ textarea{resize:vertical;min-height:52px}
 // Configurar worker do PDF.js — evita o warning "fake worker"
 if (typeof pdfjsLib !== 'undefined') {
   pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+}
+
+// ── SELECTS COM OPÇÃO "OUTRO" ─────────────────────────────────────────────────
+function selectOutro(sel, inputId) {
+  const inp = document.getElementById(inputId);
+  if (!inp) return;
+  if (sel.value === '__outro__') {
+    inp.style.display = 'block';
+    inp.focus();
+    // Mantém o select visualmente selecionado em "Outro"
+  } else {
+    inp.style.display = 'none';
+    inp.value = '';
+  }
+}
+
+// Quando o usuário digita no input livre, injeta o valor como opção temporária no select
+function sincronizarOutro(inp, selectId) {
+  const sel = document.getElementById(selectId);
+  if (!sel) return;
+  let opt = sel.querySelector('option[data-custom]');
+  if (!opt) {
+    opt = document.createElement('option');
+    opt.setAttribute('data-custom', '1');
+    // Inserir antes da opção "Outro (digitar)..."
+    const outroOpt = sel.querySelector('option[value="__outro__"]');
+    sel.insertBefore(opt, outroOpt);
+  }
+  opt.value = inp.value;
+  opt.text = inp.value;
+  opt.selected = true;
 }
 
 const CAMPOS_VALIDAVEIS = ['npu','uf','comarca','data_ajuizamento','data_citacao','valor_causa','vara_cartorio','numero_origem','tipo_justica','rito','fase_processual','tipo_documento','objeto_principal','causa_raiz','pedido','desconto_conta','autor_nome','autor_cpf','advogado_nome','advogado_oab','advogado_uf'];
@@ -2993,32 +3045,45 @@ async function carregarAcuracia() {
 async function enviarInsumo() {
   const campo = document.getElementById('insumoCampo').value;
   const file = document.getElementById('insumoFile').files[0];
+  const contexto = (document.getElementById('insumoContexto')?.value || '').trim();
   const status = document.getElementById('insumoStatus');
   if (!campo) { status.textContent = 'Selecione um campo.'; return; }
-  if (!file) { status.textContent = 'Selecione um arquivo (imagem ou PDF).'; return; }
-  status.textContent = 'Enviando para análise pela IA...';
+  if (!file && !contexto) { status.textContent = 'Anexe um arquivo ou preencha as informações adicionais.'; return; }
+  status.innerHTML = '<span style="color:var(--ciano)">Enviando para análise pela IA...</span>';
+
+  const instrucaoBase = `Você está analisando um insumo de treinamento para o campo "${campo}" de um sistema de extração automática de petições jurídicas brasileiras. ${contexto ? 'Contexto informado pelo usuário: ' + contexto + '. ' : ''}${file ? 'Analise a imagem e descreva com precisão onde e como a informação deste campo aparece no documento, incluindo formatação, posição e contexto textual ao redor.' : 'Com base no contexto fornecido, explique como identificar corretamente este campo em petições jurídicas.'}`;
+
   try {
-    const reader = new FileReader();
-    reader.onload = async (ev) => {
-      const base64 = ev.target.result.split(',')[1];
-      const mime = file.type || 'image/png';
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = async (ev) => {
+        const base64 = ev.target.result.split(',')[1];
+        const r = await fetch('/api/extrair', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tipo: 'extrair_pdf', base64, instrucao: instrucaoBase })
+        });
+        const data = await r.json();
+        if (data.resultado) {
+          status.innerHTML = `<div style="background:var(--auto-bg);border:1px solid var(--auto-b);border-radius:var(--r);padding:12px;font-size:11px;line-height:1.6"><strong style="color:var(--ciano);font-size:10px;text-transform:uppercase;letter-spacing:.4px">Análise da IA</strong><br><br>${data.resultado.replace(/\n/g,'<br>')}</div>`;
+        } else {
+          status.textContent = 'Erro: ' + (data.error || 'Sem resultado.');
+        }
+      };
+      reader.readAsDataURL(file);
+    } else {
       const r = await fetch('/api/extrair', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          tipo: 'extrair_pdf',
-          base64,
-          instrucao: `Você está analisando um print/screenshot enviado como insumo de treinamento para o campo "${campo}". Descreva com precisão onde e como a informação deste campo aparece na imagem, para que possamos melhorar a extração automática. Seja específico sobre posicionamento, formatação e contexto textual.`
-        })
+        body: JSON.stringify({ tipo: 'extrair_texto', texto: contexto, instrucao: instrucaoBase })
       });
       const data = await r.json();
       if (data.resultado) {
-        status.innerHTML = `<strong>Análise da IA:</strong><br><span style="line-height:1.6">${data.resultado.replace(/\n/g,'<br>')}</span>`;
+        status.innerHTML = `<div style="background:var(--auto-bg);border:1px solid var(--auto-b);border-radius:var(--r);padding:12px;font-size:11px;line-height:1.6"><strong style="color:var(--ciano);font-size:10px;text-transform:uppercase;letter-spacing:.4px">Análise da IA</strong><br><br>${data.resultado.replace(/\n/g,'<br>')}</div>`;
       } else {
-        status.textContent = 'Resposta: ' + (data.error || 'Sem resultado.');
+        status.textContent = 'Erro: ' + (data.error || 'Sem resultado.');
       }
-    };
-    reader.readAsDataURL(file);
+    }
   } catch(e) {
     status.textContent = 'Erro: ' + e.message;
   }
