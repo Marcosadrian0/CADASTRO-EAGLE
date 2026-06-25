@@ -417,10 +417,12 @@ textarea{resize:vertical;min-height:52px}
 
     <!-- Insumo -->
     <div class="insumo-upload" style="margin-bottom:24px">
-      <div class="insumo-ttl">Enviar exemplo para treinar campo com baixa eficiência</div>
-      <div class="insumo-sub">Selecione o campo problemático, anexe um print mostrando onde a informação aparece no documento e envie para análise pela IA.</div>
-      <div class="insumo-row">
-        <select id="insumoCampo">
+      <div class="insumo-ttl">Treinar campo com baixa eficiência</div>
+      <div class="insumo-sub">Selecione o campo, faça um print da parte do documento onde a informação aparece e envie. A IA vai aprender a localizar melhor aquele campo.</div>
+
+      <!-- Linha superior: campo + botão -->
+      <div style="display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
+        <select id="insumoCampo" style="flex:1;min-width:180px;font-size:12px;padding:8px 10px;border:1.5px solid var(--borda);border-radius:var(--r);font-family:inherit;background:#fff;outline:none">
           <option value="">Selecione o campo...</option>
           <option value="npu">NPU</option>
           <option value="valor_causa">Valor da causa</option>
@@ -432,13 +434,38 @@ textarea{resize:vertical;min-height:52px}
           <option value="vara_cartorio">Vara / Cartório</option>
           <option value="data_ajuizamento">Data de ajuizamento</option>
           <option value="objeto_principal">Objeto principal</option>
+          <option value="causa_raiz">Causa raiz</option>
+          <option value="rito">Rito</option>
         </select>
-        <input type="file" id="insumoFile" accept="image/*,.pdf" style="cursor:pointer">
-        <button class="insumo-btn" onclick="enviarInsumo()">Analisar com IA</button>
+        <button class="insumo-btn" onclick="enviarInsumo()" style="white-space:nowrap;padding:9px 20px;font-size:12px">
+          Analisar com IA
+        </button>
       </div>
-      <textarea id="insumoContexto" placeholder="Informações adicionais (opcional): descreva onde a informação aparece no documento, o formato esperado, exemplos de valores corretos..." style="width:100%;margin-top:10px;padding:8px 10px;border:1.5px solid var(--borda);border-radius:var(--r);font-size:11px;font-family:inherit;font-weight:300;resize:vertical;min-height:64px;outline:none;line-height:1.5"></textarea>
-      <div class="insumo-status" id="insumoStatus"></div>
+
+      <!-- Zona de drop de print -->
+      <div id="insumoDropZone" onclick="document.getElementById('insumoFile').click()"
+        ondragover="event.preventDefault();this.classList.add('insumo-dz-over')"
+        ondragleave="this.classList.remove('insumo-dz-over')"
+        ondrop="insumoOnDrop(event)"
+        style="border:2px dashed var(--borda);border-radius:var(--r);padding:22px 16px;text-align:center;cursor:pointer;transition:all .2s;background:#FAFBFC;margin-bottom:10px">
+        <div id="insumoDropIco" style="margin-bottom:6px">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--ciano)" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        </div>
+        <div style="font-size:12px;font-weight:600;color:var(--ciano);margin-bottom:3px">Clique ou arraste o print aqui</div>
+        <div style="font-size:10px;color:var(--chumbo)">PNG, JPG, PDF — máx. 10 MB</div>
+        <div id="insumoFileName" style="display:none;margin-top:8px;font-size:11px;color:var(--vok);font-weight:600"></div>
+        <input type="file" id="insumoFile" accept="image/*,.pdf" style="display:none" onchange="insumoOnFileChange(this)">
+      </div>
+
+      <!-- Contexto adicional -->
+      <textarea id="insumoContexto" placeholder="Informações adicionais (opcional): descreva o valor correto, onde aparece no documento, formato esperado..." style="width:100%;padding:8px 10px;border:1.5px solid var(--borda);border-radius:var(--r);font-size:11px;font-family:inherit;font-weight:300;resize:vertical;min-height:56px;outline:none;line-height:1.5"></textarea>
+
+      <div class="insumo-status" id="insumoStatus" style="margin-top:10px"></div>
     </div>
+
+    <style>
+      .insumo-dz-over{border-color:var(--ciano)!important;background:var(--auto-bg)!important}
+    </style>
 
     <!-- Processos -->
     <div class="acc-card" style="margin-bottom:0">
@@ -951,6 +978,29 @@ textarea{resize:vertical;min-height:52px}
 // Configurar worker do PDF.js — evita o warning "fake worker"
 if (typeof pdfjsLib !== 'undefined') {
   pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+}
+
+// ── INSUMO DROP ZONE ──────────────────────────────────────────────────────────
+function insumoOnFileChange(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const nameEl = document.getElementById('insumoFileName');
+  nameEl.textContent = file.name + ' (' + (file.size / 1024).toFixed(0) + ' KB)';
+  nameEl.style.display = 'block';
+  document.getElementById('insumoDropZone').style.borderColor = 'var(--vok)';
+  document.getElementById('insumoDropZone').style.background = 'var(--vok-bg)';
+}
+
+function insumoOnDrop(event) {
+  event.preventDefault();
+  document.getElementById('insumoDropZone').classList.remove('insumo-dz-over');
+  const file = event.dataTransfer.files[0];
+  if (!file) return;
+  const dt = new DataTransfer();
+  dt.items.add(file);
+  const input = document.getElementById('insumoFile');
+  input.files = dt.files;
+  insumoOnFileChange(input);
 }
 
 // ── SELECTS COM OPÇÃO "OUTRO" ─────────────────────────────────────────────────
