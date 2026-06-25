@@ -1,0 +1,1805 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>EAGLE — Cadastro de Processos | SBK</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+  // Configurar worker IMEDIATAMENTE após o carregamento do pdf.js
+  // Deve ocorrer antes de qualquer chamada a pdfjsLib.getDocument()
+  pdfjsLib.GlobalWorkerOptions.workerSrc =
+    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+</script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --verde:#023631;--ciano:#075056;--ciano-med:#2A7C79;--verde-prof:#012824;
+  --chumbo:#4A545E;--off:#ECEFF3;--branco:#fff;
+  --borda:#D8DDE3;--borda-l:#EEF1F5;
+  --vok:#1A7F4B;--vok-bg:#EAF5EE;--vok-b:#b8dfc7;
+  --err:#C0392B;--err-bg:#FEF0EF;--err-b:#f5c6c4;
+  --amb:#92400E;--amb-bg:#FFF8ED;--amb-b:#F4D080;
+  --auto-bg:#EDF6F5;--auto-b:#2A7C79;
+  --ia-bg:#F0F4FF;--ia-b:#C7D4F7;--ia-txt:#1E40AF;
+  --r:8px;--rlg:12px;
+  --shadow:0 1px 4px rgba(2,54,49,.07);
+  --shadow-md:0 2px 12px rgba(2,54,49,.10);
+}
+body{font-family:'Plus Jakarta Sans',Calibri,sans-serif;font-weight:300;background:#F0F3F7;color:#1a2421;font-size:13px;line-height:1.6;min-height:100vh}
+
+/* TOPBAR */
+.topbar{background:var(--verde);height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 28px;position:sticky;top:0;z-index:200;box-shadow:0 2px 12px rgba(0,0,0,.25)}
+.brand{display:flex;align-items:center;gap:12px}
+.cards-sym{display:flex;flex-direction:column;gap:3px;width:22px}
+.cards-sym span{display:block;background:#fff;border-radius:2px;height:5px}
+.cards-sym span:nth-child(1){width:22px;opacity:.9}
+.cards-sym span:nth-child(2){width:14px;opacity:.55}
+.cards-sym span:nth-child(3){width:18px;opacity:.72}
+.brand-txt{color:#fff;font-size:15px;font-weight:600;letter-spacing:.2px}
+.brand-div{width:1px;height:18px;background:rgba(255,255,255,.2);margin:0 4px}
+.brand-sub{color:rgba(255,255,255,.5);font-size:11px;font-weight:300}
+.top-badge{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:3px 10px;color:rgba(255,255,255,.8);font-size:10px;font-weight:500;letter-spacing:.3px}
+
+/* LAYOUT */
+.wrap{display:grid;grid-template-columns:290px 1fr;min-height:calc(100vh - 54px);align-items:start}
+
+/* SIDEBAR */
+.sidebar{background:var(--branco);border-right:1px solid var(--borda-l);position:sticky;top:54px;height:calc(100vh - 54px);overflow-y:auto;display:flex;flex-direction:column}
+.sb-block{padding:16px;border-bottom:1px solid var(--borda-l);flex-shrink:0}
+.sb-label{font-size:9.5px;font-weight:600;text-transform:uppercase;letter-spacing:.7px;color:var(--chumbo);margin-bottom:10px}
+
+/* Upload */
+.drop-zone{border:1.5px dashed var(--borda);border-radius:var(--r);padding:20px 12px;text-align:center;cursor:pointer;transition:all .2s;background:#FAFBFC}
+.drop-zone:hover,.drop-zone.dragover{border-color:var(--ciano);background:var(--auto-bg)}
+.dz-ico{width:36px;height:36px;background:linear-gradient(135deg,var(--auto-bg),#d4ece9);border-radius:8px;display:flex;align-items:center;justify-content:center;margin:0 auto 10px}
+.dz-ico svg{width:18px;height:18px;color:var(--ciano)}
+.dz-title{font-size:12px;font-weight:600;color:var(--verde);margin-bottom:2px}
+.dz-txt{font-size:11px;color:var(--chumbo);margin-bottom:2px}
+.dz-hint{font-size:10px;color:#9aA0a6}
+input[type=file]{display:none}
+
+.file-pill{display:none;align-items:center;gap:8px;background:var(--auto-bg);border:1px solid var(--auto-b);border-radius:var(--r);padding:8px 10px;margin-top:8px}
+.file-pill.show{display:flex}
+.fpdf{width:30px;height:30px;background:var(--verde);border-radius:5px;color:#fff;font-size:8px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.finfo{flex:1;min-width:0}
+.fname{font-size:11px;font-weight:600;color:var(--verde);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fsize{font-size:10px;color:var(--chumbo)}
+.fbtn-rm{background:none;border:none;color:var(--chumbo);cursor:pointer;font-size:14px;padding:2px;border-radius:4px;flex-shrink:0}
+.fbtn-rm:hover{color:var(--err)}
+
+/* Pipeline de análise */
+.pipeline{margin-top:12px;display:none;background:#FAFCFC;border:1px solid var(--borda-l);border-radius:var(--r);overflow:hidden}
+.pipeline-step{display:flex;align-items:center;gap:8px;padding:7px 10px;border-bottom:1px solid var(--borda-l);font-size:11px;color:var(--chumbo);transition:all .2s}
+.pipeline-step:last-child{border:none}
+.step-ico{width:18px;height:18px;border-radius:50%;border:1.5px solid var(--borda);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:8px;color:transparent;transition:all .2s}
+.pipeline-step.done .step-ico{background:var(--vok);border-color:var(--vok);color:#fff;font-size:9px}
+.pipeline-step.active .step-ico{border-color:var(--ciano);border-top-color:transparent;animation:spin .7s linear infinite}
+.pipeline-step.ia .step-ico{border-color:var(--ia-txt)}
+.pipeline-step.ia.active .step-ico{background:var(--ia-bg);border-color:var(--ia-txt);border-top-color:transparent}
+.pipeline-step.ia.done .step-ico{background:var(--ia-txt);border-color:var(--ia-txt)}
+.pipeline-step.done .step-label,.pipeline-step.active .step-label{color:#1a2421;font-weight:500}
+.step-sub{font-size:9px;color:#9aA0a6;margin-left:auto;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.alert-sb{display:none;margin-top:10px;padding:8px 10px;border-radius:var(--r);font-size:11px;line-height:1.5}
+.alert-ok-sb{background:var(--vok-bg);color:var(--vok);border:1px solid var(--vok-b)}
+.alert-err-sb{background:var(--err-bg);color:var(--err);border:1px solid var(--err-b)}
+
+/* Badge Escritório */
+.esc-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 14px;border-radius:20px;font-size:12px;font-weight:600}
+.esc-nd{background:var(--off);color:var(--chumbo);border:1px solid var(--borda)}
+.esc-gerber{background:#FFF3E0;color:#7C4010;border:1px solid #F4C57F}
+.esc-mascarenhas{background:#E3F0FB;color:#1A5A94;border:1px solid #9EC8EF}
+.esc-debellis{background:var(--vok-bg);color:var(--vok);border:1px solid var(--vok-b)}
+.esc-regra{font-size:10px;color:var(--chumbo);margin-top:6px;line-height:1.5}
+
+/* Alertas sidebar */
+.at{display:flex;gap:6px;padding:8px 10px;border-radius:6px;font-size:11px;line-height:1.5;margin-bottom:5px}
+.at.warn{background:var(--amb-bg);color:var(--amb);border:1px solid var(--amb-b)}
+.at.ok{background:var(--vok-bg);color:var(--vok);border:1px solid var(--vok-b)}
+.at.err{background:var(--err-bg);color:var(--err);border:1px solid var(--err-b)}
+.at-ico{flex-shrink:0;font-size:12px;margin-top:1px}
+
+/* DataJud */
+.cq-card{background:var(--off);border:1px solid var(--borda-l);border-radius:var(--r);padding:10px}
+.cq-status{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--chumbo);margin-bottom:8px}
+.cq-dot{width:7px;height:7px;border-radius:50%;background:var(--borda);flex-shrink:0}
+.cq-dot.busy{background:var(--ciano);animation:pulse 1s ease-in-out infinite}
+.cq-dot.ok{background:var(--vok)}
+.cq-dot.fail{background:var(--amb)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.cq-row{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:3px 0;border-bottom:.5px solid var(--borda-l);font-size:11px}
+.cq-row:last-child{border:none}
+.cq-k{color:var(--chumbo);font-size:10px;text-transform:uppercase;letter-spacing:.3px}
+.cq-v{font-weight:600;color:var(--verde);text-align:right;max-width:150px;word-break:break-word}
+.btn-cq{width:100%;margin-top:8px;padding:6px;border-radius:6px;border:1px solid var(--ciano);background:transparent;color:var(--ciano);font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s}
+.btn-cq:hover{background:var(--auto-bg)}
+
+/* Painel de correção / aprendizado */
+.learn-panel{}
+.learn-field{width:100%;margin-bottom:6px;font-size:11px;padding:7px 9px;border:1.5px solid var(--borda);border-radius:var(--r);font-family:inherit;background:var(--branco);color:#1a2421;outline:none}
+.learn-field:focus{border-color:var(--ciano)}
+.btn-learn{width:100%;padding:8px;background:linear-gradient(135deg,var(--ciano),var(--ciano-med));color:#fff;border:none;border-radius:var(--r);font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;transition:opacity .15s}
+.btn-learn:hover{opacity:.9}
+.btn-learn:disabled{opacity:.4;cursor:default}
+.learn-status{display:none;font-size:10px;margin-top:6px;padding:6px 8px;border-radius:5px;line-height:1.5}
+.learn-status.busy{background:var(--ia-bg);color:var(--ia-txt)}
+.learn-status.ok{background:var(--vok-bg);color:var(--vok)}
+.learn-status.err{background:var(--err-bg);color:var(--err)}
+
+.padrao-item{background:var(--off);border-radius:5px;padding:6px 8px;margin-bottom:4px;display:flex;align-items:flex-start;gap:6px}
+.padrao-info{flex:1;min-width:0}
+.padrao-desc{font-size:10px;color:#333;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.padrao-meta{font-size:9px;color:var(--chumbo);margin-top:1px}
+.padrao-conf{font-size:9px;font-weight:600}
+.conf-alta{color:var(--vok)}
+.conf-media{color:var(--amb)}
+.conf-baixa{color:#999}
+.btn-del-padrao{background:none;border:none;color:var(--err);cursor:pointer;font-size:14px;padding:0;line-height:1;flex-shrink:0;margin-top:1px}
+
+/* MAIN */
+.main{padding:20px 24px 40px;overflow-y:auto}
+
+/* Cards de seção */
+.scard{background:var(--branco);border:1px solid var(--borda-l);border-radius:var(--rlg);margin-bottom:10px;box-shadow:var(--shadow)}
+.scard-head{display:flex;align-items:center;gap:10px;padding:11px 16px;border-bottom:1px solid var(--borda-l);background:#FAFCFC;border-radius:var(--rlg) var(--rlg) 0 0}
+.scard-ico{width:26px;height:26px;background:linear-gradient(135deg,var(--auto-bg),#d4ece9);border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.scard-ico svg{width:13px;height:13px;color:var(--ciano)}
+.scard-ttl{font-size:12px;font-weight:600;color:var(--verde);flex:1}
+.scard-body{padding:14px 16px}
+
+/* Indicador IA no cabeçalho da seção */
+.ia-tag{display:inline-flex;align-items:center;gap:4px;background:var(--ia-bg);border:1px solid var(--ia-b);border-radius:10px;padding:2px 8px;font-size:9.5px;font-weight:600;color:var(--ia-txt)}
+
+/* Grids */
+.g1{display:grid;gap:10px 14px;grid-template-columns:1fr}
+.g2{display:grid;gap:10px 14px;grid-template-columns:1fr 1fr}
+.g3{display:grid;gap:10px 14px;grid-template-columns:1fr 1fr 1fr}
+.g4{display:grid;gap:10px 14px;grid-template-columns:1fr 1fr 1fr 1fr}
+.s2{grid-column:span 2}
+.s3{grid-column:span 3}
+.s4{grid-column:span 4}
+.mb10{margin-bottom:10px}
+
+/* Campo */
+.fg{display:flex;flex-direction:column;gap:4px}
+.fg label{font-size:10px;font-weight:600;color:var(--chumbo);text-transform:uppercase;letter-spacing:.45px;display:flex;align-items:center;gap:5px}
+.lhint{font-size:9.5px;font-weight:300;color:#9aA0a6;text-transform:none;letter-spacing:0}
+
+input[type=text],select,textarea{
+  width:100%;padding:7px 10px;border:1.5px solid var(--borda);border-radius:var(--r);
+  font-size:12px;font-family:inherit;font-weight:300;color:#1a2421;background:var(--branco);
+  transition:border-color .15s,background .15s;outline:none;line-height:1.4
+}
+input:focus,select:focus,textarea:focus{border-color:var(--ciano);box-shadow:0 0 0 3px rgba(7,80,86,.07)}
+input.auto,select.auto,textarea.auto{border-color:var(--auto-b);background:var(--auto-bg)}
+input.ia-filled,select.ia-filled,textarea.ia-filled{border-color:var(--ia-b);background:var(--ia-bg)}
+input.locked,select.locked{border-color:var(--ciano);background:var(--auto-bg);font-weight:600;color:var(--ciano)}
+input.field-ok,select.field-ok{border-color:var(--vok)!important;background:var(--vok-bg)}
+input.field-err,select.field-err{border-color:var(--err)!important;background:var(--err-bg)}
+
+select{
+  appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%234A545E' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 9px center;padding-right:28px;cursor:pointer
+}
+textarea{resize:vertical;min-height:52px}
+
+/* Réus */
+.reu-list{display:flex;flex-direction:column;gap:6px}
+.reu-row{display:grid;grid-template-columns:1fr 164px 26px;gap:6px;align-items:center}
+.btn-add{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border:1.5px dashed var(--borda);border-radius:var(--r);background:transparent;color:var(--chumbo);font-size:11px;font-family:inherit;cursor:pointer;margin-top:8px;transition:all .15s}
+.btn-add:hover{border-color:var(--ciano);color:var(--ciano);background:var(--auto-bg)}
+.btn-del{width:26px;height:26px;border-radius:6px;border:1.5px solid var(--err-b);color:var(--err);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;transition:all .12s}
+.btn-del:hover{background:var(--err);color:#fff}
+
+/* Legenda de cores dos campos */
+.field-legend{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.legend-item{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--chumbo)}
+.legend-dot{width:8px;height:8px;border-radius:50%}
+
+/* Footer */
+.footer{display:flex;justify-content:flex-end;gap:10px;padding:16px 0 0}
+.btn-clear{padding:8px 18px;border:1.5px solid var(--borda);border-radius:var(--r);background:transparent;color:var(--chumbo);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s}
+.btn-clear:hover{border-color:var(--ciano);color:var(--ciano)}
+.btn-export{padding:8px 22px;background:var(--verde);color:#fff;border:none;border-radius:var(--r);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px;transition:background .15s}
+.btn-export:hover{background:var(--ciano)}
+
+/* Responsivo */
+@media(max-width:860px){.wrap{grid-template-columns:1fr}.sidebar{position:static;height:auto}}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="cards-sym"><span></span><span></span><span></span></div>
+    <span class="brand-txt">EAGLE</span>
+    <div class="brand-div"></div>
+    <span class="brand-sub">Cadastro de Processos</span>
+  </div>
+  <span class="top-badge">SBK Legal Operations</span>
+</header>
+
+<div class="wrap">
+
+<!-- ===== SIDEBAR ===== -->
+<aside class="sidebar">
+
+  <!-- Upload -->
+  <div class="sb-block">
+    <div class="sb-label">Petição / Processo</div>
+    <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()"
+         ondragover="event.preventDefault();this.classList.add('dragover')"
+         ondragleave="this.classList.remove('dragover')"
+         ondrop="onDrop(event)">
+      <div class="dz-ico">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="12" x2="12" y2="18"/><line x1="9" y1="15" x2="12" y2="12"/><line x1="15" y1="15" x2="12" y2="12"/></svg>
+      </div>
+      <div class="dz-title">Carregar PDF</div>
+      <div class="dz-txt">Arraste ou clique para selecionar</div>
+      <div class="dz-hint">Petição inicial, capa de processo, agravo</div>
+    </div>
+    <input type="file" id="fileInput" accept=".pdf,application/pdf">
+
+    <div class="file-pill" id="fileCard">
+      <div class="fpdf">PDF</div>
+      <div class="finfo">
+        <div class="fname" id="fileName"></div>
+        <div class="fsize" id="fileSize"></div>
+      </div>
+      <button class="fbtn-rm" onclick="removerArquivo()">✕</button>
+    </div>
+
+    <!-- Pipeline de análise -->
+    <div class="pipeline" id="pipeline">
+      <div class="pipeline-step" id="ps1">
+        <div class="step-ico">✓</div>
+        <span class="step-label">Extraindo texto do PDF</span>
+        <span class="step-sub" id="ps1sub"></span>
+      </div>
+      <div class="pipeline-step ia" id="ps2">
+        <div class="step-ico">✓</div>
+        <span class="step-label">IA analisando a petição</span>
+        <span class="step-sub" id="ps2sub"></span>
+      </div>
+      <div class="pipeline-step" id="ps3">
+        <div class="step-ico">✓</div>
+        <span class="step-label">Preenchendo formulário</span>
+        <span class="step-sub" id="ps3sub"></span>
+      </div>
+      <div class="pipeline-step" id="ps4">
+        <div class="step-ico">✓</div>
+        <span class="step-label">Consultando DataJud CNJ</span>
+        <span class="step-sub" id="ps4sub"></span>
+      </div>
+    </div>
+
+    <div class="alert-sb" id="alertMsg"></div>
+  </div>
+
+  <!-- Escritório designado -->
+  <div class="sb-block">
+    <div class="sb-label">Escritório designado</div>
+    <div id="escritorioBadge"><span class="esc-badge esc-nd">Aguardando análise</span></div>
+    <div class="esc-regra" id="escritorioRegra">Carregue a petição para determinação automática.</div>
+  </div>
+
+  <!-- Alertas automáticos -->
+  <div class="sb-block" id="alertasWrap" style="display:none">
+    <div class="sb-label">Atenção</div>
+    <div id="alertasArea"></div>
+  </div>
+
+  <!-- DataJud -->
+  <div class="sb-block" id="consultaWrap" style="display:none">
+    <div class="sb-label">Consulta DataJud CNJ</div>
+    <div class="cq-card">
+      <div class="cq-status"><div class="cq-dot busy" id="cqDot"></div><span id="cqStatusTxt">Buscando...</span></div>
+      <div id="cqResultado"></div>
+      <button class="btn-cq" id="btnAplicarCq" style="display:none" onclick="aplicarDadosCq()">↓ Aplicar dados do DataJud</button>
+    </div>
+  </div>
+
+  <!-- Painel de correção e aprendizado -->
+  <div class="sb-block">
+    <div class="sb-label">Corrigir e ensinar a IA</div>
+    <p style="font-size:10px;color:var(--chumbo);margin-bottom:10px;line-height:1.5">
+      Quando um campo sair errado, corrija aqui. A IA aprende onde encontrar essa informação nas próximas análises.
+    </p>
+
+    <select id="learnCampo" class="learn-field">
+      <option value="">Qual campo está errado?</option>
+      <option value="npu">NPU (número do processo)</option>
+      <option value="numero_origem">Número de origem</option>
+      <option value="valor_causa">Valor da causa</option>
+      <option value="rito">Rito / classe processual</option>
+      <option value="vara_cartorio">Vara / Cartório</option>
+      <option value="comarca">Comarca</option>
+      <option value="data_ajuizamento">Data de ajuizamento</option>
+      <option value="autor_nome">Nome do autor</option>
+      <option value="autor_cpf">CPF do autor</option>
+      <option value="objeto_principal">Objeto principal</option>
+      <option value="causa_raiz">Causa raiz</option>
+      <option value="desconto_conta">Desconto em conta</option>
+      <option value="advogado_nome">Nome do advogado</option>
+      <option value="advogado_oab">OAB do advogado</option>
+    </select>
+
+    <input type="text" id="learnValor" class="learn-field" placeholder="Valor correto">
+
+    <button class="btn-learn" id="btnLearn" onclick="aprenderCorrecao()" disabled>
+      IA aprende este padrão →
+    </button>
+
+    <div class="learn-status" id="learnStatus"></div>
+
+    <div style="margin-top:12px;border-top:1px solid var(--borda-l);padding-top:10px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <span style="font-size:9px;font-weight:600;color:var(--chumbo);text-transform:uppercase;letter-spacing:.5px">Padrões aprendidos</span>
+        <button onclick="limparPadroes()" style="background:none;border:none;color:var(--err);font-size:10px;cursor:pointer;font-family:inherit">Limpar tudo</button>
+      </div>
+      <div id="padroesWrap"></div>
+    </div>
+  </div>
+
+</aside>
+
+<!-- ===== MAIN FORM ===== -->
+<main class="main">
+
+  <!-- Legenda -->
+  <div class="field-legend">
+    <div class="legend-item"><div class="legend-dot" style="background:var(--auto-b)"></div>Preenchido por regex</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--ia-b)"></div>Preenchido pela IA</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--vok)"></div>Confirmado</div>
+  </div>
+
+  <!-- ① DADOS PROCESSUAIS -->
+  <div class="scard">
+    <div class="scard-head">
+      <div class="scard-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 7h8M8 11h8M8 15h5"/></svg></div>
+      <span class="scard-ttl">Dados processuais</span>
+      <span class="ia-tag">✦ IA</span>
+    </div>
+    <div class="scard-body">
+      <div class="g1 mb10">
+        <div class="fg">
+          <label>Número do processo (NPU CNJ)</label>
+          <input type="text" id="f_npu" placeholder="0000000-00.0000.0.00.0000" oninput="onNpuChange(this.value)">
+        </div>
+      </div>
+      <div class="g4 mb10">
+        <div class="fg">
+          <label>UF</label>
+          <select id="f_uf"><option value="">UF</option>
+            <option>AC</option><option>AL</option><option>AM</option><option>AP</option><option>BA</option>
+            <option>CE</option><option>DF</option><option>ES</option><option>GO</option><option>MA</option>
+            <option>MG</option><option>MS</option><option>MT</option><option>PA</option><option>PB</option>
+            <option>PE</option><option>PI</option><option>PR</option><option>RJ</option><option>RN</option>
+            <option>RO</option><option>RR</option><option>RS</option><option>SC</option><option>SE</option>
+            <option>SP</option><option>TO</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label>Comarca</label>
+          <input type="text" id="f_comarca" placeholder="Cidade">
+        </div>
+        <div class="fg">
+          <label>Dt. Ajuizamento</label>
+          <input type="text" id="f_data_ajuizamento" placeholder="DD/MM/AAAA">
+        </div>
+        <div class="fg">
+          <label>Dt. Citação <span class="lhint">(manual)</span></label>
+          <input type="text" id="f_data_citacao" placeholder="DD/MM/AAAA">
+        </div>
+      </div>
+      <div class="g3 mb10">
+        <div class="fg">
+          <label>Valor da causa</label>
+          <input type="text" id="f_valor_causa" placeholder="R$ 0,00">
+        </div>
+        <div class="fg">
+          <label>Vara / Cartório</label>
+          <input type="text" id="f_vara_cartorio" placeholder="Ex: 3ª Vara Cível">
+        </div>
+        <div class="fg">
+          <label>Número de origem</label>
+          <input type="text" id="f_numero_origem" placeholder="Se não houver, igual ao NPU">
+        </div>
+      </div>
+      <div class="g4">
+        <div class="fg">
+          <label>Tipo de justiça</label>
+          <select id="f_tipo_justica">
+            <option value="">Selecione</option>
+            <option>ESTADUAL</option><option>FEDERAL</option><option>TRABALHISTA</option>
+            <option>MILITAR</option><option>ELEITORAL</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label>Fase processual</label>
+          <select id="f_fase_processual">
+            <option value="">Selecione</option>
+            <option>Conhecimento</option><option>Cumprimento de Sentença</option>
+            <option>Execução</option><option>Inicial</option><option>Recursal</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label>Rito</label>
+          <select id="f_rito">
+            <option value="">Selecione</option>
+            <option>Procedimento Comum Cível</option><option>Juizado Especial Cível</option>
+            <option>Juizado Especial</option><option>Cumprimento de Sentença</option>
+            <option>Superendividamento</option><option>Agravo de Instrumento</option>
+            <option>Agravo</option><option>Execução</option><option>Mandado de Segurança</option>
+            <option>Ação Civil Pública</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label>Tipo de documento</label>
+          <select id="f_tipo_documento">
+            <option value="">Selecione</option>
+            <option>Petição Inicial</option><option>Inicial</option><option>Contestação</option>
+            <option>Recurso</option><option>Agravo</option><option>Embargos</option>
+            <option>Sentença</option><option>Acórdão</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ② CLASSIFICAÇÃO -->
+  <div class="scard">
+    <div class="scard-head">
+      <div class="scard-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+      <span class="scard-ttl">Classificação do processo</span>
+      <span class="ia-tag">✦ IA</span>
+    </div>
+    <div class="scard-body">
+      <div class="g2 mb10">
+        <div class="fg">
+          <label>Objeto principal</label>
+          <select id="f_objeto_principal">
+            <option value="">Selecione</option>
+            <option>SUPERENDIVIDAMENTO</option>
+            <option>DÉBITO EM CONTA - ASSISTÊNCIA VERBIN</option>
+            <option>EMPRÉSTIMO CONSIGNADO</option>
+            <option>COBRANÇA INDEVIDA</option>
+            <option>REVISÃO CONTRATUAL</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label>Causa raiz</label>
+          <select id="f_causa_raiz">
+            <option value="">Selecione</option>
+            <option>Superendividamento</option>
+            <option>DÉBITO EM CONTA - ASSISTÊNCIA VERBIN</option>
+            <option>Empréstimo consignado</option>
+            <option>Cobrança indevida de seguro</option>
+            <option>Desconto indevido</option>
+            <option>Revisão contratual</option>
+            <option>Cliente não reconhece a contratação</option>
+          </select>
+        </div>
+      </div>
+      <div class="g2">
+        <div class="fg">
+          <label>Desconto em conta bancária <span class="lhint">(não = consignado em folha)</span></label>
+          <select id="f_desconto_conta">
+            <option value="">Selecione</option>
+            <option value="Sim">Sim — desconto em conta corrente</option>
+            <option value="Não">Não</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label>Pedido <span class="lhint">(preencher manualmente no EAGLE)</span></label>
+          <select id="f_pedido">
+            <option value="">Selecione</option>
+            <option>Tutela de urgência</option><option>Liminar</option>
+            <option>Antecipação de tutela</option><option>Indenização por danos morais</option>
+            <option>Indenização por danos materiais</option><option>Repetição de indébito</option>
+            <option>Rescisão contratual</option><option>Cumprimento de obrigação de fazer</option>
+            <option>Declaração de inexistência de relação</option><option>Revisão de contrato</option>
+            <option>Repactuação de dívidas</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ③ AUTOR -->
+  <div class="scard">
+    <div class="scard-head">
+      <div class="scard-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+      <span class="scard-ttl">Autor</span>
+      <span class="ia-tag">✦ IA</span>
+    </div>
+    <div class="scard-body">
+      <div class="g2">
+        <div class="fg">
+          <label>Nome completo</label>
+          <input type="text" id="f_autor_nome" placeholder="Nome completo do autor">
+        </div>
+        <div class="fg">
+          <label>CPF</label>
+          <input type="text" id="f_autor_cpf" placeholder="000.000.000-00">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ④ RÉUS -->
+  <div class="scard">
+    <div class="scard-head">
+      <div class="scard-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+      <span class="scard-ttl">Réus</span>
+      <span class="ia-tag">✦ IA</span>
+    </div>
+    <div class="scard-body">
+      <div class="reu-list" id="reuList"></div>
+      <button class="btn-add" onclick="addReu()">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Adicionar réu
+      </button>
+    </div>
+  </div>
+
+  <!-- ⑤ ADVOGADO -->
+  <div class="scard">
+    <div class="scard-head">
+      <div class="scard-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-4 0v2"/></svg></div>
+      <span class="scard-ttl">Advogado</span>
+      <span class="ia-tag">✦ IA</span>
+    </div>
+    <div class="scard-body">
+      <div style="display:grid;grid-template-columns:1fr 80px 150px;gap:10px 12px;align-items:end">
+        <div class="fg">
+          <label>Nome completo</label>
+          <input type="text" id="f_advogado_nome" placeholder="Nome do advogado">
+        </div>
+        <div class="fg">
+          <label>UF OAB</label>
+          <select id="f_advogado_uf">
+            <option value="">UF</option>
+            <option>AC</option><option>AL</option><option>AM</option><option>AP</option><option>BA</option>
+            <option>CE</option><option>DF</option><option>ES</option><option>GO</option><option>MA</option>
+            <option>MG</option><option>MS</option><option>MT</option><option>PA</option><option>PB</option>
+            <option>PE</option><option>PI</option><option>PR</option><option>RJ</option><option>RN</option>
+            <option>RO</option><option>RR</option><option>RS</option><option>SC</option><option>SE</option>
+            <option>SP</option><option>TO</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label>Número OAB <span class="lhint">(6 dígitos)</span></label>
+          <input type="text" id="f_advogado_oab" placeholder="015800">
+        </div>
+      </div>
+      <div style="margin-top:10px">
+        <div class="fg">
+          <label>Escritório / nome do causídico</label>
+          <input type="text" id="f_advogado_escritorio" placeholder="Nome do escritório ou advogado responsável">
+        </div>
+      </div>
+      <div id="extraAdvogados"></div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <button class="btn-clear" onclick="limparFormulario()">Limpar tudo</button>
+    <button class="btn-export" onclick="exportarCampos()">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/></svg>
+      Exportar campos
+    </button>
+  </div>
+
+</main>
+</div>
+
+<script>
+// ─────────────────────────────────────────────
+// FILTRO DE WARNINGS INOFENSIVOS DO PDF.JS
+// ─────────────────────────────────────────────
+// O pdf.js emite "TT: undefined function: 21" para fontes OpenType com
+// instruções de hint não suportadas. É inofensivo e não afeta a extração
+// de texto. Filtramos para não poluir o console.
+(function() {
+  const _warn  = console.warn.bind(console);
+  const _error = console.error.bind(console);
+  const FILTROS = [
+    /TT:\s*undefined function/i,
+    /fake worker/i,
+    /Setting up fake worker/i,
+    /Warning: TT/i
+  ];
+  const deveSuprimir = (...args) =>
+    args.some(a => typeof a === 'string' && FILTROS.some(rx => rx.test(a)));
+  console.warn  = (...args) => { if (!deveSuprimir(...args)) _warn(...args); };
+  console.error = (...args) => { if (!deveSuprimir(...args)) _error(...args); };
+})();
+
+// ─────────────────────────────────────────────
+// CONFIG
+// ─────────────────────────────────────────────
+// workerSrc configurado no script inline logo após pdf.min.js
+
+const MAP_TRIBUNAL = {
+  '01':'AC','02':'AL','03':'AM','04':'AP','05':'BA','06':'CE','07':'DF',
+  '08':'ES','09':'GO','10':'MA','11':'MT','12':'MS','13':'MG','14':'PA',
+  '15':'PB','16':'PR','17':'PE','18':'PI','19':'RJ','20':'RN','21':'RS',
+  '22':'RO','23':'RR','24':'SC','25':'SE','26':'SP','27':'TO'
+};
+
+const ROTULOS = {
+  npu:'NPU',numero_origem:'Número de origem',valor_causa:'Valor da causa',
+  rito:'Rito',vara_cartorio:'Vara/Cartório',comarca:'Comarca',
+  data_ajuizamento:'Data de ajuizamento',autor_nome:'Nome do autor',
+  autor_cpf:'CPF do autor',objeto_principal:'Objeto principal',
+  causa_raiz:'Causa raiz',desconto_conta:'Desconto em conta',
+  advogado_nome:'Advogado',advogado_oab:'OAB'
+};
+
+let pdfBuffer = null;
+let textoGlobal = '';
+let dadosCq = null;
+let padroesAprendidos = JSON.parse(localStorage.getItem('eagle_padroes_v3') || '{}');
+let reuCount = 0;
+
+// ─────────────────────────────────────────────
+// UPLOAD
+// ─────────────────────────────────────────────
+document.getElementById('fileInput').addEventListener('change', e => {
+  if (e.target.files[0]) carregarArquivo(e.target.files[0]);
+});
+document.getElementById('dropZone').addEventListener('dragover', e => e.preventDefault());
+
+function onDrop(e) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('dragover');
+  const f = e.dataTransfer.files[0];
+  if (f && f.name.toLowerCase().endsWith('.pdf')) carregarArquivo(f);
+}
+
+function carregarArquivo(file) {
+  document.getElementById('fileName').textContent = file.name;
+  document.getElementById('fileSize').textContent = (file.size/1024).toFixed(0) + ' KB';
+  document.getElementById('fileCard').classList.add('show');
+  document.getElementById('dropZone').style.display = 'none';
+  document.getElementById('alertMsg').style.display = 'none';
+  const r = new FileReader();
+  r.onload = ev => { pdfBuffer = ev.target.result; analisarPDF(); };
+  r.readAsArrayBuffer(file);
+}
+
+function removerArquivo() {
+  pdfBuffer = null; textoGlobal = '';
+  document.getElementById('fileCard').classList.remove('show');
+  document.getElementById('dropZone').style.display = '';
+  document.getElementById('fileInput').value = '';
+  document.getElementById('pipeline').style.display = 'none';
+  document.getElementById('alertMsg').style.display = 'none';
+  document.getElementById('btnLearn').disabled = true;
+}
+
+// ─────────────────────────────────────────────
+// PIPELINE UI
+// ─────────────────────────────────────────────
+function setStep(n, sub) {
+  const el = document.getElementById('pipeline');
+  el.style.display = 'block';
+  for (let i=1;i<=4;i++) {
+    const s = document.getElementById('ps'+i);
+    s.classList.remove('active','done');
+    if (i < n) s.classList.add('done');
+    else if (i === n) s.classList.add('active');
+  }
+  if (sub !== undefined && document.getElementById('ps'+n+'sub')) {
+    document.getElementById('ps'+n+'sub').textContent = sub||'';
+  }
+}
+function doneStep(n, sub) {
+  const s = document.getElementById('ps'+n);
+  s.classList.remove('active'); s.classList.add('done');
+  if (sub && document.getElementById('ps'+n+'sub')) document.getElementById('ps'+n+'sub').textContent = sub;
+}
+
+// ─────────────────────────────────────────────
+// ANÁLISE PRINCIPAL
+// ─────────────────────────────────────────────
+async function analisarPDF() {
+  if (!pdfBuffer) return;
+
+  try {
+    setStep(1);
+
+    // ── Converter para base64 ANTES de qualquer uso do buffer ──
+    // pdf.js transfere (detach) o ArrayBuffer para o worker na linha seguinte,
+    // tornando-o inutilizável. Por isso convertemos primeiro.
+    const b64 = arrayBufferToBase64(pdfBuffer);
+
+    // ── Passar uma CÓPIA do buffer para o pdf.js (preserva o original) ──
+    const bufferCopia = pdfBuffer.slice(0);
+    const pdf = await pdfjsLib.getDocument({ data: bufferCopia }).promise;
+    const totalPaginas = pdf.numPages;
+
+    let texto = '';
+    for (let p = 1; p <= Math.min(totalPaginas, 20); p++) {
+      const page    = await pdf.getPage(p);
+      const content = await page.getTextContent();
+      let linhaAtual = '';
+      let ultimaY    = null;
+      let ultimaX    = null;
+      content.items.forEach(item => {
+        const y = Math.round(item.transform[5]);
+        const x = item.transform[4];
+        if (ultimaY !== null && Math.abs(y - ultimaY) > 3) {
+          if (linhaAtual.trim()) texto += linhaAtual.trim() + '\n';
+          linhaAtual = item.str;
+        } else {
+          const gap = ultimaX !== null ? (x - ultimaX) : 0;
+          linhaAtual += (gap > 8 ? ' ' : '') + item.str;
+        }
+        ultimaX = x + (item.width || 0);
+        ultimaY = y;
+      });
+      if (linhaAtual.trim()) texto += linhaAtual.trim() + '\n';
+      texto += '\n';
+    }
+
+    // Normalização
+    texto = texto
+      .replace(/\r/g, '')
+      .replace(/[ \t]{3,}/g, '  ')
+      .replace(/\n{4,}/g, '\n\n\n')
+      .replace(/([^\n])\n([^\n])/g, '$1 $2')
+      .replace(/\n\n([^\n])/g, '\n\n$1')
+      .trim();
+
+    textoGlobal = texto;
+    doneStep(1, `${totalPaginas} págs · ${Math.round(texto.length / 1000)}k chars`);
+
+    if (texto.length < 80) {
+      const campos = extrairRegex(texto);
+      preencherFormulario(campos, 'regex');
+      mostrarAlerta('err', 'PDF escaneado — texto não legível. Preencha os campos manualmente.');
+      if (campos.npu) consultarDataJud(campos.npu);
+      document.getElementById('btnLearn').disabled = false;
+      return;
+    }
+
+    // PASSO 2: IA com PDF base64 (já convertido antes do pdf.js)
+    setStep(2, 'aguarde...');
+    const camposIA    = await extrairComIAComDocumento(b64, texto);
+    const camposRegex = extrairRegex(texto);
+    const camposFinal = mesclarCampos(camposRegex, camposIA);
+    doneStep(2, camposIA._confianca || 'ok');
+
+    // PASSO 3: Preencher
+    setStep(3);
+    preencherFormulario(camposFinal, camposIA._fonte || 'ia');
+    doneStep(3);
+
+    document.getElementById('btnLearn').disabled = false;
+
+    // PASSO 4: DataJud
+    if (camposFinal.npu) {
+      setStep(4, 'buscando...');
+      consultarDataJud(camposFinal.npu);
+    } else {
+      doneStep(4, 'sem NPU');
+    }
+
+    mostrarAlerta('ok', 'Análise concluída. Campos em azul = preenchidos pela IA. Revise antes de cadastrar.');
+
+  } catch(err) {
+    console.error('Erro na análise:', err);
+    mostrarAlerta('err', 'Erro ao processar o PDF: ' + err.message);
+    document.getElementById('pipeline').style.display = 'none';
+  }
+}
+
+// Converter ArrayBuffer para base64
+function arrayBufferToBase64(buffer) {
+  const bytes = new Uint8Array(buffer);
+  let bin = '';
+  const chunk = 8192;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    bin += String.fromCharCode(...bytes.subarray(i, i + chunk));
+  }
+  return btoa(bin);
+}
+
+// ─────────────────────────────────────────────
+// EXTRAÇÃO POR IA — ESTRATÉGIA PRIMÁRIA: PDF como documento base64
+// A IA lê o PDF diretamente, sem depender da qualidade do extrator de texto
+// ─────────────────────────────────────────────
+async function extrairComIAComDocumento(b64pdf, textoFallback) {
+  const padroesCtx = Object.entries(padroesAprendidos).length > 0
+    ? '\n\nPADRÕES APRENDIDOS COM CORREÇÕES ANTERIORES:\n' +
+      Object.entries(padroesAprendidos)
+        .map(([campo, ps]) => ps.map(p =>
+          `- ${ROTULOS[campo]||campo}: "${p.descricao}" → ex: "${p.valorExemplo}"`).join('\n'))
+        .join('\n')
+    : '';
+
+  const instrucoes = buildPromptInstrucoes(padroesCtx);
+
+  // ── Estratégia 1: PDF como documento (mais precisa) ──
+  try {
+    const resp = await fetch('/api/extrair', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        tipo: 'extrair_pdf',
+        pdf_b64: b64pdf,
+        instrucoes: instrucoes
+      })
+    });
+
+    if (resp.ok) {
+      const data = await resp.json();
+      if (!data.error) {
+        const resultado = parsearRespostaIA(data);
+        if (resultado && resultado.npu) {
+          resultado._fonte = 'ia';
+          resultado._estrategia = 'pdf-documento';
+          console.log('✅ IA via PDF documento:', resultado);
+          return resultado;
+        }
+      }
+    }
+    console.warn('PDF documento falhou, tentando com texto...');
+  } catch(e) {
+    console.warn('Erro estratégia PDF documento:', e.message);
+  }
+
+  // ── Estratégia 2: Texto otimizado (fallback) ──
+  return await extrairComIA(textoFallback);
+}
+
+// ─────────────────────────────────────────────
+// EXTRAÇÃO POR IA — ESTRATÉGIA SECUNDÁRIA: texto puro
+// ─────────────────────────────────────────────
+async function extrairComIA(texto) {
+  const padroesCtx = Object.entries(padroesAprendidos).length > 0
+    ? '\n\nPADRÕES APRENDIDOS:\n' +
+      Object.entries(padroesAprendidos)
+        .map(([campo, ps]) => ps.map(p =>
+          `- ${ROTULOS[campo]||campo}: "${p.descricao}" → ex: "${p.valorExemplo}"`).join('\n'))
+        .join('\n')
+    : '';
+
+  const instrucoes = buildPromptInstrucoes(padroesCtx);
+
+  // Montar texto otimizado: priorizar início (capa/cabeçalho) + final (valor/assinatura)
+  // A capa ePROC/PJe tem toda a informação estruturada nas primeiras ~4000 chars
+  const inicio = texto.substring(0, 5000);
+  const fim    = texto.substring(Math.max(0, texto.length - 3000));
+  const trechoEnvio = inicio + (texto.length > 8000 ? '\n\n[...trecho central omitido...]\n\n' : '') + fim;
+
+  const prompt = instrucoes + `\n\nTEXTO DA PETIÇÃO/PROCESSO:\n${trechoEnvio}`;
+
+  try {
+    const resp = await fetch('/api/extrair', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        tipo: 'extrair_texto',
+        texto: trechoEnvio,
+        instrucoes: instrucoes
+      })
+    });
+
+    if (!resp.ok) {
+      const errBody = await resp.text().catch(() => '');
+      throw new Error(`HTTP ${resp.status}: ${errBody.substring(0, 100)}`);
+    }
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error.message);
+
+    const resultado = parsearRespostaIA(data);
+    resultado._fonte = 'ia';
+    resultado._estrategia = 'texto';
+    resultado._confianca = resultado.confianca || 'media';
+    console.log('✅ IA via texto:', resultado);
+    return resultado;
+
+  } catch(err) {
+    console.error('Erro extração IA (texto):', err);
+    mostrarAlerta('err', `IA indisponível — preenchimento por regex. Revise os campos.`);
+    return { _fonte: 'regex', _erroIA: err.message };
+  }
+}
+
+// ─────────────────────────────────────────────
+// PARSEAR RESPOSTA DA IA (JSON robusto)
+// ─────────────────────────────────────────────
+function parsearRespostaIA(data) {
+  let raw = (data.content?.[0]?.text || '').trim();
+  // Remover blocos de código markdown
+  raw = raw.replace(/^```json\s*/i, '').replace(/^```\s*/, '').replace(/\s*```$/, '').trim();
+  // Extrair JSON se vier com texto antes/depois
+  const jsonMatch = raw.match(/\{[\s\S]*\}/);
+  if (jsonMatch) raw = jsonMatch[0];
+  // Corrigir JSON truncado
+  if (!raw.endsWith('}')) {
+    const ab = (raw.match(/\{/g)||[]).length - (raw.match(/\}/g)||[]).length;
+    const sq = (raw.match(/\[/g)||[]).length - (raw.match(/\]/g)||[]).length;
+    // Fechar arrays abertos primeiro
+    for (let i = 0; i < sq; i++) raw += ']';
+    for (let i = 0; i < ab + 1; i++) raw += '}';
+  }
+
+  let resultado;
+  try {
+    resultado = JSON.parse(raw);
+  } catch (e) {
+    console.warn('JSON malformado, usando extração parcial:', e.message, '\nRAW:', raw.substring(0, 300));
+    resultado = extrairCamposDeTextoIA(raw);
+  }
+
+  // Sanitizar strings "null"/"undefined" para null real
+  Object.keys(resultado).forEach(k => {
+    if (resultado[k] === 'null' || resultado[k] === 'undefined' || resultado[k] === 'N/A') {
+      resultado[k] = null;
+    }
+  });
+
+  return resultado;
+}
+
+// ─────────────────────────────────────────────
+// PROMPT DE INSTRUÇÕES (compartilhado pelas duas estratégias)
+// ─────────────────────────────────────────────
+function buildPromptInstrucoes(padroesCtx) {
+  return `Você é especialista em petições judiciais brasileiras — SBK Legal Operations / EAGLE-IILEX.
+Leia o documento e extraia os campos abaixo com máxima precisão.
+
+REGRAS DE EXTRAÇÃO:
+1. NPU: formato NNNNNNN-NN.AAAA.J.TT.OOOO (ex: 1006021-07.2026.8.13.0525)
+2. UF: do TT do NPU → 01=AC 02=AL 03=AM 04=AP 05=BA 06=CE 07=DF 08=ES 09=GO 10=MA 11=MT 12=MS 13=MG 14=PA 15=PB 16=PR 17=PE 18=PI 19=RJ 20=RN 21=RS 22=RO 23=RR 24=SC 25=SE 26=SP 27=TO
+3. Comarca: cidade do cabeçalho ou "COMARCA DE [cidade]" — apenas o nome da cidade
+4. Data ajuizamento: campo "Data de autuação:" na capa OU data da assinatura no final da petição. Formato: DD/MM/AAAA. NUNCA datas de leis.
+5. Valor da causa: "Dá-se à causa o valor de R$ X" (final) OU "Valor da Causa: R$ X" (capa). Formato: "R$ XX.XXX,XX"
+6. Vara/Cartório: do "Órgão Julgador:" na capa. Ex: "3º JD", "2ª Vara Cível", "1ª VT". Apenas o identificador, sem nome da cidade.
+7. Tipo de justiça: J no NPU → 8=ESTADUAL, 4=FEDERAL, 5=TRABALHISTA
+8. Fase: petição inicial → "Conhecimento" | agravo → "Recursal" | cumprimento → "Cumprimento de Sentença"
+9. Rito: "Classe da ação:" da capa → mapeamento: "PROCEDIMENTO DO JUIZADO ESPECIAL CÍVEL"→"Juizado Especial Cível" | "PROCEDIMENTO COMUM CÍVEL"→"Procedimento Comum Cível"
+10. Tipo documento: petição inicial → "Petição Inicial" | agravo/recurso → "Recurso"
+11. Desconto em conta: "Sim" = débito direto não autorizado em conta corrente bancária. "Não" = empréstimo consignado em contracheque/INSS/folha.
+12. Objeto principal: "DÉBITO EM CONTA - ASSISTÊNCIA VERBIN" | "EMPRÉSTIMO CONSIGNADO" | "SUPERENDIVIDAMENTO" | "COBRANÇA INDEVIDA" | "REVISÃO CONTRATUAL"
+13. Causa raiz: "DÉBITO EM CONTA - ASSISTÊNCIA VERBIN" | "Empréstimo consignado" | "Superendividamento" | "Cobrança indevida de seguro" | "Desconto indevido" | "Revisão contratual" | "Cliente não reconhece a contratação"
+14. Número de origem: mesmo NPU para petição inicial. Processo originário para agravo/cumprimento.
+15. Autor: nome em MAIÚSCULAS antes de "brasileiro/a" → retornar em Title Case
+16. CPF do autor: primeiro CPF NNN.NNN.NNN-NN na qualificação do autor
+17. Réus: TODOS no polo passivo com CNPJ. EAGLE SOCIEDADE DE CREDITO DIRETO (45.745.537/0001-19) → nome: "Futuro Sociedade de Crédito Direto S/A"
+18. Advogado: quem assina ao final da petição (nome antes de "OAB/XX nº XXXXX")
+19. OAB: apenas o número com 6 dígitos, zeros à esquerda. Ex: "247352"
+20. Escritório: nome do advogado/escritório na assinatura
+
+CLASSIFICAÇÃO EAGLE:
+- Débito em conta corrente não autorizado (Eagle/Binclub/seguro) → objeto=DÉBITO EM CONTA - ASSISTÊNCIA VERBIN, desconto_conta=Sim → escritório GERBER
+- Empréstimo consignado/superendividamento → objeto=EMPRÉSTIMO CONSIGNADO, desconto_conta=Não → escritório MASCARENHAS  
+- Trabalhista → escritório DE BELLIS
+${padroesCtx}
+
+Responda SOMENTE com JSON puro, sem markdown:
+{
+  "npu": "string ou null",
+  "uf": "string ou null",
+  "comarca": "string ou null",
+  "data_ajuizamento": "DD/MM/AAAA ou null",
+  "valor_causa": "R$ X.XXX,XX ou null",
+  "vara_cartorio": "string ou null",
+  "numero_origem": "string ou null",
+  "tipo_justica": "ESTADUAL|FEDERAL|TRABALHISTA ou null",
+  "fase_processual": "string ou null",
+  "rito": "string ou null",
+  "tipo_documento": "string ou null",
+  "desconto_conta": "Sim|Não",
+  "objeto_principal": "string ou null",
+  "causa_raiz": "string ou null",
+  "autor_nome": "string ou null",
+  "autor_cpf": "NNN.NNN.NNN-NN ou null",
+  "reus": [{"nome": "string", "cnpj": "string"}],
+  "advogado_nome": "string ou null",
+  "advogado_uf": "string ou null",
+  "advogado_oab": "000000 ou null",
+  "advogado_escritorio": "string ou null",
+  "advogados_extras": [],
+  "confianca": "alta|media|baixa",
+  "observacoes": "string ou null"
+}`;
+}
+
+
+// Extração de emergência quando o JSON da IA vem malformado
+function extrairCamposDeTextoIA(rawText) {
+  const extrai = (campo) => {
+    const rx = new RegExp(`"${campo}"\\s*:\\s*"([^"]*)"`, 'i');
+    const m = rawText.match(rx);
+    return m ? m[1].replace(/\\n/g,' ').trim() : null;
+  };
+  const extraiArr = (campo) => {
+    try {
+      const rx = new RegExp(`"${campo}"\\s*:\\s*(\\[[^\\]]*\\])`, 'i');
+      const m = rawText.match(rx);
+      return m ? JSON.parse(m[1]) : [];
+    } catch { return []; }
+  };
+  return {
+    npu: extrai('npu'), uf: extrai('uf'), comarca: extrai('comarca'),
+    data_ajuizamento: extrai('data_ajuizamento'), valor_causa: extrai('valor_causa'),
+    vara_cartorio: extrai('vara_cartorio'), numero_origem: extrai('numero_origem'),
+    tipo_justica: extrai('tipo_justica'), fase_processual: extrai('fase_processual'),
+    rito: extrai('rito'), tipo_documento: extrai('tipo_documento'),
+    desconto_conta: extrai('desconto_conta'), objeto_principal: extrai('objeto_principal'),
+    causa_raiz: extrai('causa_raiz'), autor_nome: extrai('autor_nome'),
+    autor_cpf: extrai('autor_cpf'), reus: extraiArr('reus'),
+    advogado_nome: extrai('advogado_nome'), advogado_uf: extrai('advogado_uf'),
+    advogado_oab: extrai('advogado_oab'), advogado_escritorio: extrai('advogado_escritorio'),
+    advogados_extras: extraiArr('advogados_extras'),
+    confianca: extrai('confianca'), observacoes: extrai('observacoes'),
+  };
+}
+
+// ─────────────────────────────────────────────
+// EXTRAÇÃO POR REGEX — FALLBACK / COMPLEMENTO
+// ─────────────────────────────────────────────
+function extrairRegex(txt) {
+  const c = {};
+
+  // NPU
+  const npuRx = /\b(\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4})\b/;
+  const mNpu = txt.match(npuRx);
+  if (mNpu) c.npu = mNpu[1];
+  // Fallback: nome do arquivo
+  if (!c.npu) {
+    const nomeArq = document.getElementById('fileName')?.textContent||'';
+    const mArq = nomeArq.match(/(\d{7})[-_](\d{2})[-_.](\d{4})[-_.](\d)[-_.](\d{2})[-_.](\d{4})/);
+    if (mArq) c.npu = `${mArq[1]}-${mArq[2]}.${mArq[3]}.${mArq[4]}.${mArq[5]}.${mArq[6]}`;
+  }
+
+  // UF e tipo de justiça a partir do NPU
+  if (c.npu) {
+    const p = c.npu.match(/\d{7}-\d{2}\.(\d{4})\.(\d)\.(\d{2})\.(\d{4})/);
+    if (p) {
+      if (p[2]==='8') c.tipo_justica='ESTADUAL';
+      else if (p[2]==='4') c.tipo_justica='FEDERAL';
+      else if (p[2]==='5') c.tipo_justica='TRABALHISTA';
+      if (MAP_TRIBUNAL[p[3]]) c.uf = MAP_TRIBUNAL[p[3]];
+    }
+  }
+
+  // Valor da causa
+  const vRx = [
+    /[Dd][áa][\s-]+se\s+[àa]\s+causa\s+o\s+valor\s+de\s+R\$\s*(\d[\d.,]*\d)/,
+    /[Vv]alor\s+da\s+[Cc]ausa\s*:?\s*R\$\s*(\d[\d.,]*\d)/i
+  ];
+  const txtF = txt.replace(/\n/g,' ');
+  for (const rx of vRx) {
+    const m = txtF.match(rx);
+    if (m) { c.valor_causa = 'R$ ' + m[1].trim(); break; }
+  }
+
+  // CPF autor
+  const cpfM = txt.match(/(\d{3}\.\d{3}\.\d{3}-\d{2})/);
+  if (cpfM) c.autor_cpf = cpfM[1];
+
+  // OAB
+  const oabM = txt.match(/OAB\/([A-Z]{2})\s*[Nn]?[.º°]?\s*([\d.]{4,9})/i);
+  if (oabM) {
+    c.advogado_uf = oabM[1].toUpperCase();
+    c.advogado_oab = oabM[2].replace(/\D/g,'').padStart(6,'0');
+  }
+
+  // Desconto em conta — LÓGICA REFINADA
+  // "Sim" = débito direto não autorizado em conta corrente (Eagle, Binclub, seguros via banco)
+  // "Não" = empréstimo consignado em contracheque/folha/INSS (mesmo que mencione conta bancária como destino)
+  const ehConsig = /empréstimo[s]?\s+consignado[s]?|desconto[^.]{0,60}contracheque|consignado[^.]{0,60}(?:INSS|SIAPE|folha)|margem\s+consign|superendividamento/i.test(txt);
+  const ehConta = /d[eé]bito[^.]{0,100}conta\s+corrente|desconto[^.]{0,100}conta\s+corrente|cobranças?\s+indevidas?\s+(?:na|em\s+sua)\s+conta|(?:Eagle|Binclub|BINCLUB|EAGLE)[^.]{0,150}conta\s+corrente/i.test(txt);
+  // Consignado tem prioridade sobre conta corrente — se é consignado, não é VERBIN
+  c.desconto_conta = (ehConta && !ehConsig) ? 'Sim' : 'Não';
+
+  // Objeto/causa raiz básicos
+  if (c.desconto_conta === 'Sim') {
+    c.objeto_principal = 'DÉBITO EM CONTA - ASSISTÊNCIA VERBIN';
+    c.causa_raiz = 'DÉBITO EM CONTA - ASSISTÊNCIA VERBIN';
+    c._verbin = true;
+  } else if (/superendividamento/i.test(txt)) {
+    c.objeto_principal = 'SUPERENDIVIDAMENTO';
+    c.causa_raiz = 'Superendividamento';
+  }
+
+  return c;
+}
+
+// ─────────────────────────────────────────────
+// MESCLAR — IA tem prioridade sobre regex
+// ─────────────────────────────────────────────
+function mesclarCampos(regex, ia) {
+  const resultado = {...regex};
+  // IA sobrescreve qualquer campo que extraiu (mesmo se regex já tinha)
+  const camposIA = ['npu','uf','comarca','data_ajuizamento','valor_causa','vara_cartorio',
+    'numero_origem','tipo_justica','fase_processual','rito','tipo_documento','desconto_conta',
+    'objeto_principal','causa_raiz','autor_nome','autor_cpf','reus','advogado_nome',
+    'advogado_uf','advogado_oab','advogado_escritorio','advogados_extras','confianca','observacoes',
+    '_verbin','_fonte','_erroIA','_confianca'];
+  camposIA.forEach(k => {
+    const v = ia[k];
+    if (v !== null && v !== undefined && v !== '' && !(Array.isArray(v) && v.length===0)) {
+      resultado[k] = v;
+    }
+  });
+  return resultado;
+}
+
+// ─────────────────────────────────────────────
+// PREENCHER FORMULÁRIO
+// ─────────────────────────────────────────────
+function preencherFormulario(c, fonte) {
+  const classeAuto = fonte === 'ia' ? 'ia-filled' : 'auto';
+  let camposPreenchidos = 0;
+  let camposVazios = [];
+
+  function limparVal(v) {
+    if (v === null || v === undefined) return null;
+    const s = String(v).trim();
+    if (s === '' || s === 'null' || s === 'undefined' || s === 'N/A' || s === 'n/a') return null;
+    return s;
+  }
+
+  function set(id, val) {
+    const v = limparVal(val);
+    const el = document.getElementById(id);
+    if (!el) return;
+
+    if (!v) {
+      // Marcar campo como não preenchido para alertas
+      const label = el.closest('.fg')?.querySelector('label')?.textContent?.trim() || id;
+      camposVazios.push(label.replace(/\s*\(.*\)/,'').trim());
+      return;
+    }
+
+    if (el.tagName === 'SELECT') {
+      const vUpper = v.toUpperCase();
+      // 1. Exato por value
+      for (const opt of el.options) {
+        if ((opt.value||'').toUpperCase() === vUpper) {
+          opt.selected = true; el.classList.add(classeAuto); camposPreenchidos++; return;
+        }
+      }
+      // 2. Exato por text
+      for (const opt of el.options) {
+        if ((opt.text||'').trim().toUpperCase() === vUpper) {
+          opt.selected = true; el.classList.add(classeAuto); camposPreenchidos++; return;
+        }
+      }
+      // 3. Parcial — mínimo 8 caracteres para evitar falsos positivos
+      const vParcial = vUpper.substring(0, Math.max(8, Math.floor(vUpper.length * 0.6)));
+      for (const opt of el.options) {
+        if ((opt.text||'').toUpperCase().includes(vParcial)) {
+          opt.selected = true; el.classList.add(classeAuto); camposPreenchidos++; return;
+        }
+      }
+      // 4. Não encontrou opção — registrar como vazio
+      camposVazios.push(`${el.id.replace('f_','').replace(/_/g,' ')} (valor: ${v})`);
+    } else {
+      el.value = v;
+      el.classList.add(classeAuto);
+      camposPreenchidos++;
+    }
+  }
+
+  // Limpar classes anteriores em todos os campos
+  document.querySelectorAll('input,select,textarea').forEach(el => {
+    el.classList.remove('ia-filled','auto','field-ok','field-err','locked');
+  });
+
+  // ── Dados processuais ──
+  set('f_npu', c.npu);
+  set('f_uf', c.uf);
+
+  // Comarca: limpar sufixo de estado
+  if (limparVal(c.comarca)) {
+    let cidade = c.comarca.replace(/[\s,]+(ESTADO\s+DO|ESTADO\s+DA|ESTADO\s+DE|\/[A-Z]{2}|\-[A-Z]{2}).*/i,'').trim();
+    cidade = cidade.split(/\s+/).slice(0,4).join(' ');
+    const el = document.getElementById('f_comarca');
+    if (el && cidade) { el.value = cidade; el.classList.add(classeAuto); camposPreenchidos++; }
+    else camposVazios.push('Comarca');
+  } else camposVazios.push('Comarca');
+
+  set('f_data_ajuizamento', c.data_ajuizamento);
+  set('f_data_citacao',     c.data_ajuizamento); // começa igual, ajuste manual posterior
+  set('f_valor_causa',      c.valor_causa);
+  set('f_vara_cartorio',    c.vara_cartorio);
+  set('f_numero_origem',    c.numero_origem || c.npu);
+  set('f_tipo_justica',     c.tipo_justica);
+  set('f_rito',             c.rito);
+  set('f_fase_processual',  c.fase_processual);
+  set('f_tipo_documento',   c.tipo_documento);
+
+  // ── Classificação ──
+  const elObj   = document.getElementById('f_objeto_principal');
+  const elCausa = document.getElementById('f_causa_raiz');
+  set('f_objeto_principal', c.objeto_principal);
+  set('f_causa_raiz',       c.causa_raiz);
+
+  // VERBIN trava os campos de classificação
+  if (c._verbin) {
+    elObj.disabled = true;   elObj.classList.add('locked');
+    elCausa.disabled = true; elCausa.classList.add('locked');
+  } else {
+    elObj.disabled = false; elCausa.disabled = false;
+  }
+
+  // Desconto em conta
+  const descontoEl = document.getElementById('f_desconto_conta');
+  const descontoVal = limparVal(c.desconto_conta);
+  if (descontoEl && descontoVal) {
+    const target = descontoVal.toLowerCase().startsWith('sim') ? 'Sim' : 'Não';
+    for (const opt of descontoEl.options) {
+      if (opt.value === target) { opt.selected = true; descontoEl.classList.add(classeAuto); camposPreenchidos++; break; }
+    }
+  }
+
+  // Pedido: sempre vazio (preenchimento manual no EAGLE)
+  document.getElementById('f_pedido').value = '';
+
+  // ── Autor ──
+  set('f_autor_nome', c.autor_nome);
+  set('f_autor_cpf',  c.autor_cpf);
+
+  // ── Advogado ──
+  set('f_advogado_nome',       c.advogado_nome);
+  set('f_advogado_uf',         c.advogado_uf);
+  set('f_advogado_oab',        c.advogado_oab);
+  set('f_advogado_escritorio', c.advogado_escritorio);
+
+  // Advogados extras
+  const extraWrap = document.getElementById('extraAdvogados');
+  extraWrap.innerHTML = '';
+  const extras = Array.isArray(c.advogados_extras) ? c.advogados_extras : [];
+  extras.forEach((a, i) => {
+    if (!limparVal(a?.nome)) return;
+    extraWrap.innerHTML += `
+      <div style="display:grid;grid-template-columns:1fr 80px 150px;gap:10px 12px;align-items:end;margin-top:10px;padding-top:10px;border-top:1px dashed var(--borda-l)">
+        <div class="fg"><label>Advogado ${i+2}</label>
+          <input type="text" class="${classeAuto}" value="${a.nome||''}" style="width:100%"></div>
+        <div class="fg"><label>UF OAB</label>
+          <input type="text" class="${classeAuto}" value="${a.uf||''}" style="width:100%"></div>
+        <div class="fg"><label>Número OAB</label>
+          <input type="text" class="${classeAuto}" value="${a.oab||''}" style="width:100%"></div>
+      </div>`;
+  });
+
+  // ── Réus ──
+  document.getElementById('reuList').innerHTML = '';
+  reuCount = 0;
+  const reus = Array.isArray(c.reus) ? c.reus : [];
+  if (reus.length > 0) {
+    reus.forEach(r => addReu(limparVal(r?.nome)||'', limparVal(r?.cnpj)||'', classeAuto));
+  } else {
+    addReu();
+    camposVazios.push('Réus (não identificados)');
+  }
+
+  // ── Escritório ──
+  definirEscritorio(c);
+
+  // ── Contador de preenchimento ──
+  atualizarContador(camposPreenchidos, camposVazios);
+
+  // ── Alertas ──
+  montarAlertas(c, camposVazios);
+}
+
+// ─────────────────────────────────────────────
+// RÉUS
+// ─────────────────────────────────────────────
+function addReu(nome, cnpj, cls) {
+  reuCount++;
+  const id = 'reu_' + reuCount;
+  const div = document.createElement('div');
+  div.className = 'reu-row';
+  div.id = id;
+  div.innerHTML = `
+    <input type="text" placeholder="Nome do réu" value="${nome||''}" class="${cls||''}" style="width:100%">
+    <input type="text" placeholder="CNPJ / CPF" value="${cnpj||''}" class="${cls||''}" style="width:100%">
+    <button class="btn-del" onclick="document.getElementById('${id}').remove()" title="Remover">✕</button>`;
+  document.getElementById('reuList').appendChild(div);
+}
+
+// ─────────────────────────────────────────────
+// ESCRITÓRIO — Regras SBK
+// DE BELLIS  → trabalhista (prioridade máxima)
+// GERBER     → desconto em conta corrente (VERBIN / cobrança indevida via banco)
+// MASCARENHAS→ empréstimo consignado, superendividamento, demais cível
+// ─────────────────────────────────────────────
+function definirEscritorio(c) {
+  const tipoJ   = c.tipo_justica  || document.getElementById('f_tipo_justica').value;
+  const desconto = c.desconto_conta || document.getElementById('f_desconto_conta').value;
+  const objeto   = c.objeto_principal || document.getElementById('f_objeto_principal').value;
+
+  let esc, cls, regra;
+
+  if (tipoJ === 'TRABALHISTA') {
+    esc = 'DE BELLIS'; cls = 'esc-debellis';
+    regra = 'Processo trabalhista → DE BELLIS (prioridade máxima).';
+  } else if (desconto === 'Sim' || objeto === 'DÉBITO EM CONTA - ASSISTÊNCIA VERBIN') {
+    esc = 'GERBER'; cls = 'esc-gerber';
+    regra = 'Débito em conta corrente não autorizado (VERBIN/seguro/assistência) → GERBER.';
+  } else if (objeto === 'EMPRÉSTIMO CONSIGNADO' || objeto === 'SUPERENDIVIDAMENTO') {
+    esc = 'MASCARENHAS'; cls = 'esc-mascarenhas';
+    regra = objeto === 'SUPERENDIVIDAMENTO'
+      ? 'Superendividamento (Lei 14.181/2021) → MASCARENHAS.'
+      : 'Empréstimo consignado / revisão de consignado → MASCARENHAS.';
+  } else {
+    esc = 'MASCARENHAS'; cls = 'esc-mascarenhas';
+    regra = 'Cível não trabalhista sem VERBIN confirmado → MASCARENHAS (validar por UF).';
+  }
+
+  document.getElementById('escritorioBadge').innerHTML = `<span class="esc-badge ${cls}">${esc}</span>`;
+  document.getElementById('escritorioRegra').textContent = regra;
+}
+
+// ─────────────────────────────────────────────
+// CONTADOR DE PREENCHIMENTO
+// ─────────────────────────────────────────────
+function atualizarContador(preenchidos, vazios) {
+  // Campos relevantes totais (excluindo data citação e pedido que são manuais)
+  const TOTAL_CAMPOS = 18;
+  const pct = Math.round((preenchidos / TOTAL_CAMPOS) * 100);
+
+  let el = document.getElementById('contadorPreench');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'contadorPreench';
+    el.style.cssText = 'margin-top:10px;padding:8px 10px;border-radius:6px;font-size:11px;line-height:1.6;display:block';
+    document.getElementById('alertMsg').parentNode.insertBefore(el, document.getElementById('alertMsg'));
+  }
+
+  const cor = pct >= 80 ? 'var(--vok)' : pct >= 50 ? 'var(--amb)' : 'var(--err)';
+  const bg  = pct >= 80 ? 'var(--vok-bg)' : pct >= 50 ? 'var(--amb-bg)' : 'var(--err-bg)';
+  const brd = pct >= 80 ? 'var(--vok-b)' : pct >= 50 ? 'var(--amb-b)' : 'var(--err-b)';
+
+  el.style.background = bg;
+  el.style.border = `1px solid ${brd}`;
+  el.style.color = cor;
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;gap:6px;font-weight:600;margin-bottom:4px">
+      <span style="font-size:13px">${pct >= 80 ? '✓' : pct >= 50 ? '◑' : '!'}</span>
+      <span>${preenchidos} de ${TOTAL_CAMPOS} campos preenchidos (${pct}%)</span>
+    </div>
+    <div style="background:rgba(0,0,0,.07);border-radius:4px;height:5px;margin-bottom:${vazios.length?'6px':'0'}">
+      <div style="background:${cor};height:5px;border-radius:4px;width:${pct}%;transition:width .4s"></div>
+    </div>
+    ${vazios.length ? `<div style="font-size:10px;opacity:.85">Preencher manualmente: ${[...new Set(vazios)].slice(0,5).join(' · ')}${vazios.length>5?' + mais...':''}</div>` : ''}
+  `;
+}
+
+// ─────────────────────────────────────────────
+// ALERTAS AUTOMÁTICOS
+// ─────────────────────────────────────────────
+function montarAlertas(c, camposVazios) {
+  const lista = [];
+
+  // Alertas baseados em campos ausentes
+  if (!c.vara_cartorio)
+    lista.push({tipo:'warn', msg:'Vara/Cartório não identificado — confirme no DataJud ou na capa do processo.'});
+  if (!c.data_ajuizamento)
+    lista.push({tipo:'warn', msg:'Data de ajuizamento não localizada — preencha manualmente.'});
+  if (!c.autor_nome)
+    lista.push({tipo:'err', msg:'Nome do autor não extraído — verifique a qualificação na petição.'});
+  if (!c.reus || !c.reus.length)
+    lista.push({tipo:'err', msg:'Réus não identificados — adicione manualmente pelo botão + Adicionar réu.'});
+  if (!c.advogado_oab)
+    lista.push({tipo:'warn', msg:'OAB não localizada — verifique a assinatura da petição.'});
+
+  // Alertas de classificação
+  if (c._erroIA)
+    lista.push({tipo:'err', msg:`IA indisponível — preenchimento apenas por regex. Revise todos os campos.`});
+  if (c.confianca === 'baixa')
+    lista.push({tipo:'warn', msg:'Confiança baixa na extração — revise os campos marcados em azul com atenção.'});
+  if (c.observacoes && c.observacoes !== 'null' && c.observacoes.length > 5 && c.observacoes.length < 300)
+    lista.push({tipo:'warn', msg:`IA observou: ${c.observacoes}`});
+
+  // Alerta de sucesso quando tudo OK
+  if (lista.length === 0)
+    lista.push({tipo:'ok', msg:'Extração completa. Revise os campos em azul antes de cadastrar no EAGLE.'});
+
+  const area = document.getElementById('alertasArea');
+  area.innerHTML = lista.map(a => `
+    <div class="at ${a.tipo}">
+      <span class="at-ico">${a.tipo==='warn'?'⚠':a.tipo==='err'?'✕':'✓'}</span>
+      <span>${a.msg}</span>
+    </div>`).join('');
+  document.getElementById('alertasWrap').style.display = 'block';
+}
+
+// ─────────────────────────────────────────────
+// DATAJUD
+// ─────────────────────────────────────────────
+const MAP_TRIBUNAL_NOME = {
+  '01':'tjal','02':'tjac','03':'tjam','04':'tjap','05':'tjba','06':'tjce','07':'tjdft',
+  '08':'tjes','09':'tjgo','10':'tjma','11':'tjmt','12':'tjms','13':'tjmg','14':'tjpa',
+  '15':'tjpb','16':'tjpr','17':'tjpe','18':'tjpi','19':'tjrj','20':'tjrn','21':'tjrs',
+  '22':'tjro','23':'tjrr','24':'tjsc','25':'tjse','26':'tjsp','27':'tjto'
+};
+
+async function consultarDataJud(npu) {
+  document.getElementById('consultaWrap').style.display = 'block';
+  document.getElementById('cqDot').className = 'cq-dot busy';
+  document.getElementById('cqStatusTxt').textContent = 'Buscando no DataJud CNJ...';
+  document.getElementById('cqResultado').innerHTML = '';
+  document.getElementById('btnAplicarCq').style.display = 'none';
+  dadosCq = null;
+
+  const partes = npu.match(/\d{7}-\d{2}\.(\d{4})\.(\d)\.(\d{2})\.\d{4}/);
+  if (!partes) { finalizarCq(false,'NPU inválido para consulta.'); doneStep(4,'NPU inválido'); return; }
+
+  const codTrib = partes[3];
+  const tribunalId = MAP_TRIBUNAL_NOME[codTrib];
+  if (!tribunalId) { finalizarCq(false,'Tribunal não mapeado.'); doneStep(4,'não mapeado'); return; }
+
+  const url = `https://api-publica.datajud.cnj.jus.br/api_publica_${tribunalId}/_search`;
+  try {
+    const resp = await fetch(url, {
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'Authorization':'ApiKey cDZHYzlZa0JadVREZDJCendFbGFDZzo2MDExMTcxMWIzYmFiOTBhMTVkNTg='
+      },
+      body: JSON.stringify({query:{match:{numeroProcesso:npu.replace(/[^\d]/g,'')}},size:1})
+    });
+
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const data = await resp.json();
+    const hit = data?.hits?.hits?.[0]?._source;
+    if (!hit) { finalizarCq(false,'Processo não encontrado — pode estar em sigilo ou pendente de indexação.'); doneStep(4,'não encontrado'); return; }
+
+    dadosCq = {
+      classe: hit.classe?.nome || '',
+      assunto: hit.assuntos?.[0]?.nome || '',
+      orgao: hit.orgaoJulgador?.nome || '',
+      dataAjuizamento: hit.dataAjuizamento ? hit.dataAjuizamento.split('T')[0].split('-').reverse().join('/') : '',
+      situacao: hit.movimentos?.[0]?.nome || '',
+      origem: hit.processoVinculado?.[0]?.numeroProcessoVinculado || ''
+    };
+
+    const linhas = [
+      dadosCq.classe && {k:'Classe',v:dadosCq.classe},
+      dadosCq.assunto && {k:'Assunto',v:dadosCq.assunto},
+      dadosCq.orgao && {k:'Órgão julgador',v:dadosCq.orgao},
+      dadosCq.dataAjuizamento && {k:'Ajuizamento',v:dadosCq.dataAjuizamento},
+      dadosCq.situacao && {k:'Situação',v:dadosCq.situacao},
+    ].filter(Boolean);
+
+    document.getElementById('cqDot').className = 'cq-dot ok';
+    document.getElementById('cqStatusTxt').textContent = 'Encontrado no DataJud';
+    document.getElementById('cqResultado').innerHTML = linhas.map(l =>
+      `<div class="cq-row"><span class="cq-k">${l.k}</span><span class="cq-v">${l.v}</span></div>`).join('');
+    document.getElementById('btnAplicarCq').style.display = 'block';
+    doneStep(4,'encontrado');
+
+  } catch(err) {
+    finalizarCq(false,'DataJud indisponível — consulte o portal do tribunal manualmente.');
+    doneStep(4,'indisponível');
+  }
+}
+
+function finalizarCq(ok, msg) {
+  document.getElementById('cqDot').className = 'cq-dot ' + (ok?'ok':'fail');
+  document.getElementById('cqStatusTxt').textContent = ok ? 'Dados encontrados' : 'Consulta manual necessária';
+  if (msg) document.getElementById('cqResultado').innerHTML = `<div style="color:var(--amb);font-size:11px">${msg}</div>`;
+}
+
+function aplicarDadosCq() {
+  if (!dadosCq) return;
+  const aplica = (id, val) => {
+    if (!val) return;
+    const el = document.getElementById(id);
+    if (!el || el.value) return;
+    if (el.tagName==='SELECT') {
+      for (const opt of el.options) {
+        if ((opt.text||'').toLowerCase().includes(val.toLowerCase().substring(0,10))) {
+          opt.selected=true; el.classList.add('auto'); return;
+        }
+      }
+    } else { el.value=val; el.classList.add('auto'); }
+  };
+  aplica('f_rito', dadosCq.classe);
+  aplica('f_data_ajuizamento', dadosCq.dataAjuizamento);
+  aplica('f_data_citacao', dadosCq.dataAjuizamento);
+  aplica('f_vara_cartorio', dadosCq.orgao);
+  if (dadosCq.origem) {
+    const el = document.getElementById('f_numero_origem');
+    if (el && el.value === document.getElementById('f_npu').value) {
+      el.value = dadosCq.origem; el.classList.add('auto');
+    }
+  }
+  document.getElementById('btnAplicarCq').textContent = '✓ Dados aplicados';
+  document.getElementById('btnAplicarCq').disabled = true;
+}
+
+// ─────────────────────────────────────────────
+// SISTEMA DE APRENDIZADO ADAPTATIVO
+// ─────────────────────────────────────────────
+document.getElementById('learnCampo').addEventListener('change', () => {
+  document.getElementById('learnValor').placeholder = 'Valor correto para "' + (document.getElementById('learnCampo').selectedOptions[0]?.text||'') + '"';
+});
+
+async function aprenderCorrecao() {
+  const campo = document.getElementById('learnCampo').value;
+  const valor = document.getElementById('learnValor').value.trim();
+  if (!campo || !valor) { mostrarLearnStatus('Selecione o campo e informe o valor correto.','err'); return; }
+  if (!textoGlobal) { mostrarLearnStatus('Carregue um PDF antes de corrigir.','err'); return; }
+
+  const btn = document.getElementById('btnLearn');
+  btn.disabled = true;
+  mostrarLearnStatus('Analisando com IA — aguarde...','busy');
+
+  // Encontrar contexto ao redor do valor no texto
+  const idx = textoGlobal.indexOf(valor);
+  const trecho = idx >= 0
+    ? textoGlobal.substring(Math.max(0,idx-250), idx+valor.length+250)
+    : textoGlobal.substring(0,500);
+
+  const existentes = (padroesAprendidos[campo]||[])
+    .map(p=>`- "${p.padrao}" → "${p.valorExemplo}"`).join('\n');
+
+  const prompt = `Você é especialista em extração de dados de petições judiciais brasileiras.
+
+O usuário corrigiu o campo "${ROTULOS[campo]||campo}" para: "${valor}"
+
+TRECHO DA PETIÇÃO:
+${trecho}
+
+${existentes ? 'PADRÕES JÁ APRENDIDOS:\n'+existentes+'\n' : ''}
+
+Analise como "${valor}" aparece no texto e crie um padrão de extração regex JavaScript robusto para encontrá-lo em petições similares.
+
+Responda SOMENTE em JSON puro:
+{
+  "padrao": "regex JS sem delimitadores, apenas o padrão",
+  "tipo": "regex",
+  "descricao": "1 frase descrevendo o que o padrão captura",
+  "confianca": "alta|media|baixa",
+  "observacao": "quando pode falhar (opcional)"
+}`;
+
+  try {
+    const resp = await fetch('/api/extrair',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ tipo: 'aprender', prompt_aprendizado: prompt })
+    });
+    const data = await resp.json();
+    const raw = (data.content?.[0]?.text||'').replace(/```json|```/g,'').trim();
+    const res = JSON.parse(raw);
+    if (!res.padrao) throw new Error('padrão vazio');
+
+    if (!padroesAprendidos[campo]) padroesAprendidos[campo] = [];
+    const jaExiste = padroesAprendidos[campo].find(p=>p.padrao===res.padrao);
+    if (!jaExiste) {
+      padroesAprendidos[campo].unshift({
+        padrao:res.padrao, tipo:res.tipo||'regex', descricao:res.descricao,
+        valorExemplo:valor, confianca:res.confianca,
+        data: new Date().toLocaleDateString('pt-BR'), usos:0
+      });
+      if (padroesAprendidos[campo].length > 6) padroesAprendidos[campo] = padroesAprendidos[campo].slice(0,6);
+    }
+    localStorage.setItem('eagle_padroes_v3', JSON.stringify(padroesAprendidos));
+    mostrarLearnStatus('✓ Padrão aprendido: "' + res.descricao + '"','ok');
+    renderPadroes();
+
+  } catch(err) {
+    // Fallback: padrão literal
+    if (!padroesAprendidos[campo]) padroesAprendidos[campo] = [];
+    padroesAprendidos[campo].unshift({
+      padrao:valor.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),
+      tipo:'regex', descricao:'Valor literal: '+valor,
+      valorExemplo:valor, confianca:'baixa',
+      data:new Date().toLocaleDateString('pt-BR'), usos:0
+    });
+    localStorage.setItem('eagle_padroes_v3', JSON.stringify(padroesAprendidos));
+    mostrarLearnStatus('Padrão simples salvo (IA indisponível)','ok');
+    renderPadroes();
+  }
+
+  // Aplicar a correção no campo imediatamente
+  const el = document.getElementById('f_'+campo);
+  if (el) {
+    if (el.tagName==='SELECT') {
+      for (const opt of el.options) {
+        if ((opt.value||opt.text||'').toUpperCase()===valor.toUpperCase()) {
+          opt.selected=true; break;
+        }
+      }
+    } else { el.value=valor; }
+    el.classList.add('field-ok');
+  }
+
+  btn.disabled = false;
+  document.getElementById('learnCampo').value = '';
+  document.getElementById('learnValor').value = '';
+}
+
+function mostrarLearnStatus(msg, tipo) {
+  const el = document.getElementById('learnStatus');
+  el.textContent = msg;
+  el.className = 'learn-status ' + tipo;
+  el.style.display = 'block';
+  if (tipo === 'ok') setTimeout(() => el.style.display='none', 4000);
+}
+
+function renderPadroes() {
+  const wrap = document.getElementById('padroesWrap');
+  const total = Object.values(padroesAprendidos).flat().length;
+  if (total === 0) {
+    wrap.innerHTML = '<div style="font-size:10px;color:var(--chumbo);font-style:italic">Nenhum padrão aprendido ainda. Corrija um campo para começar.</div>';
+    return;
+  }
+  let html = '';
+  Object.entries(padroesAprendidos).forEach(([campo, padroes]) => {
+    if (!padroes.length) return;
+    const rotulo = ROTULOS[campo]||campo;
+    html += `<div style="margin-bottom:8px">
+      <div style="font-size:9px;font-weight:600;color:var(--ciano);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">${rotulo}</div>`;
+    padroes.forEach((p,idx) => {
+      html += `<div class="padrao-item">
+        <div class="padrao-info">
+          <div class="padrao-desc" title="${p.descricao}">${p.descricao}</div>
+          <div class="padrao-meta">Ex: ${p.valorExemplo} · ${p.data}</div>
+        </div>
+        <span class="padrao-conf conf-${p.confianca}">${p.confianca||'?'}</span>
+        <button class="btn-del-padrao" onclick="removerPadrao('${campo}',${idx})" title="Remover padrão">×</button>
+      </div>`;
+    });
+    html += '</div>';
+  });
+  wrap.innerHTML = html;
+}
+
+function removerPadrao(campo, idx) {
+  if (!padroesAprendidos[campo]) return;
+  padroesAprendidos[campo].splice(idx,1);
+  if (!padroesAprendidos[campo].length) delete padroesAprendidos[campo];
+  localStorage.setItem('eagle_padroes_v3', JSON.stringify(padroesAprendidos));
+  renderPadroes();
+}
+
+function limparPadroes() {
+  if (!confirm('Apagar todos os padrões aprendidos?')) return;
+  padroesAprendidos = {};
+  localStorage.removeItem('eagle_padroes_v3');
+  renderPadroes();
+}
+
+// ─────────────────────────────────────────────
+// NPU CHANGE → atualiza UF/tipo de justiça em tempo real
+// ─────────────────────────────────────────────
+function onNpuChange(val) {
+  const p = val.match(/\d{7}-\d{2}\.(\d{4})\.(\d)\.(\d{2})\.(\d{4})/);
+  if (!p) return;
+  const tj = {'8':'ESTADUAL','4':'FEDERAL','5':'TRABALHISTA'}[p[2]];
+  if (tj) {
+    const el = document.getElementById('f_tipo_justica');
+    for (const opt of el.options) if (opt.value===tj) { opt.selected=true; break; }
+  }
+  const uf = MAP_TRIBUNAL[p[3]];
+  if (uf) {
+    const el = document.getElementById('f_uf');
+    for (const opt of el.options) if (opt.value===uf) { opt.selected=true; break; }
+  }
+}
+
+// ─────────────────────────────────────────────
+// UTILITÁRIOS
+// ─────────────────────────────────────────────
+function mostrarAlerta(tipo, msg) {
+  const el = document.getElementById('alertMsg');
+  el.style.display = 'block';
+  el.className = 'alert-sb ' + (tipo==='ok'?'alert-ok-sb':'alert-err-sb');
+  el.textContent = msg;
+}
+
+function limparFormulario() {
+  ['npu','uf','comarca','data_ajuizamento','data_citacao','valor_causa','vara_cartorio',
+   'numero_origem','tipo_justica','fase_processual','rito','tipo_documento','objeto_principal',
+   'causa_raiz','pedido','desconto_conta','autor_nome','autor_cpf','advogado_nome',
+   'advogado_oab','advogado_uf','advogado_escritorio'].forEach(k => {
+    const el = document.getElementById('f_'+k);
+    if (!el) return;
+    el.value=''; el.selectedIndex=0; el.disabled=false;
+    el.classList.remove('ia-filled','auto','field-ok','field-err','locked');
+  });
+  document.getElementById('reuList').innerHTML = '';
+  reuCount = 0; addReu();
+  document.getElementById('extraAdvogados').innerHTML = '';
+  document.getElementById('escritorioBadge').innerHTML = '<span class="esc-badge esc-nd">Aguardando análise</span>';
+  document.getElementById('escritorioRegra').textContent = 'Carregue a petição para determinação automática.';
+  document.getElementById('alertasArea').innerHTML = '';
+  document.getElementById('alertasWrap').style.display = 'none';
+  const cont = document.getElementById('contadorPreench');
+  if (cont) cont.style.display = 'none';
+  document.getElementById('alertMsg').style.display = 'none';
+  document.getElementById('pipeline').style.display = 'none';
+}
+
+function exportarCampos() {
+  const reus = Array.from(document.querySelectorAll('.reu-row')).map(r => {
+    const inp = r.querySelectorAll('input');
+    return (inp[0].value||'') + (inp[1]?.value ? ' ('+inp[1].value+')' : '');
+  }).filter(Boolean).join('; ');
+
+  const linhas = [
+    '=== EAGLE — CADASTRO DE PROCESSO ===',
+    '',
+    '--- DADOS PROCESSUAIS ---',
+    `NPU CNJ: ${document.getElementById('f_npu').value}`,
+    `UF: ${document.getElementById('f_uf').value}`,
+    `Comarca: ${document.getElementById('f_comarca').value}`,
+    `Data ajuizamento: ${document.getElementById('f_data_ajuizamento').value}`,
+    `Data citação: ${document.getElementById('f_data_citacao').value}`,
+    `Valor da causa: ${document.getElementById('f_valor_causa').value}`,
+    `Vara/Cartório: ${document.getElementById('f_vara_cartorio').value}`,
+    `Número origem: ${document.getElementById('f_numero_origem').value}`,
+    `Tipo de justiça: ${document.getElementById('f_tipo_justica').value}`,
+    `Rito: ${document.getElementById('f_rito').value}`,
+    `Fase processual: ${document.getElementById('f_fase_processual').value}`,
+    `Tipo de documento: ${document.getElementById('f_tipo_documento').value}`,
+    '',
+    '--- CLASSIFICAÇÃO ---',
+    `Objeto principal: ${document.getElementById('f_objeto_principal').value}`,
+    `Causa raiz: ${document.getElementById('f_causa_raiz').value}`,
+    `Desconto em conta: ${document.getElementById('f_desconto_conta').value}`,
+    `Pedido: ${document.getElementById('f_pedido').value}`,
+    '',
+    '--- PARTES ---',
+    `Autor: ${document.getElementById('f_autor_nome').value}`,
+    `CPF autor: ${document.getElementById('f_autor_cpf').value}`,
+    `Réus: ${reus}`,
+    '',
+    '--- ADVOGADO ---',
+    `Advogado: ${document.getElementById('f_advogado_nome').value}`,
+    `OAB: ${document.getElementById('f_advogado_oab').value}`,
+    `UF OAB: ${document.getElementById('f_advogado_uf').value}`,
+    `Escritório: ${document.getElementById('f_advogado_escritorio').value}`,
+    '',
+    '--- EAGLE ---',
+    `Escritório SBK: ${document.getElementById('escritorioBadge').textContent.trim()}`,
+  ].join('\n');
+
+  const blob = new Blob([linhas],{type:'text/plain;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href=url; a.download='eagle_cadastro_'+Date.now()+'.txt'; a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ─────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  addReu();
+  renderPadroes();
+
+  // Atualizar escritório em tempo real quando usuário edita campos relevantes
+  ['f_tipo_justica','f_desconto_conta','f_objeto_principal'].forEach(id => {
+    document.getElementById(id)?.addEventListener('change', () => {
+      const c = {
+        tipo_justica:   document.getElementById('f_tipo_justica').value,
+        desconto_conta: document.getElementById('f_desconto_conta').value,
+        objeto_principal: document.getElementById('f_objeto_principal').value,
+      };
+      definirEscritorio(c);
+    });
+  });
+});
+</script>
+</body>
+</html>
