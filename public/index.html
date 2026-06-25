@@ -2802,7 +2802,7 @@ function aplicarSessao(user) {
   // Mostrar abas conforme permissão
   const abas = user.abas || [];
   document.getElementById('tab-acuracia').style.display = abas.includes('acuracia') ? '' : 'none';
-  document.getElementById('tab-usuarios').style.display = abas.includes('usuarios') ? '' : 'none';
+  // tab-usuarios sempre oculto — acesso via dropdown do usuário
   if (abas.includes('usuarios')) document.getElementById('menuBtnUsuarios').style.display = 'block';
 }
 
