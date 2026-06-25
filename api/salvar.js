@@ -7,25 +7,29 @@ import { neon } from '@neondatabase/serverless';
 
 export const config = { maxDuration: 30 };
 
-const INIT_SQL = `
-  CREATE TABLE IF NOT EXISTS processos (
-    id          SERIAL PRIMARY KEY,
-    npu         TEXT,
-    arquivo_nome TEXT,
-    data_upload TIMESTAMPTZ DEFAULT NOW(),
-    campos      JSONB NOT NULL DEFAULT '{}',
-    status      TEXT  DEFAULT 'pendente'
-  );
-  CREATE TABLE IF NOT EXISTS validacoes (
-    id            SERIAL PRIMARY KEY,
-    processo_id   INTEGER REFERENCES processos(id) ON DELETE CASCADE,
-    campo         TEXT NOT NULL,
-    valor_extraido TEXT,
-    valor_correto  TEXT,
-    acertou        BOOLEAN NOT NULL,
-    data_validacao TIMESTAMPTZ DEFAULT NOW()
-  );
-`;
+async function initDB(sql) {
+  await sql`
+    CREATE TABLE IF NOT EXISTS processos (
+      id           SERIAL PRIMARY KEY,
+      npu          TEXT,
+      arquivo_nome TEXT,
+      data_upload  TIMESTAMPTZ DEFAULT NOW(),
+      campos       JSONB NOT NULL DEFAULT '{}',
+      status       TEXT DEFAULT 'pendente'
+    )
+  `;
+  await sql`
+    CREATE TABLE IF NOT EXISTS validacoes (
+      id             SERIAL PRIMARY KEY,
+      processo_id    INTEGER REFERENCES processos(id) ON DELETE CASCADE,
+      campo          TEXT NOT NULL,
+      valor_extraido TEXT,
+      valor_correto  TEXT,
+      acertou        BOOLEAN NOT NULL,
+      data_validacao TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+}
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -39,7 +43,7 @@ export default async function handler(req, res) {
 
   try {
     const sql = neon(DB);
-    await sql.transaction([sql.unsafe(INIT_SQL)]);
+    await initDB(sql);
 
     const { arquivo_nome, campos } = req.body || {};
     const npu = campos?.npu || null;
