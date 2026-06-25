@@ -1047,9 +1047,18 @@ function extrairCampos(txt) {
       break;
     }
   }
-  // Primeiro CPF no texto
-  const cpfs = [...txt.matchAll(/(\d{3}\.\d{3}\.\d{3}-\d{2})/g)];
-  if (cpfs.length > 0) campos.autor_cpf = cpfs[0][1];
+  // CPF: priorizar próximo à palavra "CPF" ou "portador do CPF" (evita pegar CPF de réu)
+  const cpfComContexto = [...txt.matchAll(/(?:CPF|portador[^.]{0,30}?CPF|inscrit[ao][^.]{0,30}?CPF)\s*[nºo.°]*\s*[:\s]\s*(\d{3}\.?\d{3}\.?\d{3}-?\d{2})/gi)];
+  if (cpfComContexto.length > 0) {
+    campos.autor_cpf = cpfComContexto[0][1].replace(/[^\d\.\-]/g,'');
+    if (!campos.autor_cpf.includes('.')) {
+      const d = campos.autor_cpf.replace(/\D/g,'');
+      if (d.length === 11) campos.autor_cpf = `${d.slice(0,3)}.${d.slice(3,6)}.${d.slice(6,9)}-${d.slice(9)}`;
+    }
+  } else {
+    const cpfs = [...txt.matchAll(/(\d{3}\.\d{3}\.\d{3}-\d{2})/g)];
+    if (cpfs.length > 0) campos.autor_cpf = cpfs[0][1];
+  }
 
   // ── RÉUS e CNPJ ───────────────────────────────────────────────────────────
   // Usa o CNPJ como âncora e olha para trás para achar o nome
@@ -1120,19 +1129,34 @@ function extrairCampos(txt) {
     if (idxFuturo > 0) { const f = reus.splice(idxFuturo, 1)[0]; reus.unshift(f); }
 
   } else {
-    // ── PETIÇÃO COMUM: âncora no CNPJ ──────────────────────────────────────
-    const nomeEmpRx = /([A-ZÁÉÍÓÚÂÊÔÃÕÇ][A-ZÁÉÍÓÚÂÊÔÃÕÇ\s&.'\-]{2,60}?(?:S\.?\s*A\.?|S\/A|LTDA\.?|BANCO\s+[A-Z]+|PRIVADA|DIRETO\s+S\.?\s*A\.?|FINANCEIRA|SEGURADORA))/gi;
+    // ── PETIÇÃO COMUM: captura nome COMPLETO entre delimitador e CNPJ
+    // Divide o texto em segmentos pelos delimitadores principais e extrai o nome
+    // de cada segmento que contenha um CNPJ — preserva nomes longos como
+    // "CREFISA S.A. CRÉDITO, FINANCIAMENTO E INVESTIMENTO S.A."
     for (const m of txt.matchAll(/\b(\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2})\b/g)) {
       const cnpj = m[1];
       if (reus.find(r => r.cnpj === cnpj)) continue;
-      const trecho = txt.substring(Math.max(0, m.index - 280), m.index);
-      const nomes = [...trecho.matchAll(nomeEmpRx)];
-      if (!nomes.length) continue;
-      let nome = nomes[nomes.length - 1][1].trim().replace(/\s+/g, ' ');
-      nome = nome.replace(/^.*?(?:em\s+desfavor\s+d[eo]\s+|em\s+face\s+d[eo][:\s]*[\d.]*\s*)/i, '').trim();
-      nome = nome.replace(/^(?:em\s+desfavor\s+d[eo]\s+)/i, '').trim();
-      const reuEx = reus.find(r => !r.cnpj && nome.toLowerCase().includes(r.nome.toLowerCase().substring(0,8)));
-      if (reuEx) { reuEx.cnpj = cnpj; } else if (nome.length > 2) reus.push({ nome, cnpj });
+
+      // Trecho de até 500 chars antes do CNPJ
+      const trecho = txt.substring(Math.max(0, m.index - 500), m.index);
+
+      // Dividir pelo último delimitador forte antes do CNPJ
+      // (número de lista "1.", ponto-e-vírgula, nova linha, "em face de:", colon após intro)
+      const partes = trecho.split(/\n\s*\d+[\.\)]\s*|\n{2,}|;\s*|\bem\s+face\s+d[eo][:\s]+|\bem\s+desfavor\s+d[eo][:\s]+/i);
+      let ultimaParte = (partes[partes.length - 1] || '').replace(/\s+/g, ' ').trim();
+
+      // Limpar tudo depois de "inscrit", "portador", "CNPJ" ou número (CNPJ inline)
+      ultimaParte = ultimaParte
+        .replace(/,?\s*(?:inscrit[ao]\s+(?:no|na|sob)\s+)?(?:CNPJ|C\.N\.P\.J).*$/i, '')
+        .replace(/,?\s*(?:inscrit[ao]|portador[ao]|com\s+sede|pessoa\s+jur\w*).*$/i, '')
+        .replace(/^\s*(?:\d+[\.\)]\s*)/, '') // remover numeração residual
+        .trim();
+
+      if (ultimaParte.length < 3) continue;
+
+      const reuEx = reus.find(r => !r.cnpj && ultimaParte.toLowerCase().startsWith(r.nome.toLowerCase().substring(0,8)));
+      if (reuEx) { reuEx.cnpj = cnpj; }
+      else reus.push({ nome: ultimaParte, cnpj });
     }
   }
   campos.reus = reus;
@@ -1401,7 +1425,7 @@ function preencherFormulario(c) {
 }
 
 function definirEscritorio(c) {
-  let esc = 'INDEFINIDO', regra = '', cls = 'badge-nd';
+  let esc = 'INDEFINIDO', regra = '', cls = 'esc-nd';
 
   if (c.tipo_justica === 'TRABALHISTA') {
     esc = 'DE BELLIS';
@@ -1899,10 +1923,13 @@ async function interpretarComIA(camposRegex, textoCompleto) {
       regraAprendidas.map(r => `- ${r.campo}: buscar "${r.padrao}" → valor: "${r.valor}"`).join('\n')
     : '';
 
-  // Trecho relevante: primeiros 800 + últimos 1200 chars (onde ficam valor e assina)
-  const trechoInicio = textoCompleto.substring(0, 800);
+  // Trecho: início (cabeçalho/partes) + meio (réus/CNPJs) + fim (valor/assinatura)
+  const trechoInicio = textoCompleto.substring(0, 1200);
+  const trechoMeio = textoCompleto.length > 4000
+    ? textoCompleto.substring(Math.floor(textoCompleto.length * 0.25), Math.floor(textoCompleto.length * 0.65)).substring(0, 1500)
+    : '';
   const trechoFim = textoCompleto.substring(Math.max(0, textoCompleto.length - 1500));
-  const trecho = trechoInicio + '\n[...]\n' + trechoFim;
+  const trecho = trechoInicio + (trechoMeio ? '\n[...]\n' + trechoMeio : '') + '\n[...]\n' + trechoFim;
 
   const camposJaPreenchidos = Object.entries(camposRegex)
     .filter(([k,v]) => v && !k.startsWith('_') && k !== 'reus' && k !== 'pedido')
@@ -1921,20 +1948,17 @@ ${trecho}
 ${regrasCtx}
 
 REGRAS DE INTERPRETAÇÃO:
-- valor_causa: buscar "dá-se à causa o valor de R$ X" OU "Valor da Causa: R$ X" — sempre próximo a "Pede deferimento" ou "Nestes termos". Retornar só o número formato "R$ XX.XXX,XX".
-- rito: Regras por tipo de processo:
-  * Agravo de Instrumento: se "Classe da ação: Agravo de Instrumento" ou título "AGRAVO DE INSTRUMENTO" na petição → "Agravo de Instrumento"
-  * Superendividamento: se "superendividamento" no objeto da ação → "Superendividamento"
-  * Procedimento Comum Cível: se "Classe da ação: Procedimento Comum Cível" → "Procedimento Comum Cível"
-  * Outros: usar o valor exato do campo "Classe da ação:" da capa do processo
-  * NUNCA inferir de citações jurisprudenciais (só da capa ou do título da ação)
-- vara_cartorio: Para agravo: buscar "Xª Vara Cível da Comarca de Cidade" no bloco "Origem:" da petição. Para petição comum: buscar "Juizo/Juízo da Xª Vara" ou "Xª Vara Cível/Criminal de cidade". Retornar APENAS "Xª Vara Cível" sem nome da cidade ou comarca.
-- data_ajuizamento: Para petição comum: próximo a "Pede deferimento". Para agravo: campo "Data de autuação:" da capa. Formato saída: "DD/MM/AAAA".
-- fase_processual: Agravo de Instrumento → "Recursal". Cumprimento de Sentença → "Cumprimento de Sentença". Petição inicial comum → "Conhecimento".
-- tipo_documento: Agravo → "Recurso". Petição inicial → "Petição Inicial". Cumprimento → "Petição Inicial".
-- numero_origem: Para agravo: buscar "Processos relacionados: XXXXX | Originário" ou "Origem: Processo nº XXXXX". Para petição comum: igual ao NPU se não houver segundo número.
-- objeto_principal: uma de: "SUPERENDIVIDAMENTO", "DÉBITO EM CONTA - ASSISTÊNCIA VERBIN", "EMPRÉSTIMO CONSIGNADO", "COBRANÇA INDEVIDA", "REVISÃO CONTRATUAL". Inferir pelo contexto da ação.
+- valor_causa: buscar "dá-se à causa o valor de R$ X" OU "Valor da Causa: R$ X" próximo a "Pede deferimento". Formato "R$ XX.XXX,XX".
+- rito: Agravo → "Agravo de Instrumento". Superendividamento → "Superendividamento". Procedimento Comum → "Procedimento Comum Cível". Usar campo "Classe da ação:". NUNCA inferir de jurisprudência.
+- vara_cartorio: buscar "Xª Vara Cível/Criminal/Federal". Retornar APENAS "Xª Vara Cível" sem cidade/comarca.
+- data_ajuizamento: próximo a "Pede deferimento" ou "Data de autuação:". Formato "DD/MM/AAAA".
+- objeto_principal: uma de: "SUPERENDIVIDAMENTO", "DÉBITO EM CONTA - ASSISTÊNCIA VERBIN", "EMPRÉSTIMO CONSIGNADO", "COBRANÇA INDEVIDA", "REVISÃO CONTRATUAL".
 - causa_raiz: uma de: "Superendividamento", "DÉBITO EM CONTA - ASSISTÊNCIA VERBIN", "Empréstimo consignado", "Cobrança indevida de seguro", "Desconto indevido", "Revisão contratual".
+- autor_cpf: CPF do AUTOR (requerente/polo ativo) no formato NNN.NNN.NNN-NN. Buscar próximo ao nome do autor ou "portador do CPF". NUNCA usar CPF de réu/empresa.
+- advogado_nome: nome COMPLETO do advogado do autor (antes de "OAB/" ou após "Dr./Dra."). Nome próprio, não empresa.
+- advogado_uf: UF da OAB (duas letras, ex: SP, AL, RJ).
+- advogado_oab: somente o NÚMERO da OAB com 6 dígitos com zeros à esquerda (ex: 015800). Sem "OAB/" ou letras.
+- reus: lista completa de réus/requeridos com nome COMPLETO da instituição e CNPJ. Incluir o sufixo societário completo (ex: "Crefisa S.A. Crédito, Financiamento e Investimento S.A.", não apenas "Financiamento e Investimento S.A."). Buscar em "em face de:", polo passivo, qualificação dos réus.
 
 Responda SOMENTE em JSON puro sem markdown:
 {
@@ -1944,6 +1968,11 @@ Responda SOMENTE em JSON puro sem markdown:
   "data_ajuizamento": "DD/MM/AAAA ou null",
   "objeto_principal": "valor ou null",
   "causa_raiz": "valor ou null",
+  "autor_cpf": "NNN.NNN.NNN-NN ou null",
+  "advogado_nome": "nome completo ou null",
+  "advogado_uf": "UF ou null",
+  "advogado_oab": "000000 ou null",
+  "reus": [{"nome": "Nome Completo S.A.", "cnpj": "00.000.000/0001-00"}],
   "confianca": "alta|media|baixa",
   "observacoes": "breve nota sobre campos incertos"
 }`;
@@ -1953,44 +1982,96 @@ Responda SOMENTE em JSON puro sem markdown:
     const raw = (data.content?.[0]?.text || '').replace(/```json|```/g, '').trim();
     const resultado = JSON.parse(raw);
 
-    // Aplicar campos que estão em branco ou incorretos
+    // Aplicar campos simples que estão em branco
     const camposAplicar = ['valor_causa','rito','vara_cartorio','data_ajuizamento','objeto_principal','causa_raiz'];
     const aplicados = [];
 
-    camposAplicar.forEach(campo => {
-      if (!resultado[campo] || resultado[campo] === 'null') return;
+    function aplicarCampoIA(campo, valor) {
+      if (!valor || valor === 'null') return false;
       const el = document.getElementById('f_' + campo);
-      if (!el) return;
-      const valorAtual = el.value || el.options?.[el.selectedIndex]?.text || '';
-      // Aplicar se campo vazio ou era placeholder
-      if (!valorAtual || valorAtual === '1ª Vara Cível') {
-        if (el.tagName === 'SELECT') {
-          for (const opt of el.options) {
-            if ((opt.text||'').trim().toLowerCase() === resultado[campo].trim().toLowerCase()) {
-              opt.selected = true;
-              el.classList.add('auto');
-              aplicados.push(campo);
-              break;
-            }
+      if (!el) return false;
+      const valorAtual = (el.value || '').trim();
+      if (valorAtual && valorAtual !== '1ª Vara Cível') return false;
+      if (el.tagName === 'SELECT') {
+        for (const opt of el.options) {
+          if ((opt.text||'').trim().toLowerCase() === valor.trim().toLowerCase()) {
+            opt.selected = true; el.classList.add('auto'); return true;
           }
-          // Se não achou no select, tenta match parcial
-          if (!aplicados.includes(campo)) {
-            for (const opt of el.options) {
-              if ((opt.text||'').toLowerCase().includes(resultado[campo].toLowerCase().substring(0,10))) {
-                opt.selected = true;
-                el.classList.add('auto');
-                aplicados.push(campo);
-                break;
-              }
-            }
+        }
+        for (const opt of el.options) {
+          if ((opt.text||'').toLowerCase().includes(valor.toLowerCase().substring(0,10))) {
+            opt.selected = true; el.classList.add('auto'); return true;
           }
-        } else {
-          el.value = resultado[campo];
-          el.classList.add('auto');
-          aplicados.push(campo);
+        }
+        return false;
+      } else {
+        el.value = valor; el.classList.add('auto'); return true;
+      }
+    }
+
+    camposAplicar.forEach(campo => {
+      if (aplicarCampoIA(campo, resultado[campo])) aplicados.push(campo);
+    });
+
+    // Aplicar CPF do autor se vazio
+    if (resultado.autor_cpf && resultado.autor_cpf !== 'null') {
+      const elCpf = document.getElementById('f_autor_cpf');
+      if (elCpf && !elCpf.value.trim()) {
+        elCpf.value = resultado.autor_cpf; elCpf.classList.add('auto'); aplicados.push('autor_cpf');
+      }
+    }
+
+    // Aplicar advogado completo se campos estiverem vazios
+    if (resultado.advogado_nome && resultado.advogado_nome !== 'null') {
+      const elAdv = document.getElementById('f_advogado_nome');
+      if (elAdv && !elAdv.value.trim()) {
+        elAdv.value = resultado.advogado_nome; elAdv.classList.add('auto'); aplicados.push('advogado_nome');
+      }
+    }
+    if (resultado.advogado_oab && resultado.advogado_oab !== 'null') {
+      const elOab = document.getElementById('f_advogado_oab');
+      if (elOab && !elOab.value.trim()) {
+        elOab.value = resultado.advogado_oab; elOab.classList.add('auto');
+      }
+    }
+    if (resultado.advogado_uf && resultado.advogado_uf !== 'null') {
+      const elUf = document.getElementById('f_advogado_uf');
+      if (elUf) {
+        for (const opt of elUf.options) {
+          if (opt.value === resultado.advogado_uf) { opt.selected = true; elUf.classList.add('auto'); break; }
         }
       }
-    });
+    }
+
+    // Aplicar réus se IA retornou lista e regex não encontrou nada útil
+    const reuListAtual = document.querySelectorAll('#reuList .reu-row');
+    const reuListVazia = reuListAtual.length === 0 || (reuListAtual.length === 1 && !reuListAtual[0].querySelector('input').value.trim());
+    if (resultado.reus && Array.isArray(resultado.reus) && resultado.reus.length > 0 && reuListVazia) {
+      document.getElementById('reuList').innerHTML = '';
+      reuCount = 0;
+      resultado.reus.forEach(r => addReu(r.nome || '', r.cnpj || ''));
+      aplicados.push('reus');
+    } else if (resultado.reus && Array.isArray(resultado.reus) && resultado.reus.length > 0) {
+      // Atualizar CNPJs em branco e corrigir nomes truncados
+      const rows = document.querySelectorAll('#reuList .reu-row');
+      rows.forEach(row => {
+        const inputs = row.querySelectorAll('input');
+        const nomeAtual = (inputs[0]?.value || '').trim();
+        const cnpjAtual = (inputs[1]?.value || '').trim();
+        if (!cnpjAtual || nomeAtual.length < 8) {
+          const match = resultado.reus.find(r =>
+            r.nome && (
+              r.nome.toLowerCase().startsWith(nomeAtual.toLowerCase().substring(0,8)) ||
+              nomeAtual.toLowerCase().startsWith((r.nome||'').toLowerCase().substring(0,8))
+            )
+          );
+          if (match) {
+            if (inputs[0] && match.nome) { inputs[0].value = match.nome; inputs[0].classList.add('auto'); }
+            if (inputs[1] && match.cnpj && !cnpjAtual) { inputs[1].value = match.cnpj; inputs[1].classList.add('auto'); }
+          }
+        }
+      });
+    }
 
     // Mostrar resultado no painel
     const dot = document.getElementById('iaInterpDot');
@@ -1999,20 +2080,24 @@ Responda SOMENTE em JSON puro sem markdown:
     document.getElementById('iaInterpStatus').textContent =
       aplicados.length > 0 ? `${aplicados.length} campo(s) preenchido(s) pela IA` : 'Campos confirmados';
 
+    const rotulos = {
+      valor_causa:'Valor da causa', rito:'Rito', vara_cartorio:'Vara/Cartório',
+      data_ajuizamento:'Data ajuizamento', objeto_principal:'Objeto', causa_raiz:'Causa raiz',
+      autor_cpf:'CPF do autor', advogado_nome:'Advogado', reus:'Réus'
+    };
     let html = '';
-    camposAplicar.forEach(campo => {
+    [...camposAplicar, 'autor_cpf', 'advogado_nome'].forEach(campo => {
       const val = resultado[campo];
       if (!val || val === 'null') return;
-      const rotulos = {
-        valor_causa:'Valor da causa', rito:'Rito', vara_cartorio:'Vara/Cartório',
-        data_ajuizamento:'Data ajuizamento', objeto_principal:'Objeto', causa_raiz:'Causa raiz'
-      };
       const aplicado = aplicados.includes(campo);
       html += `<div style="display:flex;justify-content:space-between;align-items:baseline;padding:3px 0;border-bottom:.5px solid var(--borda-l);font-size:11px">
         <span style="color:var(--chumbo);font-size:10px">${rotulos[campo]||campo}</span>
-        <span style="font-weight:600;color:${aplicado?'var(--vok)':'var(--chumbo)'};text-align:right;max-width:160px">${val}</span>
+        <span style="font-weight:600;color:${aplicado?'var(--vok)':'var(--chumbo)'};text-align:right;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${val}</span>
       </div>`;
     });
+    if (aplicados.includes('reus')) {
+      html += `<div style="padding:3px 0;font-size:11px;color:var(--vok);font-weight:600">Réus: ${resultado.reus.length} preenchido(s) pela IA</div>`;
+    }
     if (resultado.observacoes) {
       html += `<div style="margin-top:6px;font-size:10px;color:var(--amb);font-style:italic">${resultado.observacoes}</div>`;
     }
