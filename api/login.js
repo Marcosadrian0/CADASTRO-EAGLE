@@ -57,7 +57,7 @@ export default async function handler(req, res) {
       const hash = hashSenha('1234');
       await sql`
         INSERT INTO usuarios (usuario, senha_hash, nome, perfil, abas)
-        VALUES ('marcos.oliveira', ${hash}, 'Marcos Oliveira', 'admin', 'analise,acuracia,usuarios')
+        VALUES ('marcos.oliveira', ${hash}, 'Marcos Oliveira', 'admin', 'analise,acuracia,faturamento,usuarios')
       `;
     }
 
