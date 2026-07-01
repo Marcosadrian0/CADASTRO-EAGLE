@@ -82,6 +82,13 @@ export default async function handler(req, res) {
     const user = rows[0];
     if (!user) return res.status(401).json({ error: 'Usuário ou senha incorretos.' });
 
+    // Garante que admin sempre tenha a aba faturamento
+    if (user.perfil === 'admin' && !user.abas.split(',').map(s => s.trim()).includes('faturamento')) {
+      const novasAbas = user.abas + ',faturamento';
+      await sql`UPDATE usuarios SET abas = ${novasAbas} WHERE id = ${user.id}`;
+      user.abas = novasAbas;
+    }
+
     await sql`DELETE FROM sessoes WHERE usuario_id = ${user.id} AND expira_em < NOW()`;
 
     const token = randomBytes(32).toString('hex');
