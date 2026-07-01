@@ -681,10 +681,24 @@ textarea{resize:vertical;min-height:52px}
     </div>
 
     <!-- DOWNLOAD -->
+    <!-- DOWNLOADS INDIVIDUAIS -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+      <div class="fat-card" style="text-align:center;padding:20px">
+        <div style="font-size:11px;font-weight:600;color:var(--chumbo);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">Consolidado Captura</div>
+        <div style="font-size:11px;color:var(--chumbo);margin-bottom:14px">Lista acumulada de processos da aba Captura do mês</div>
+        <button class="fat-btn fat-btn-ghost" onclick="fatDownloadCaptura()">Baixar Captura (.xlsx)</button>
+      </div>
+      <div class="fat-card" style="text-align:center;padding:20px">
+        <div style="font-size:11px;font-weight:600;color:var(--chumbo);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">Consolidado DJE</div>
+        <div style="font-size:11px;color:var(--chumbo);margin-bottom:14px">Lista acumulada de processos da aba DJE do mês</div>
+        <button class="fat-btn fat-btn-ghost" onclick="fatDownloadDje()">Baixar DJE (.xlsx)</button>
+      </div>
+    </div>
+
     <div class="fat-download-card">
-      <div class="fat-download-ttl">Gerar relatório do mês</div>
+      <div class="fat-download-ttl">Gerar relatório completo do mês</div>
       <div class="fat-download-sub">Exporta um Excel no padrão do modelo base, com as abas "Cadastro", "Captura MM.YYYY" e "Espelho".</div>
-      <button class="fat-btn-download" onclick="fatDownload()">Baixar Relatório (.xlsx)</button>
+      <button class="fat-btn-download" onclick="fatDownload()">Baixar Relatório Completo (.xlsx)</button>
     </div>
 
   </div>
@@ -4122,6 +4136,30 @@ function fatDownload() {
   XLSX.writeFile(wb, `FATURAMENTO_EAGLE_BASE_${mm}.${yyyy}.xlsx`);
   fatShowToast('Relatório gerado com sucesso.');
 }
+
+function fatDownloadTipo(tipo) {
+  const { sbkSet, outrosSet } = fatBuildCadastroLookups();
+  const rows = fatState[tipo].rows;
+  if (!rows.length) { fatShowToast('Nenhum processo acumulado para ' + (tipo === 'captura' ? 'Captura' : 'DJE') + ' neste mês.'); return; }
+  const { mm, yyyy } = fatMonthLabel(fatMonthKey);
+  const label = tipo === 'captura' ? 'CAPTURA' : 'DJE';
+  const headers = ['DATA', 'Processo', 'Pasta', 'Data do Cadastro', 'Tipo Ocorrencia', 'Cadastrante'];
+  const aoa = [
+    headers,
+    ...rows.map(r => {
+      const n = fatNormalizeNPU(r.processo);
+      const info = sbkSet.get(n) || outrosSet.get(n);
+      return [r.data, r.processo, r.pasta || (info ? info.pasta : ''), r.dataCadastro || (info ? info.dataCadastro : ''), r.tipoOcorrencia, info ? info.cadastrante : 'Sem cadastro'];
+    })
+  ];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa), label);
+  XLSX.writeFile(wb, `CONSOLIDADO_${label}_${mm}.${yyyy}.xlsx`);
+  fatShowToast(`Consolidado ${label === 'CAPTURA' ? 'Captura' : 'DJE'} gerado.`);
+}
+
+function fatDownloadCaptura() { fatDownloadTipo('captura'); }
+function fatDownloadDje() { fatDownloadTipo('dje'); }
 
 function fatInit() {
   if (fatInitialized) return;
