@@ -1794,6 +1794,29 @@ function extrairCampos(txt, seg) {
       }
     }
   }
+
+  // Padrão 7: nome antes de "vem, por meio de" ou "vem mui respeitosamente"
+  if (!campos.autor_nome) {
+    const mVemMui = txtPartes.match(/\n([A-ZÁÉÍÓÚÂÊÔÃÕÇ][A-ZÁÉÍÓÚÂÊÔÃÕÇA-Za-záéíóúâêôãõç\s\.]{3,60}?),?\s*(?:vem,?\s*(?:por\s+meio|mui\s+resp|através|por\s+interm)|através\s+de\s+seu\s+advogado)/i);
+    if (mVemMui) {
+      const n = mVemMui[1].trim().replace(/\s+/g,' ');
+      if (!_FILTRO_AUTOR.test(n) && n.split(' ').length >= 2 && n.split(' ').length <= 8) {
+        campos.autor_nome = capitalizar(n);
+      }
+    }
+  }
+
+  // Padrão 8: busca pelo CPF como âncora — nome imediatamente antes do CPF (sem "portador")
+  // Útil quando a qualificação começa direto com o nome seguido do CPF
+  if (!campos.autor_nome) {
+    const mCpfAncora = txtPartes.match(/\n([A-ZÁÉÍÓÚÂÊÔÃÕÇ][A-ZÁÉÍÓÚÂÊÔÃÕÇA-Za-záéíóúâêôãõç\s\.]{3,60}?),?\s*CPF\s*(?:n[º°o]?\.?\s*)?[\d.\-]{11,14}/i);
+    if (mCpfAncora) {
+      const n = mCpfAncora[1].trim().replace(/\s+/g,' ');
+      if (!_FILTRO_AUTOR.test(n) && n.split(' ').length >= 2 && n.split(' ').length <= 8) {
+        campos.autor_nome = capitalizar(n);
+      }
+    }
+  }
   // CPF: priorizar próximo à palavra "CPF" ou "portador do CPF" (evita pegar CPF de réu)
   const cpfComContexto = [...txt.matchAll(/(?:CPF|portador[^.]{0,30}?CPF|inscrit[ao][^.]{0,30}?CPF)\s*[nºo.°]*\s*[:\s]\s*(\d{3}\.?\d{3}\.?\d{3}-?\d{2})/gi)];
   if (cpfComContexto.length > 0) {
@@ -1896,7 +1919,8 @@ function extrairCampos(txt, seg) {
       ultimaParte = ultimaParte
         .replace(/,?\s*(?:inscrit[ao]\s+(?:no|na|sob)\s+)?(?:CNPJ|C\.N\.P\.J).*$/i, '')
         .replace(/,?\s*(?:inscrit[ao]|portador[ao]|com\s+sede|pessoa\s+jur\w*).*$/i, '')
-        .replace(/^\s*(?:\d+[\.\)]\s*)/, '') // remover numeração residual
+        .replace(/^\s*(?:\(?\d+\)?\s*[\.\)]\s*|\(\d+\)\s*)/, '') // remover numeração "(01)", "1.", "1)"
+        .replace(/\b([A-ZÁÉÍÓÚÂÊÔÃÕÇ])\s+([A-ZÁÉÍÓÚÂÊÔÃÕÇ]{3,})\b/g, '$1$2') // juntar letra solta: "F UTURO" → "FUTURO"
         .trim();
 
       if (ultimaParte.length < 3) continue;
@@ -1905,7 +1929,7 @@ function extrairCampos(txt, seg) {
       // 1. Começa com letra minúscula = trecho de meio de frase
       if (/^[a-záéíóúâêôãõç]/.test(ultimaParte)) continue;
       // 2. Começa com preposição/artigo/conjunção = fragmento de corpo de texto
-      if (/^(?:Em|Na|No|Pe[lr]|Por|Se|Que|De[sr]?|Do|Da|Ao|[Àà]s?|Os|As|Um|Uma|Para|Com|Sem|Entre|Após|Antes|Quando|Onde|Como|Sendo|Tendo|Dado|Caso|Pois|Logo|Assim|Ainda|Então|Também|Além|Salvo|Exceto|Conforme)\b/.test(ultimaParte)) continue;
+      if (/^(?:Em|Na|No|Pe(?:[lr]|\s)|Por|Se|Que|De[sr]?|Do|Da|Ao|[Àà]s?|Os|As|Um|Uma|Para|Com|Sem|Entre|Após|Antes|Quando|Onde|Como|Sendo|Tendo|Dado|Caso|Pois|Logo|Assim|Ainda|Então|Também|Além|Salvo|Exceto|Conforme)\b/.test(ultimaParte)) continue;
       // 3. Muitas palavras minúsculas = prosa jurídica, não razão social
       const wordsMin = (ultimaParte.match(/\b[a-záéíóúâêôãõç]{4,}\b/g) || []).length;
       if (wordsMin > 5) continue;
@@ -2003,6 +2027,9 @@ function extrairCampos(txt, seg) {
       .replace(/\s+/g, ' ')
       .replace(/^(?:Dr[a]?|ADV|Adv|ADVOGAD[AO])\.\s*/i, '')
       .trim();
+    // Rejeitar texto de assinatura digital ou bloco jurídico
+    const _FILTRO_ADV = /Assinado\s+Digital|Assinatura\s+Eletr|Certific|EXCELENT|SENHOR\s+JUIZ|TRIBUNAL|ESTADO\s+DE|PODER\s+JUDICI/i;
+    if (_FILTRO_ADV.test(nomeAdv)) continue;
     if (nomeAdv.split(' ').length >= 2) todosAdvs.push({ nome: capitalizar(nomeAdv), uf: ufAdv, oab: oabNum });
   }
   if (todosAdvs.length > 0) {
@@ -2192,7 +2219,9 @@ function preprocessarTexto(txt) {
     // Recolher 3+ quebras de linha em dupla (preservar separação de parágrafos)
     .replace(/\n{3,}/g, '\n\n')
     // Espaços antes de pontuação
-    .replace(/ +([,;:](?!\d))/g, '$1');
+    .replace(/ +([,;:](?!\d))/g, '$1')
+    // Letra maiúscula isolada colada à próxima palavra maiúscula (artefato PDF: "F UTURO" → "FUTURO")
+    .replace(/\b([A-ZÁÉÍÓÚÂÊÔÃÕÇ])\s+([A-ZÁÉÍÓÚÂÊÔÃÕÇ]{3,})\b/g, '$1$2');
 }
 
 // ── SEGMENTAÇÃO EM SEÇÕES DA PETIÇÃO ─────────────────────────────────────────
