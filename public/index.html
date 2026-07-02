@@ -3727,6 +3727,48 @@ const fatStorage = {
   }
 };
 
+// IndexedDB para dados grandes (estado mensal com rows)
+const fatIDB = (() => {
+  const DB_NAME = 'eagle_faturamento';
+  const STORE = 'estados';
+  let _db = null;
+  function open() {
+    if (_db) return Promise.resolve(_db);
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open(DB_NAME, 1);
+      req.onupgradeneeded = e => { e.target.result.createObjectStore(STORE); };
+      req.onsuccess = e => { _db = e.target.result; resolve(_db); };
+      req.onerror = e => reject(e.target.error);
+    });
+  }
+  return {
+    async get(key) {
+      const db = await open();
+      return new Promise((resolve, reject) => {
+        const req = db.transaction(STORE, 'readonly').objectStore(STORE).get(key);
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+    },
+    async set(key, value) {
+      const db = await open();
+      return new Promise((resolve, reject) => {
+        const req = db.transaction(STORE, 'readwrite').objectStore(STORE).put(value, key);
+        req.onsuccess = () => resolve();
+        req.onerror = () => reject(req.error);
+      });
+    },
+    async delete(key) {
+      const db = await open();
+      return new Promise((resolve, reject) => {
+        const req = db.transaction(STORE, 'readwrite').objectStore(STORE).delete(key);
+        req.onsuccess = () => resolve();
+        req.onerror = () => reject(req.error);
+      });
+    }
+  };
+})();
+
 function fatShowToast(msg) {
   let t = document.getElementById('fatToast');
   if (!t) {
@@ -3772,10 +3814,15 @@ function fatLoadMappingHeaders(tipo) {
   try { return JSON.parse(fatStorage.get('mapping-headers-' + tipo).value); } catch(e) { return null; }
 }
 
-function fatLoadMonthState(mk) {
-  try { return JSON.parse(fatStorage.get('mes:' + mk).value); } catch(e) { return fatEmptyState(); }
+async function fatLoadMonthState(mk) {
+  try {
+    const val = await fatIDB.get('mes:' + mk);
+    return val || fatEmptyState();
+  } catch(e) { return fatEmptyState(); }
 }
-function fatSaveMonthState(mk, st) { fatStorage.set('mes:' + mk, JSON.stringify(st)); }
+async function fatSaveMonthState(mk, st) {
+  try { await fatIDB.set('mes:' + mk, st); } catch(e) { console.warn('[fat] IDB save error:', e); }
+}
 
 function fatLoadPrecos() {
   try { return JSON.parse(fatStorage.get('espelho-precos').value); }
@@ -4084,9 +4131,9 @@ function fatRenderAll() {
   fatRenderEspelho();
 }
 
-function fatSetMonth(mk) {
+async function fatSetMonth(mk) {
   fatMonthKey = mk;
-  fatState = fatLoadMonthState(mk);
+  fatState = await fatLoadMonthState(mk);
   fatRenderAll();
 }
 
@@ -4129,14 +4176,14 @@ function fatRenderMappingUI(tipo, headers, detected) {
     const pend = fatPendingMapping[tipo];
     if (!pend) { fatShowToast('Mapeamento salvo. Será usado nos próximos uploads.'); return; }
     fatPendingMapping[tipo] = null;
-    const r = fatApplyCapturaRows(tipo, pend.aoa, pend.headerRowIdx, mapping, pend.file.name);
+    const r = await fatApplyCapturaRows(tipo, pend.aoa, pend.headerRowIdx, mapping, pend.file.name);
     pend.acc.added += r.added;
     pend.acc.duplicadas += r.duplicadas;
     await fatProcessCapturaBatch(tipo, pend.remainingFiles, 0, pend.acc, pend.totalFiles);
   });
 }
 
-function fatApplyCapturaRows(tipo, aoa, headerRowIdx, mapping, fileName) {
+async function fatApplyCapturaRows(tipo, aoa, headerRowIdx, mapping, fileName) {
   const existing = fatState[tipo].rows;
   const keys = new Set(existing.map(r => r.processo));
   let added = 0, duplicadas = 0;
@@ -4155,7 +4202,7 @@ function fatApplyCapturaRows(tipo, aoa, headerRowIdx, mapping, fileName) {
     });
     added++;
   }
-  fatSaveMonthState(fatMonthKey, fatState);
+  await fatSaveMonthState(fatMonthKey, fatState);
   return { added, duplicadas };
 }
 
@@ -4173,7 +4220,7 @@ async function fatProcessCapturaBatch(tipo, files, startIdx, acc, totalFiles) {
         fatRenderMappingUI(tipo, headers, detected);
         return;
       }
-      const r = fatApplyCapturaRows(tipo, aoa, headerRowIdx, mapping, file.name);
+      const r = await fatApplyCapturaRows(tipo, aoa, headerRowIdx, mapping, file.name);
       acc.added += r.added;
       acc.duplicadas += r.duplicadas;
     } catch(err) {
@@ -4200,10 +4247,10 @@ async function fatAbrirAjuste(tipo) {
   });
 }
 
-function fatResetMes() {
+async function fatResetMes() {
   if (!confirm('Isso vai apagar os dados acumulados de Captura, DJE e Cadastro deste mês. Confirmar?')) return;
   fatState = fatEmptyState();
-  fatSaveMonthState(fatMonthKey, fatState);
+  await fatSaveMonthState(fatMonthKey, fatState);
   fatRenderAll();
   fatShowToast('Dados do mês limpos.');
 }
@@ -4348,7 +4395,7 @@ function fatFecharCadastrar() {
   document.getElementById('fatModalCadastrar').classList.remove('open');
 }
 
-function fatAdicionarManual() {
+async function fatAdicionarManual() {
   const npu = document.getElementById('fatManualNPU').value.trim();
   const pasta = document.getElementById('fatManualPasta').value.trim();
   const cad = document.getElementById('fatManualCadastrante').value.trim();
@@ -4362,7 +4409,7 @@ function fatAdicionarManual() {
   if (jaExiste) { msg.textContent = 'Processo já adicionado manualmente.'; msg.style.color = 'var(--amb)'; return; }
 
   fatState.cadastro.manuaisRows.push({ processo: npu, pasta, cadastrante: cad, dataCadastro: data, manual: true });
-  fatSaveMonthState(fatMonthKey, fatState);
+  await fatSaveMonthState(fatMonthKey, fatState);
 
   // Fechar mini-modal
   fatFecharCadastrar();
@@ -4387,7 +4434,7 @@ function fatDownloadSemCadastro() {
   fatShowToast(`${semCad.length} casos exportados.`);
 }
 
-function fatInit() {
+async function fatInit() {
   if (fatInitialized) return;
   fatInitialized = true;
 
@@ -4422,7 +4469,7 @@ function fatInit() {
         }
       }
       fatState.cadastro = { rows, uploadedAt: new Date().toISOString(), totalRaw: raw, totalFiltrado: filtrado, fileName: file.name, outrosPorCadastrante, outrosRows };
-      fatSaveMonthState(fatMonthKey, fatState);
+      await fatSaveMonthState(fatMonthKey, fatState);
       fatRenderCadastro();
       fatRenderCapturas();
       fatRenderEspelho();
@@ -4441,10 +4488,10 @@ function fatInit() {
     if (e.target.files.length) await fatProcessCapturaBatch('dje', Array.from(e.target.files), 0, { added: 0, duplicadas: 0, erros: [] }, e.target.files.length);
     e.target.value = '';
   });
-  document.getElementById('fatMonthInput').addEventListener('change', (e) => {
+  document.getElementById('fatMonthInput').addEventListener('change', async (e) => {
     if (e.target.value) {
       fatStorage.set('ultimo-mes', e.target.value);
-      fatSetMonth(e.target.value);
+      await fatSetMonth(e.target.value);
     }
   });
 
@@ -4453,7 +4500,7 @@ function fatInit() {
   let savedMonth = currentMonth;
   try { savedMonth = fatStorage.get('ultimo-mes').value || currentMonth; } catch(e) {}
   document.getElementById('fatMonthInput').value = savedMonth;
-  fatSetMonth(savedMonth);
+  await fatSetMonth(savedMonth);
 }
 
 </script>
