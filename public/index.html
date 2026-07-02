@@ -1655,21 +1655,24 @@ function extrairCampos(txt, seg) {
       if (todos.length > 0) { campos.valor_causa = 'R$ ' + todos[todos.length - 1][1].trim(); valorAchado = true; break; }
     }
   }
-  // Fallback 2 (agravo/cumprimento): buscar "Valor da Causa: R$ X" na capa (início do doc)
+  // Fallback 2 (agravo/cumprimento): buscar "Valor da Causa: R$ X" em todo o documento
+  // Portal TJMT coloca esse dado em posicoes variadas (pode ser no meio do PDF)
   if (!valorAchado && (ehAgravo || ehCumprimento)) {
-    const txtCapaFlat = txt.substring(0, 3000).replace(/\n/g,' ').replace(/\s{2,}/g,' ');
-    const mCapa = txtCapaFlat.match(/[Vv]alor\s+da\s+[Cc]ausa\s*:?\s*R\$\s*([\d.,]+)/);
-    if (!mCapa) {
-      // Também tentar "Valor: R$ X" na capa
-      const mCapaSimples = txtCapaFlat.match(/[Vv]alor\s*:\s*R\$\s*([\d.,]+)/);
-      if (mCapaSimples) campos.valor_causa = 'R$ ' + mCapaSimples[1].trim();
-    } else {
-      campos.valor_causa = 'R$ ' + mCapa[1].trim();
+    const todosVal = [...txtFlat.matchAll(/[Vv]alor\s+da\s+[Cc]ausa\s*:?\s*R\$\s*([\d.,]+)/g)];
+    if (todosVal.length > 0) {
+      campos.valor_causa = 'R$ ' + todosVal[todosVal.length - 1][1].trim();
+      valorAchado = true;
     }
+  }
+  if (!valorAchado && (ehAgravo || ehCumprimento)) {
+    const mCapaSimples = txtFlat.match(/[Vv]alor\s*:\s*R\$\s*([\d.,]+)/);
+    if (mCapaSimples) campos.valor_causa = 'R$ ' + mCapaSimples[1].trim();
   }
 
   // ── VARA / CARTÓRIO ───────────────────────────────────────────────────────
   const varaPatterns = [
+    // Agravo portal TJMT: "Processo de origem: NPU · Xª Vara Cível da Comarca de Cidade/UF"
+    /[Pp]rocesso\s+de\s+origem[^\n]{5,80}[·•\-]\s*(\d+[ªa°]+\s*Vara[A-Za-záéíóúâêôãõç\s]+?)(?:da\s+Comarca|\/[A-Z]{2}|\n|$)/i,
     // Agravo: "Xª Vara Cível da Comarca de Cidade/UF" (linha do processo de origem)
     /Origem[^\n]{0,50}\n(\d+[ªa°]+\s*Vara[A-Za-záéíóúâêôãõç\s]+?)(?:\/[A-Z]{2}|\n)/i,
     // Juizo/Juízo da Xª Vara
@@ -1934,6 +1937,32 @@ function extrairCampos(txt, seg) {
         if (nome.length < 3) continue;
         if (_FILTRO_AUTOR.test(nome)) continue;
         reus.push({ nome: capitalizar(nome), cnpj: '' });
+      }
+    }
+    // fallback 3: scan por CNPJ no corpo da peticao (agravos TJMT listam "Reu N: NOME, CNPJ X")
+    if (reus.length === 0) {
+      for (const m of txt.matchAll(/\b(\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2})\b/g)) {
+        const cnpj = m[1];
+        if (reus.find(r => r.cnpj === cnpj)) continue;
+        const trecho = txt.substring(Math.max(0, m.index - 500), m.index);
+        const partesF = trecho.split(/\n\s*[Rr][eé][uo][:\s]\s*\d+[\.\):\s]*|\n\s*\d+[\.\)]\s*|\n{2,}|;\s*|\bem\s+face\s+d[eo][:\s]+/i);
+        let ultimaP = (partesF[partesF.length - 1] || '').replace(/\s+/g, ' ').trim();
+        ultimaP = ultimaP
+          .replace(/,?\s*(?:inscrit[ao]\s+(?:no|na|sob)\s+)?(?:CNPJ|C\.N\.P\.J).*$/i, '')
+          .replace(/,?\s*(?:inscrit[ao]|portador[ao]|com\s+sede|pessoa\s+jur\w*).*$/i, '')
+          .replace(/^\s*(?:[Rr][eé]u\s+\d+[:\s]*|\(?\d+\)?\s*[\.\)]\s*)/, '')
+          .trim();
+        if (ultimaP.length < 3) continue;
+        if (/^[a-záéíóúâêôãõç]/.test(ultimaP)) continue;
+        if (/^(?:Em|Na|No|Pe(?:[lr]|\s)|Por|Se|Que|De[sr]?|Do|Da|Ao|Para|Com|Sem|Entre)\b/.test(ultimaP)) continue;
+        const wMin2 = (ultimaP.match(/\b[a-záéíóúâêôãõç]{4,}\b/g) || []).length;
+        if (wMin2 > 5) continue;
+        // Remapear Eagle SCD para Futuro
+        let nomeF = ultimaP;
+        if (/45\.745\.537\/0001-19/.test(cnpj) || /EAGLE\s+SCD/i.test(ultimaP)) {
+          nomeF = 'Futuro Sociedade de Crédito Direto S/A';
+        }
+        reus.push({ nome: capitalizar(nomeF), cnpj });
       }
     }
     // FUTURO SOCIEDADE sempre primeiro
