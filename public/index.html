@@ -325,6 +325,26 @@ textarea{resize:vertical;min-height:52px}
 .fat-download-sub{font-size:12px;color:rgba(255,255,255,.7);margin-bottom:18px}
 .fat-btn-download{background:#fff;color:var(--verde);padding:12px 28px;border-radius:8px;font-size:13px;font-weight:700;border:none;cursor:pointer;font-family:inherit;transition:background .15s}
 .fat-btn-download:hover{background:var(--off)}
+.fat-kpi-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-bottom:20px}
+.fat-kpi{background:#fff;border:1px solid var(--borda-l);border-radius:var(--rlg);padding:16px 14px;box-shadow:var(--shadow);text-align:center}
+.fat-kpi-warn{border-color:var(--err-b);background:var(--err-bg)}
+.fat-kpi-ok{border-color:var(--vok-b);background:var(--vok-bg)}
+.fat-kpi-val{font-size:24px;font-weight:700;color:var(--verde);line-height:1.1;margin-bottom:4px}
+.fat-kpi-warn .fat-kpi-val{color:var(--err)}
+.fat-kpi-ok .fat-kpi-val{color:var(--vok)}
+.fat-kpi-lbl{font-size:10px;color:var(--chumbo);text-transform:uppercase;letter-spacing:.4px}
+.fat-modal{display:none;position:fixed;inset:0;background:rgba(2,36,36,.55);z-index:500;align-items:center;justify-content:center}
+.fat-modal.open{display:flex}
+.fat-modal-box{background:#fff;border-radius:16px;padding:28px;max-width:620px;width:92%;max-height:88vh;overflow-y:auto;box-shadow:0 8px 40px rgba(2,36,36,.25)}
+.fat-modal-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+.fat-modal-ttl{font-size:15px;font-weight:600;color:var(--verde)}
+.fat-modal-close{background:none;border:none;font-size:20px;color:var(--chumbo);cursor:pointer;padding:2px 6px;border-radius:4px;line-height:1}
+.fat-modal-close:hover{background:var(--off);color:var(--verde)}
+.fat-chart-bar-row{display:flex;align-items:center;gap:8px;font-size:11px;margin-bottom:7px}
+.fat-chart-label{width:130px;color:#1a2421;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fat-chart-track{flex:1;background:var(--off);border-radius:6px;height:10px;overflow:hidden}
+.fat-chart-fill{height:100%;border-radius:6px;transition:width .5s ease}
+.fat-chart-val{width:50px;text-align:right;font-weight:600;color:var(--chumbo);font-size:11px}
 
 /* ABA USUÁRIOS */
 .usuarios-wrap{padding:28px 32px;max-width:800px;margin:0 auto}
@@ -474,58 +494,6 @@ textarea{resize:vertical;min-height:52px}
       </div>
     </div>
 
-    <!-- Insumo -->
-    <div class="insumo-upload" style="margin-bottom:24px">
-      <div class="insumo-ttl">Treinar campo com baixa eficiência</div>
-      <div class="insumo-sub">Selecione o campo, faça um print da parte do documento onde a informação aparece e envie. A IA vai aprender a localizar melhor aquele campo.</div>
-
-      <!-- Linha superior: campo + botão -->
-      <div style="display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
-        <select id="insumoCampo" style="flex:1;min-width:180px;font-size:12px;padding:8px 10px;border:1.5px solid var(--borda);border-radius:var(--r);font-family:inherit;background:#fff;outline:none">
-          <option value="">Selecione o campo...</option>
-          <option value="npu">NPU</option>
-          <option value="valor_causa">Valor da causa</option>
-          <option value="advogado_nome">Nome do advogado</option>
-          <option value="advogado_oab">OAB do advogado</option>
-          <option value="autor_nome">Nome do autor</option>
-          <option value="reus">Réu(s)</option>
-          <option value="comarca">Comarca</option>
-          <option value="vara_cartorio">Vara / Cartório</option>
-          <option value="data_ajuizamento">Data de ajuizamento</option>
-          <option value="objeto_principal">Objeto principal</option>
-          <option value="causa_raiz">Causa raiz</option>
-          <option value="rito">Rito</option>
-        </select>
-        <button class="insumo-btn" onclick="enviarInsumo()" style="white-space:nowrap;padding:9px 20px;font-size:12px">
-          Analisar com IA
-        </button>
-      </div>
-
-      <!-- Zona de drop de print -->
-      <div id="insumoDropZone" onclick="document.getElementById('insumoFile').click()"
-        ondragover="event.preventDefault();this.classList.add('insumo-dz-over')"
-        ondragleave="this.classList.remove('insumo-dz-over')"
-        ondrop="insumoOnDrop(event)"
-        style="border:2px dashed var(--borda);border-radius:var(--r);padding:22px 16px;text-align:center;cursor:pointer;transition:all .2s;background:#FAFBFC;margin-bottom:10px">
-        <div id="insumoDropIco" style="margin-bottom:6px">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--ciano)" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-        </div>
-        <div style="font-size:12px;font-weight:600;color:var(--ciano);margin-bottom:3px">Clique ou arraste o print aqui</div>
-        <div style="font-size:10px;color:var(--chumbo)">PNG, JPG, PDF — máx. 10 MB</div>
-        <div id="insumoFileName" style="display:none;margin-top:8px;font-size:11px;color:var(--vok);font-weight:600"></div>
-        <input type="file" id="insumoFile" accept="image/*,.pdf" style="display:none" onchange="insumoOnFileChange(this)">
-      </div>
-
-      <!-- Contexto adicional -->
-      <textarea id="insumoContexto" placeholder="Informações adicionais (opcional): descreva o valor correto, onde aparece no documento, formato esperado..." style="width:100%;padding:8px 10px;border:1.5px solid var(--borda);border-radius:var(--r);font-size:11px;font-family:inherit;font-weight:300;resize:vertical;min-height:56px;outline:none;line-height:1.5"></textarea>
-
-      <div class="insumo-status" id="insumoStatus" style="margin-top:10px"></div>
-    </div>
-
-    <style>
-      .insumo-dz-over{border-color:var(--ciano)!important;background:var(--auto-bg)!important}
-    </style>
-
     <!-- Processos -->
     <div class="acc-card" style="margin-bottom:0">
       <div class="acc-card-ttl">
@@ -587,88 +555,55 @@ textarea{resize:vertical;min-height:52px}
 <div class="tab-panel" id="panel-faturamento">
   <div class="fat-wrap">
 
+    <!-- HEADER -->
     <div class="fat-header">
       <div>
         <div class="fat-title">Faturamento Mensal</div>
         <div class="fat-sub">Consolidador de volumes — Base Cadastro (iiLex) + Capturas do mês</div>
       </div>
-      <div class="fat-month-picker">
-        <span>Mês de referência</span>
-        <input type="month" id="fatMonthInput">
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <div class="fat-month-picker">
+          <span>Mês de referência</span>
+          <input type="month" id="fatMonthInput">
+        </div>
+        <button class="fat-btn fat-btn-primary" onclick="fatAbrirModal()" style="white-space:nowrap">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align:middle;margin-right:4px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Importar dados
+        </button>
       </div>
     </div>
 
-    <!-- BASE CADASTRO -->
-    <div class="fat-card">
-      <div class="fat-card-ttl">Anexo 01 — Base Cadastro (iiLex)</div>
-      <div class="fat-card-sub">Suba a exportação do iiLex. O sistema filtra automaticamente pela coluna Cadastrante.</div>
-
-      <label class="fat-upload-zone">
-        <input type="file" id="fatFileCadastro" accept=".xlsx,.xls">
-        <div class="fat-upload-lbl">Clique para selecionar o arquivo do iiLex (.xlsx)</div>
-      </label>
-
-      <div style="margin-top:12px">
-        <div style="font-size:11px;color:var(--chumbo);font-weight:600;margin-bottom:4px">Cadastrantes considerados:</div>
-        <div class="fat-chips" id="fatChipsCadastrantes"></div>
-        <div class="fat-add-chip">
-          <input type="text" id="fatNovoCadastrante" placeholder="adicionar cadastrante (ex: joao.silva)">
-          <button class="fat-btn fat-btn-ghost" onclick="fatAddCadastrante()">Adicionar</button>
-        </div>
-      </div>
-
-      <div class="fat-stats" id="fatCadastroStats"></div>
-      <div id="fatCadastroTable"></div>
+    <!-- KPI CARDS -->
+    <div class="fat-kpi-grid">
+      <div class="fat-kpi fat-kpi-ok"><div class="fat-kpi-val" id="fatKpiSBK">—</div><div class="fat-kpi-lbl">Cadastrados SBK</div></div>
+      <div class="fat-kpi"><div class="fat-kpi-val" id="fatKpiCaptura">—</div><div class="fat-kpi-lbl">Processos Captura</div></div>
+      <div class="fat-kpi"><div class="fat-kpi-val" id="fatKpiDje">—</div><div class="fat-kpi-lbl">Processos DJE</div></div>
+      <div class="fat-kpi"><div class="fat-kpi-val" id="fatKpiDupl">—</div><div class="fat-kpi-lbl">Duplicados</div></div>
+      <div class="fat-kpi" style="border-color:var(--auto-b);background:var(--auto-bg)"><div class="fat-kpi-val" id="fatKpiTotal" style="color:var(--ciano)">—</div><div class="fat-kpi-lbl">Volume sem duplicidade</div></div>
+      <div class="fat-kpi fat-kpi-warn"><div class="fat-kpi-val" id="fatKpiSemCad">—</div><div class="fat-kpi-lbl">Sem cadastro</div></div>
     </div>
 
-    <!-- CAPTURAS -->
-    <div class="fat-card">
-      <div class="fat-card-ttl">Anexo 01 — Capturas do mês</div>
-      <div class="fat-card-sub">Suba os arquivos diários recebidos por e-mail. Cada upload soma ao total acumulado (sem duplicar processos já lançados).</div>
-
-      <div class="fat-grid2">
-        <div>
-          <div class="fat-section-ttl">Aba Captura</div>
-          <label class="fat-upload-zone">
-            <input type="file" id="fatFileCaptura" accept=".xlsx,.xls" multiple>
-            <div class="fat-upload-lbl">Clique para selecionar captura(s) diária(s)</div>
-          </label>
-          <span class="fat-ajustar-link" onclick="fatAbrirAjuste('captura')">Ajustar mapeamento de colunas</span>
-          <div id="fatMappingCaptura"></div>
-          <div class="fat-stats" id="fatStatsCaptura"></div>
-        </div>
-        <div>
-          <div class="fat-section-ttl">Aba DJE</div>
-          <label class="fat-upload-zone">
-            <input type="file" id="fatFileDje" accept=".xlsx,.xls" multiple>
-            <div class="fat-upload-lbl">Clique para selecionar captura(s) diária(s) DJE</div>
-          </label>
-          <span class="fat-ajustar-link" onclick="fatAbrirAjuste('dje')">Ajustar mapeamento de colunas</span>
-          <div id="fatMappingDje"></div>
-          <div class="fat-stats" id="fatStatsDje"></div>
-        </div>
+    <!-- GRÁFICOS -->
+    <div class="fat-grid2" style="margin-bottom:18px">
+      <div class="fat-card">
+        <div class="fat-card-ttl">Processos por cadastrante</div>
+        <div class="fat-card-sub">Distribuição dos processos capturados no mês</div>
+        <div id="fatChartCadastrante"><p style="font-size:11px;color:var(--chumbo)">Importe os dados para visualizar.</p></div>
       </div>
-
-      <div class="fat-divider"></div>
-      <div class="fat-stats" id="fatStatsCombinado"></div>
-      <div style="margin-top:12px">
-        <button class="fat-btn-danger" onclick="fatResetMes()">Limpar dados do mês</button>
+      <div class="fat-card">
+        <div class="fat-card-ttl">Status dos processos capturados</div>
+        <div class="fat-card-sub">SBK, outros cadastrantes e sem cadastro</div>
+        <div id="fatChartStatus"><p style="font-size:11px;color:var(--chumbo)">Importe os dados para visualizar.</p></div>
       </div>
     </div>
 
     <!-- ESPELHO -->
-    <div class="fat-card">
-      <div class="fat-card-ttl">Espelho de Faturamento (prévia)</div>
-      <div class="fat-card-sub">Volumes calculados automaticamente a partir dos dados de Captura e Cadastro do mês. Edite os valores unitários conforme necessário.</div>
+    <div class="fat-card" style="margin-bottom:18px">
+      <div class="fat-card-ttl">Espelho de Faturamento</div>
+      <div class="fat-card-sub">Volumes calculados automaticamente. Edite os valores unitários conforme necessário.</div>
       <table class="fat-table">
         <thead>
-          <tr>
-            <th>Código</th>
-            <th>Item de Serviço</th>
-            <th>Volume</th>
-            <th>Valor Unitário (R$)</th>
-            <th>Total Faturado (R$)</th>
-          </tr>
+          <tr><th>Código</th><th>Item de Serviço</th><th>Volume</th><th>Valor Unit. (R$)</th><th>Total (R$)</th></tr>
         </thead>
         <tbody id="fatEspelhoBody"></tbody>
         <tfoot>
@@ -680,27 +615,84 @@ textarea{resize:vertical;min-height:52px}
       </table>
     </div>
 
-    <!-- DOWNLOAD -->
-    <!-- DOWNLOADS INDIVIDUAIS -->
+    <!-- DOWNLOADS -->
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
       <div class="fat-card" style="text-align:center;padding:20px">
-        <div style="font-size:11px;font-weight:600;color:var(--chumbo);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">Consolidado Captura</div>
-        <div style="font-size:11px;color:var(--chumbo);margin-bottom:14px">Lista acumulada de processos da aba Captura do mês</div>
+        <div style="font-size:11px;font-weight:600;color:var(--chumbo);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">Consolidado Captura</div>
+        <div style="font-size:11px;color:var(--chumbo);margin-bottom:14px;line-height:1.4">Base completa acumulada da aba Captura — todos os processos sem filtro</div>
         <button class="fat-btn fat-btn-ghost" onclick="fatDownloadCaptura()">Baixar Captura (.xlsx)</button>
       </div>
       <div class="fat-card" style="text-align:center;padding:20px">
-        <div style="font-size:11px;font-weight:600;color:var(--chumbo);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">Consolidado DJE</div>
-        <div style="font-size:11px;color:var(--chumbo);margin-bottom:14px">Lista acumulada de processos da aba DJE do mês</div>
+        <div style="font-size:11px;font-weight:600;color:var(--chumbo);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">Consolidado DJE</div>
+        <div style="font-size:11px;color:var(--chumbo);margin-bottom:14px;line-height:1.4">Base completa acumulada da aba DJE — todos os processos sem filtro</div>
         <button class="fat-btn fat-btn-ghost" onclick="fatDownloadDje()">Baixar DJE (.xlsx)</button>
       </div>
     </div>
 
     <div class="fat-download-card">
-      <div class="fat-download-ttl">Gerar relatório completo do mês</div>
-      <div class="fat-download-sub">Exporta um Excel no padrão do modelo base, com as abas "Cadastro", "Captura MM.YYYY" e "Espelho".</div>
-      <button class="fat-btn-download" onclick="fatDownload()">Baixar Relatório Completo (.xlsx)</button>
+      <div class="fat-download-ttl">Relatório de Faturamento</div>
+      <div class="fat-download-sub">Excel com 4 abas: Cadastro (iiLex SBK), Captura SBK, Captura Outros, Sem Cadastro</div>
+      <button class="fat-btn-download" onclick="fatDownload()">Baixar Relatório (.xlsx)</button>
     </div>
 
+  </div>
+</div>
+
+<!-- MODAL IMPORTAR FATURAMENTO -->
+<div class="fat-modal" id="fatModal" onclick="if(event.target===this)fatFecharModal()">
+  <div class="fat-modal-box">
+    <div class="fat-modal-hdr">
+      <div class="fat-modal-ttl">Importar dados do mês</div>
+      <button class="fat-modal-close" onclick="fatFecharModal()">&#xd7;</button>
+    </div>
+
+    <div class="fat-card" style="margin-bottom:14px">
+      <div class="fat-card-ttl">Base Cadastro (iiLex)</div>
+      <div class="fat-card-sub">Exportação do iiLex. Filtra automaticamente pela coluna Cadastrante.</div>
+      <label class="fat-upload-zone">
+        <input type="file" id="fatFileCadastro" accept=".xlsx,.xls">
+        <div class="fat-upload-lbl">Clique para selecionar o arquivo (.xlsx)</div>
+      </label>
+      <div style="margin-top:10px">
+        <div style="font-size:11px;color:var(--chumbo);font-weight:600;margin-bottom:4px">Cadastrantes SBK:</div>
+        <div class="fat-chips" id="fatChipsCadastrantes"></div>
+        <div class="fat-add-chip">
+          <input type="text" id="fatNovoCadastrante" placeholder="adicionar cadastrante">
+          <button class="fat-btn fat-btn-ghost" onclick="fatAddCadastrante()">Adicionar</button>
+        </div>
+      </div>
+      <div class="fat-stats" id="fatCadastroStats"></div>
+      <div id="fatCadastroTable"></div>
+    </div>
+
+    <div class="fat-card" style="margin-bottom:14px">
+      <div class="fat-card-ttl">Captura diária</div>
+      <div class="fat-card-sub">Arquivos diários da aba Captura. Pode selecionar vários de uma vez.</div>
+      <label class="fat-upload-zone">
+        <input type="file" id="fatFileCaptura" accept=".xlsx,.xls" multiple>
+        <div class="fat-upload-lbl">Clique para selecionar captura(s) diária(s)</div>
+      </label>
+      <span class="fat-ajustar-link" style="display:inline-block;margin-top:6px" onclick="fatAbrirAjuste('captura')">Ajustar mapeamento de colunas</span>
+      <div id="fatMappingCaptura"></div>
+      <div class="fat-stats" id="fatStatsCaptura"></div>
+    </div>
+
+    <div class="fat-card" style="margin-bottom:20px">
+      <div class="fat-card-ttl">Captura DJE</div>
+      <div class="fat-card-sub">Arquivos diários da aba DJE. Pode selecionar vários de uma vez.</div>
+      <label class="fat-upload-zone">
+        <input type="file" id="fatFileDje" accept=".xlsx,.xls" multiple>
+        <div class="fat-upload-lbl">Clique para selecionar captura(s) DJE</div>
+      </label>
+      <span class="fat-ajustar-link" style="display:inline-block;margin-top:6px" onclick="fatAbrirAjuste('dje')">Ajustar mapeamento de colunas</span>
+      <div id="fatMappingDje"></div>
+      <div class="fat-stats" id="fatStatsDje"></div>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <button class="fat-btn-danger" onclick="fatResetMes()">Limpar dados do mês</button>
+      <button class="fat-btn fat-btn-primary" onclick="fatFecharModal()">Concluir</button>
+    </div>
   </div>
 </div>
 
@@ -3184,29 +3176,32 @@ async function carregarAcuracia() {
     document.getElementById('kpiAceitos').textContent = totalAcertos || '--';
     document.getElementById('kpiAlterados').textContent = totalVal - totalAcertos || '--';
 
-    // Gráfico de barras — eficiência por campo (ordena do pior para o melhor)
+    // Gráfico de barras — todos os campos sempre, ordenados do pior para o melhor
+    const statsMap = {};
+    (stats || []).forEach(s => statsMap[s.campo] = s);
+    const todosCampos = Object.entries(CAMPO_LABELS).map(([campo, label]) => {
+      const s = statsMap[campo];
+      return s ? { campo, label, pct: s.pct, acertos: s.acertos, total: s.total, comDados: true }
+               : { campo, label, pct: 100, acertos: 0, total: 0, comDados: false };
+    }).sort((a, b) => a.pct - b.pct);
+
     let htmlS = '';
-    if (stats && stats.length > 0) {
-      const sorted = [...stats].sort((a, b) => a.pct - b.pct);
-      sorted.forEach(s => {
-        const cor = s.pct >= 80 ? '#16a34a' : s.pct >= 60 ? '#d97706' : '#dc2626';
-        const label = CAMPO_LABELS[s.campo] || s.campo;
+    if (todosCampos.length > 0) {
+      todosCampos.forEach(s => {
+        const cor = !s.comDados ? '#9aA0a6' : s.pct >= 80 ? '#16a34a' : s.pct >= 60 ? '#d97706' : '#dc2626';
+        const pctTxt = s.comDados ? s.pct + '%' : '100%';
+        const countTxt = s.comDados ? `${s.acertos}/${s.total}` : 'sem dados';
         htmlS += `<div class="acc-bar-row">
-          <span class="acc-bar-label" title="${label}">${label}</span>
+          <span class="acc-bar-label" title="${s.label}">${s.label}</span>
           <div class="acc-bar-track">
-            <div class="acc-bar-fill" style="width:${s.pct}%;background:${cor}"></div>
+            <div class="acc-bar-fill" style="width:${s.comDados ? s.pct : 100}%;background:${cor};opacity:${s.comDados ? 1 : 0.25}"></div>
           </div>
-          <span class="acc-pct" style="color:${cor}">${s.pct}%</span>
-          <span class="acc-count">${s.acertos}/${s.total}</span>
+          <span class="acc-pct" style="color:${cor}">${pctTxt}</span>
+          <span class="acc-count">${countTxt}</span>
         </div>`;
       });
-    } else {
-      htmlS = `<div style="text-align:center;padding:24px 0">
-        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--borda)" stroke-width="1.5" style="margin-bottom:8px"><path d="M3 3v18h18"/><path d="M18.4 9l-4-4-4 4-3.4-3.4"/></svg>
-        <p style="font-size:11px;color:var(--chumbo)">Salve processos para ver a eficiência por campo.</p>
-      </div>`;
     }
-    document.getElementById('accStatsContent').innerHTML = htmlS;
+    document.getElementById('accStatsContent').innerHTML = htmlS || '<p style="font-size:11px;color:var(--chumbo)">Salve processos para ver os dados.</p>';
 
     // Campos mais corrigidos
     let htmlE = '';
@@ -3912,10 +3907,10 @@ function fatRenderCadastro() {
 }
 
 function fatRenderCapturas() {
-  document.getElementById('fatStatsCaptura').innerHTML =
-    `<div class="fat-stat"><div class="n">${fatState.captura.rows.length}</div><div class="l">processos (Captura)</div></div>`;
-  document.getElementById('fatStatsDje').innerHTML =
-    `<div class="fat-stat"><div class="n">${fatState.dje.rows.length}</div><div class="l">processos (DJE)</div></div>`;
+  const stCapEl = document.getElementById('fatStatsCaptura');
+  const stDjeEl = document.getElementById('fatStatsDje');
+  if (stCapEl) stCapEl.innerHTML = `<div class="fat-stat"><div class="n">${fatState.captura.rows.length}</div><div class="l">processos (Captura)</div></div>`;
+  if (stDjeEl) stDjeEl.innerHTML = `<div class="fat-stat"><div class="n">${fatState.dje.rows.length}</div><div class="l">processos (DJE)</div></div>`;
 
   const capSet = new Set(fatState.captura.rows.map(r => fatNormalizeNPU(r.processo)));
   const djeSet = new Set(fatState.dje.rows.map(r => fatNormalizeNPU(r.processo)));
@@ -3926,13 +3921,72 @@ function fatRenderCapturas() {
   let sbk = 0, outros = 0, semCad = 0;
   uniao.forEach(n => { if (sbkSet.has(n)) sbk++; else if (outrosSet.has(n)) outros++; else semCad++; });
 
-  document.getElementById('fatStatsCombinado').innerHTML = `
-    <div class="fat-stat"><div class="n">${dupl}</div><div class="l">duplicados Captura e DJE</div></div>
-    <div class="fat-stat"><div class="n">${uniao.size}</div><div class="l">total sem duplicidade</div></div>
-    <div class="fat-stat" style="background:#e3f3ea"><div class="n">${sbk}</div><div class="l">cadastrados SBK</div></div>
-    <div class="fat-stat" style="background:#fdeee0"><div class="n">${outros}</div><div class="l">cadastrados (outros)</div></div>
-    <div class="fat-stat" style="background:#fdecec"><div class="n">${semCad}</div><div class="l">sem cadastro</div></div>
-  `;
+  // KPI cards
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  set('fatKpiSBK', sbk.toLocaleString('pt-BR'));
+  set('fatKpiCaptura', fatState.captura.rows.length.toLocaleString('pt-BR'));
+  set('fatKpiDje', fatState.dje.rows.length.toLocaleString('pt-BR'));
+  set('fatKpiDupl', dupl.toLocaleString('pt-BR'));
+  set('fatKpiTotal', uniao.size.toLocaleString('pt-BR'));
+  set('fatKpiSemCad', semCad.toLocaleString('pt-BR'));
+
+  // Gráfico 1: processos por cadastrante (captura + DJE combinados)
+  const porCad = {};
+  [...fatState.captura.rows, ...fatState.dje.rows].forEach(r => {
+    const n = fatNormalizeNPU(r.processo);
+    const info = sbkSet.get(n) || outrosSet.get(n);
+    const cad = info ? info.cadastrante : 'Sem cadastro';
+    porCad[cad] = (porCad[cad] || 0) + 1;
+  });
+  const cadEntries = Object.entries(porCad).sort((a, b) => b[1] - a[1]);
+  const maxCad = cadEntries.length ? cadEntries[0][1] : 1;
+  const cores = ['var(--ciano)', 'var(--verde)', '#2A7C79', '#4A545E', '#C0392B', '#F59E0B', '#6366f1', '#0891b2'];
+  let htmlChart1 = '';
+  if (cadEntries.length) {
+    cadEntries.forEach(([k, v], i) => {
+      const pct = Math.round(v / maxCad * 100);
+      const cor = k === 'Sem cadastro' ? 'var(--err)' : cores[i % cores.length];
+      htmlChart1 += `<div class="fat-chart-bar-row">
+        <span class="fat-chart-label" title="${k}">${k}</span>
+        <div class="fat-chart-track"><div class="fat-chart-fill" style="width:${pct}%;background:${cor}"></div></div>
+        <span class="fat-chart-val">${v}</span>
+      </div>`;
+    });
+  } else {
+    htmlChart1 = '<p style="font-size:11px;color:var(--chumbo)">Importe os dados para visualizar.</p>';
+  }
+  const el1 = document.getElementById('fatChartCadastrante');
+  if (el1) el1.innerHTML = htmlChart1;
+
+  // Gráfico 2: status (SBK / Outros / Sem cadastro)
+  const total2 = uniao.size || 1;
+  const items2 = [
+    { label: 'Cadastrados SBK', val: sbk, cor: 'var(--vok)' },
+    { label: 'Cadastrados (outros)', val: outros, cor: '#F59E0B' },
+    { label: 'Sem cadastro', val: semCad, cor: 'var(--err)' }
+  ];
+  let htmlChart2 = '';
+  if (uniao.size > 0) {
+    items2.forEach(item => {
+      const pct = Math.round(item.val / total2 * 100);
+      htmlChart2 += `<div class="fat-chart-bar-row">
+        <span class="fat-chart-label">${item.label}</span>
+        <div class="fat-chart-track"><div class="fat-chart-fill" style="width:${pct}%;background:${item.cor}"></div></div>
+        <span class="fat-chart-val" style="color:${item.cor}">${item.val} <span style="font-weight:400;font-size:10px">(${pct}%)</span></span>
+      </div>`;
+    });
+    // Nota sobre padrão dos outros
+    if (outros > 0) {
+      const outrosCads = {};
+      uniao.forEach(n => { if (!sbkSet.has(n) && outrosSet.has(n)) { const info = outrosSet.get(n); outrosCads[info.cadastrante] = (outrosCads[info.cadastrante]||0)+1; }});
+      const top = Object.entries(outrosCads).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([k,v])=>`${k} (${v})`).join(', ');
+      if (top) htmlChart2 += `<div style="margin-top:10px;padding:8px 10px;background:var(--amb-bg);border:1px solid var(--amb-b);border-radius:6px;font-size:10px;color:var(--amb)">Outros cadastrantes: ${top}</div>`;
+    }
+  } else {
+    htmlChart2 = '<p style="font-size:11px;color:var(--chumbo)">Importe os dados para visualizar.</p>';
+  }
+  const el2 = document.getElementById('fatChartStatus');
+  if (el2) el2.innerHTML = htmlChart2;
 }
 
 function fatRenderChips() {
@@ -4092,12 +4146,16 @@ function fatResetMes() {
 }
 
 function fatDownload() {
-  const { sheetName, mm, yyyy } = fatMonthLabel(fatMonthKey);
+  const { mm, yyyy } = fatMonthLabel(fatMonthKey);
+  const { sbkSet, outrosSet } = fatBuildCadastroLookups();
+
+  // Aba 1: Cadastro iiLex SBK
   const cadastroAoa = [
     ['Nº do Processo / Nº do CNJ', 'Pasta iiLex', 'Data de cadastro', 'Cadastrante'],
     ...fatState.cadastro.rows.map(r => [r.processo, r.pasta, r.dataCadastro, r.cadastrante])
   ];
-  const { sbkSet, outrosSet } = fatBuildCadastroLookups();
+
+  // Deduplicar captura + DJE
   const vistos = new Set();
   const combinado = [];
   [...fatState.captura.rows, ...fatState.dje.rows].forEach(r => {
@@ -4106,46 +4164,36 @@ function fatDownload() {
     vistos.add(n);
     combinado.push(r);
   });
-  const capturaAoa = [
-    ['DATA', 'Processo', 'Pasta', 'Data do Cadastro', 'Tipo Ocorrencia', 'Cadastrante'],
-    ...combinado.map(r => {
-      const n = fatNormalizeNPU(r.processo);
-      const info = sbkSet.get(n) || outrosSet.get(n);
-      return [r.data, r.processo, r.pasta || (info ? info.pasta : ''), r.dataCadastro || (info ? info.dataCadastro : ''), r.tipoOcorrencia, info ? info.cadastrante : 'Sem cadastro'];
-    })
-  ];
-  const prec = fatLoadPrecos();
-  const vols = fatLoadVolumesManuais(fatMonthKey);
-  const linhas = FAT_ESPELHO_ITENS.map(item => {
-    let volume;
-    if (item.regra === 'auto_captura') volume = fatVolumeCapturaTotal();
-    else if (item.regra === 'auto_cadastro_total') volume = fatState.cadastro.totalFiltrado;
-    else volume = vols[item.codigo] || 0;
-    const p = prec[item.codigo] !== undefined ? prec[item.codigo] : item.precoDefault;
-    return [item.codigo, item.nome, volume, p, volume * p];
+
+  const capHdr = ['DATA', 'Processo', 'Pasta', 'Data do Cadastro', 'Tipo Ocorrencia', 'Cadastrante'];
+  const sbkRows = [], outrosRows = [], semCadRows = [];
+  combinado.forEach(r => {
+    const n = fatNormalizeNPU(r.processo);
+    const info = sbkSet.get(n) || outrosSet.get(n);
+    const cad = info ? info.cadastrante : 'Sem cadastro';
+    const row = [r.data, r.processo, r.pasta || (info ? info.pasta : ''), r.dataCadastro || (info ? info.dataCadastro : ''), r.tipoOcorrencia, cad];
+    if (sbkSet.has(n)) sbkRows.push(row);
+    else if (outrosSet.has(n)) outrosRows.push(row);
+    else semCadRows.push(row);
   });
-  const espelhoAoa = [
-    ['Código AX', 'Itens de Serviço', 'Volumes', 'Valor Unitário', 'Total Faturado'],
-    ...linhas,
-    ['Total', '', '', '', linhas.reduce((a, l) => a + l[4], 0)]
-  ];
+
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(cadastroAoa), 'Cadastro');
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(capturaAoa), sheetName);
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(espelhoAoa), 'Espelho');
-  XLSX.writeFile(wb, `FATURAMENTO_EAGLE_BASE_${mm}.${yyyy}.xlsx`);
-  fatShowToast('Relatório gerado com sucesso.');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([capHdr, ...sbkRows]), 'Captura SBK');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([capHdr, ...outrosRows]), 'Captura Outros');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([capHdr, ...semCadRows]), 'Sem Cadastro');
+  XLSX.writeFile(wb, `FATURAMENTO_EAGLE_${mm}.${yyyy}.xlsx`);
+  fatShowToast('Relatório gerado: 4 abas.');
 }
 
 function fatDownloadTipo(tipo) {
-  const { sbkSet, outrosSet } = fatBuildCadastroLookups();
   const rows = fatState[tipo].rows;
   if (!rows.length) { fatShowToast('Nenhum processo acumulado para ' + (tipo === 'captura' ? 'Captura' : 'DJE') + ' neste mês.'); return; }
+  const { sbkSet, outrosSet } = fatBuildCadastroLookups();
   const { mm, yyyy } = fatMonthLabel(fatMonthKey);
   const label = tipo === 'captura' ? 'CAPTURA' : 'DJE';
-  const headers = ['DATA', 'Processo', 'Pasta', 'Data do Cadastro', 'Tipo Ocorrencia', 'Cadastrante'];
   const aoa = [
-    headers,
+    ['DATA', 'Processo', 'Pasta', 'Data do Cadastro', 'Tipo Ocorrencia', 'Cadastrante'],
     ...rows.map(r => {
       const n = fatNormalizeNPU(r.processo);
       const info = sbkSet.get(n) || outrosSet.get(n);
@@ -4155,11 +4203,18 @@ function fatDownloadTipo(tipo) {
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa), label);
   XLSX.writeFile(wb, `CONSOLIDADO_${label}_${mm}.${yyyy}.xlsx`);
-  fatShowToast(`Consolidado ${label === 'CAPTURA' ? 'Captura' : 'DJE'} gerado.`);
+  fatShowToast(`Consolidado ${label} gerado (${rows.length} processos).`);
 }
 
 function fatDownloadCaptura() { fatDownloadTipo('captura'); }
 function fatDownloadDje() { fatDownloadTipo('dje'); }
+
+function fatAbrirModal() {
+  document.getElementById('fatModal').classList.add('open');
+}
+function fatFecharModal() {
+  document.getElementById('fatModal').classList.remove('open');
+}
 
 function fatInit() {
   if (fatInitialized) return;
@@ -4216,13 +4271,18 @@ function fatInit() {
     e.target.value = '';
   });
   document.getElementById('fatMonthInput').addEventListener('change', (e) => {
-    if (e.target.value) fatSetMonth(e.target.value);
+    if (e.target.value) {
+      fatStorage.set('ultimo-mes', e.target.value);
+      fatSetMonth(e.target.value);
+    }
   });
 
   const now = new Date();
-  const defaultMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  document.getElementById('fatMonthInput').value = defaultMonth;
-  fatSetMonth(defaultMonth);
+  const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  let savedMonth = currentMonth;
+  try { savedMonth = fatStorage.get('ultimo-mes').value || currentMonth; } catch(e) {}
+  document.getElementById('fatMonthInput').value = savedMonth;
+  fatSetMonth(savedMonth);
 }
 
 </script>
