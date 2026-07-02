@@ -3715,6 +3715,7 @@ let fatPendingMapping = { captura: null, dje: null };
 let fatPrecosAtuais = null;
 let fatVolumesManuaisAtuais = null;
 let fatInitialized = false;
+let fatCadastroConsolidado = null; // base global acumulada de todos os uploads iiLex
 
 const fatStorage = {
   get(key) {
@@ -3777,6 +3778,21 @@ const fatIDB = (() => {
   };
 })();
 
+function fatEmptyCadastroConsolidado() {
+  return { rows: [], manuaisRows: [], outrosRows: [], outrosPorCadastrante: {}, uploads: [] };
+}
+
+async function fatLoadCadastroConsolidado() {
+  try {
+    const val = await fatIDB.get('cadastro:consolidado');
+    return val || fatEmptyCadastroConsolidado();
+  } catch(e) { return fatEmptyCadastroConsolidado(); }
+}
+
+async function fatSaveCadastroConsolidado() {
+  await fatIDB.set('cadastro:consolidado', fatCadastroConsolidado);
+}
+
 async function fatMigrateLocalStorage() {
   const toMigrate = [];
   for (let i = 0; i < localStorage.length; i++) {
@@ -3793,6 +3809,40 @@ async function fatMigrateLocalStorage() {
       }
       localStorage.removeItem(k);
     } catch(e) { console.warn('[fat] migration error:', e); }
+  }
+  // Absorver rows de cadastro de meses antigos para o consolidado (executa uma vez)
+  const consolidadoExistente = await fatIDB.get('cadastro:consolidado');
+  if (!consolidadoExistente) {
+    const consolidado = fatEmptyCadastroConsolidado();
+    const sbkNPUs = new Set();
+    const outrosNPUs = new Set();
+    try {
+      const keys = await fatIDB.getAllKeys();
+      const mesKeys = keys.filter(k => typeof k === 'string' && k.startsWith('mes:')).sort();
+      for (const key of mesKeys) {
+        const st = await fatIDB.get(key);
+        if (!st || !st.cadastro) continue;
+        (st.cadastro.rows || []).forEach(r => {
+          const n = fatNormalizeNPU(r.processo);
+          if (!sbkNPUs.has(n)) { sbkNPUs.add(n); consolidado.rows.push(r); }
+        });
+        (st.cadastro.manuaisRows || []).forEach(r => {
+          const n = fatNormalizeNPU(r.processo);
+          if (!sbkNPUs.has(n)) { sbkNPUs.add(n); consolidado.manuaisRows.push(r); }
+        });
+        (st.cadastro.outrosRows || []).forEach(r => {
+          const n = fatNormalizeNPU(r.processo);
+          if (!outrosNPUs.has(n)) {
+            outrosNPUs.add(n);
+            consolidado.outrosRows.push(r);
+            consolidado.outrosPorCadastrante[r.cadastrante] = (consolidado.outrosPorCadastrante[r.cadastrante] || 0) + 1;
+          }
+        });
+      }
+    } catch(e) { console.warn('[fat] consolidado migration error:', e); }
+    if (consolidado.rows.length || consolidado.outrosRows.length) {
+      await fatIDB.set('cadastro:consolidado', consolidado);
+    }
   }
 }
 
@@ -3953,12 +4003,12 @@ async function fatReadWorkbook(file) {
 }
 
 function fatBuildCadastroLookups() {
+  const base = fatCadastroConsolidado || fatEmptyCadastroConsolidado();
   const sbkMap = new Map();
-  fatState.cadastro.rows.forEach(r => sbkMap.set(fatNormalizeNPU(r.processo), r));
-  // Manuais também entram como SBK
-  (fatState.cadastro.manuaisRows || []).forEach(r => sbkMap.set(fatNormalizeNPU(r.processo), r));
+  (base.rows || []).forEach(r => sbkMap.set(fatNormalizeNPU(r.processo), r));
+  (base.manuaisRows || []).forEach(r => sbkMap.set(fatNormalizeNPU(r.processo), r));
   const outrosMap = new Map();
-  (fatState.cadastro.outrosRows || []).forEach(r => outrosMap.set(fatNormalizeNPU(r.processo), r));
+  (base.outrosRows || []).forEach(r => outrosMap.set(fatNormalizeNPU(r.processo), r));
   return { sbkSet: sbkMap, outrosSet: outrosMap };
 }
 
@@ -3978,7 +4028,7 @@ function fatRenderEspelho() {
   tbody.innerHTML = FAT_ESPELHO_ITENS.map(item => {
     let volume, badge = '';
     if (item.regra === 'auto_captura') { volume = fatVolumeCapturaTotal(); badge = '<span class="fat-badge-ok">auto</span>'; }
-    else if (item.regra === 'auto_cadastro_total') { volume = fatState.cadastro.totalFiltrado; badge = '<span class="fat-badge-ok">auto</span>'; }
+    else if (item.regra === 'auto_cadastro_total') { volume = (fatCadastroConsolidado?.rows?.length || 0); badge = '<span class="fat-badge-ok">auto</span>'; }
     else { volume = fatVolumesManuaisAtuais[item.codigo] || 0; badge = '<span class="fat-badge-warn">manual</span>'; }
     const preco = fatPrecosAtuais[item.codigo] !== undefined ? fatPrecosAtuais[item.codigo] : item.precoDefault;
     const total = volume * preco;
@@ -4013,19 +4063,21 @@ function fatRenderEspelho() {
 }
 
 function fatRenderCadastro() {
-  const c = fatState.cadastro;
+  const c = fatCadastroConsolidado;
   const stats = document.getElementById('fatCadastroStats');
   const tbl = document.getElementById('fatCadastroTable');
-  if (!c.rows.length) { stats.innerHTML = ''; tbl.innerHTML = ''; return; }
+  if (!c || !c.rows.length) { stats.innerHTML = ''; tbl.innerHTML = ''; return; }
 
   const porCadastrante = {};
   c.rows.forEach(r => porCadastrante[r.cadastrante] = (porCadastrante[r.cadastrante] || 0) + 1);
-  const totalOutros = Object.values(c.outrosPorCadastrante || {}).reduce((a, b) => a + b, 0);
+  const totalOutros = (c.outrosRows || []).length;
+  const totalManuais = (c.manuaisRows || []).length;
 
   let html = `
-    <div class="fat-stat"><div class="n">${c.totalRaw}</div><div class="l">registros no arquivo</div></div>
-    <div class="fat-stat"><div class="n">${c.totalFiltrado}</div><div class="l">após filtro de cadastrante</div></div>
+    <div class="fat-stat"><div class="n">${c.rows.length}</div><div class="l">cadastros SBK (total)</div></div>
+    <div class="fat-stat"><div class="n">${(c.uploads || []).length}</div><div class="l">arquivos importados</div></div>
   `;
+  if (totalManuais) html += `<div class="fat-stat" style="background:var(--auto-bg)"><div class="n">${totalManuais}</div><div class="l">adicionados manualmente</div></div>`;
   Object.entries(porCadastrante).forEach(([k, v]) => {
     html += `<div class="fat-stat"><div class="n">${v}</div><div class="l">${k}</div></div>`;
   });
@@ -4034,13 +4086,15 @@ function fatRenderCadastro() {
   }
   stats.innerHTML = html;
 
-  let outrosDetalhe = '';
-  if (totalOutros) {
-    const linhas = Object.entries(c.outrosPorCadastrante).sort((a, b) => b[1] - a[1])
-      .map(([k, v]) => `<tr><td style="padding:4px 8px">${k}</td><td style="padding:4px 8px">${v}</td></tr>`).join('');
-    outrosDetalhe = `<table class="fat-table" style="max-width:360px;margin-top:10px"><thead><tr><th>Cadastrante (outros)</th><th>Qtd</th></tr></thead><tbody>${linhas}</tbody></table>`;
+  const uploads = (c.uploads || []).slice().reverse();
+  let uploadsHtml = '';
+  if (uploads.length) {
+    uploadsHtml = `<div style="font-size:11px;font-weight:600;color:var(--chumbo);margin-top:10px;margin-bottom:4px">Historico de importacoes:</div>`;
+    uploadsHtml += uploads.map(u => `<div style="font-size:11px;color:var(--chumbo);margin-bottom:2px">
+      ${u.fileName} — ${new Date(u.uploadedAt).toLocaleString('pt-BR')} — ${u.novos} novos registros
+    </div>`).join('');
   }
-  tbl.innerHTML = `<div style="font-size:11px;color:var(--chumbo);margin-top:8px">Arquivo: ${c.fileName} — carregado em ${new Date(c.uploadedAt).toLocaleString('pt-BR')}</div>${outrosDetalhe}`;
+  tbl.innerHTML = uploadsHtml;
 }
 
 async function fatRenderCapturas() {
@@ -4288,10 +4342,11 @@ function fatDownload() {
   const { mm, yyyy } = fatMonthLabel(fatMonthKey);
   const { sbkSet, outrosSet } = fatBuildCadastroLookups();
 
-  // Aba 1: Cadastro iiLex SBK
+  // Aba 1: Cadastro iiLex SBK (consolidado global)
+  const todosRows = [...(fatCadastroConsolidado?.rows || []), ...(fatCadastroConsolidado?.manuaisRows || [])];
   const cadastroAoa = [
     ['Nº do Processo / Nº do CNJ', 'Pasta iiLex', 'Data de cadastro', 'Cadastrante'],
-    ...fatState.cadastro.rows.map(r => [r.processo, r.pasta, r.dataCadastro, r.cadastrante])
+    ...todosRows.map(r => [r.processo, r.pasta, r.dataCadastro, r.cadastrante])
   ];
 
   // Deduplicar captura + DJE
@@ -4388,21 +4443,23 @@ function fatBuildLookupsFromState(st) {
 }
 
 async function fatGetAllSemCadRows() {
+  // Usa sempre o consolidado global como referencia unica
+  const { sbkSet, outrosSet } = fatBuildCadastroLookups();
+  if (!sbkSet.size && !outrosSet.size) return []; // sem base carregada, nao ha como calcular
   const vistos = new Set();
   const result = [];
 
-  // Mes atual — usa cadastro do proprio mes
+  // Mes atual
   const { mm: mmA, yyyy: yyyyA } = fatMonthLabel(fatMonthKey);
   const labelAtual = `${mmA}/${yyyyA}`;
-  const { sbkSet: sbkA, outrosSet: outrosA } = fatBuildCadastroLookups();
   [...fatState.captura.rows, ...fatState.dje.rows].forEach(r => {
     const n = fatNormalizeNPU(r.processo);
     if (vistos.has(n)) return;
     vistos.add(n);
-    if (!sbkA.has(n) && !outrosA.has(n)) result.push({ ...r, mesRef: labelAtual });
+    if (!sbkSet.has(n) && !outrosSet.has(n)) result.push({ ...r, mesRef: labelAtual });
   });
 
-  // Meses anteriores — cada mes avaliado com sua propria base de cadastro
+  // Meses anteriores — todos comparados contra o mesmo consolidado
   try {
     const keys = await fatIDB.getAllKeys();
     const pastKeys = keys
@@ -4411,17 +4468,14 @@ async function fatGetAllSemCadRows() {
     for (const key of pastKeys) {
       const st = await fatIDB.get(key);
       if (!st) continue;
-      // So inclui meses que tinham base de cadastro carregada
-      if (!st.cadastro?.rows?.length && !st.cadastro?.manuaisRows?.length) continue;
       const mk = key.replace('mes:', '');
       const { mm, yyyy } = fatMonthLabel(mk);
       const label = `${mm}/${yyyy}`;
-      const { sbkSet: sbkP, outrosSet: outrosP } = fatBuildLookupsFromState(st);
       [...(st.captura?.rows || []), ...(st.dje?.rows || [])].forEach(r => {
         const n = fatNormalizeNPU(r.processo);
         if (vistos.has(n)) return;
         vistos.add(n);
-        if (!sbkP.has(n) && !outrosP.has(n)) result.push({ ...r, mesRef: label });
+        if (!sbkSet.has(n) && !outrosSet.has(n)) result.push({ ...r, mesRef: label });
       });
     }
   } catch(e) { console.warn('[fat] getAllSemCad error:', e); }
@@ -4496,12 +4550,13 @@ async function fatAdicionarManual() {
   if (!npu) { msg.textContent = 'Informe o número do processo.'; msg.style.color = 'var(--err)'; return; }
   if (!cad) { msg.textContent = 'Informe o cadastrante.'; msg.style.color = 'var(--err)'; return; }
 
-  if (!fatState.cadastro.manuaisRows) fatState.cadastro.manuaisRows = [];
-  const jaExiste = fatState.cadastro.manuaisRows.some(r => fatNormalizeNPU(r.processo) === fatNormalizeNPU(npu));
-  if (jaExiste) { msg.textContent = 'Processo já adicionado manualmente.'; msg.style.color = 'var(--amb)'; return; }
+  if (!fatCadastroConsolidado.manuaisRows) fatCadastroConsolidado.manuaisRows = [];
+  const jaExiste = fatCadastroConsolidado.manuaisRows.some(r => fatNormalizeNPU(r.processo) === fatNormalizeNPU(npu))
+    || fatCadastroConsolidado.rows.some(r => fatNormalizeNPU(r.processo) === fatNormalizeNPU(npu));
+  if (jaExiste) { msg.textContent = 'Processo ja consta na base consolidada.'; msg.style.color = 'var(--amb)'; return; }
 
-  fatState.cadastro.manuaisRows.push({ processo: npu, pasta, cadastrante: cad, dataCadastro: data, manual: true });
-  await fatSaveMonthState(fatMonthKey, fatState);
+  fatCadastroConsolidado.manuaisRows.push({ processo: npu, pasta, cadastrante: cad, dataCadastro: data, manual: true });
+  await fatSaveCadastroConsolidado();
 
   // Fechar mini-modal
   fatFecharCadastrar();
@@ -4533,6 +4588,9 @@ async function fatInit() {
   // Migra dados antigos do localStorage para IndexedDB (executa uma vez)
   await fatMigrateLocalStorage();
 
+  // Carrega o cadastro consolidado global
+  fatCadastroConsolidado = await fatLoadCadastroConsolidado();
+
   document.getElementById('fatFileCadastro').addEventListener('change', async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -4544,8 +4602,9 @@ async function fatInit() {
       if (cols.processo === -1 || cols.cadastrante === -1) { fatShowToast('Não foi possível identificar as colunas. Verifique o cabeçalho.'); return; }
       const allowed = fatLoadCadastrantes();
       const allowedNorm = allowed.map(a => a.toLowerCase().trim());
-      let raw = 0, filtrado = 0;
-      const rows = [], outrosPorCadastrante = {}, outrosRows = [];
+      let raw = 0, novos = 0, duplicados = 0;
+      const sbkNPUs = new Set((fatCadastroConsolidado.rows || []).map(r => fatNormalizeNPU(r.processo)));
+      const outrosNPUs = new Set((fatCadastroConsolidado.outrosRows || []).map(r => fatNormalizeNPU(r.processo)));
       for (let i = headerRowIdx + 1; i < aoa.length; i++) {
         const r = aoa[i];
         const cad = String(r[cols.cadastrante] || '').trim();
@@ -4553,22 +4612,30 @@ async function fatInit() {
         if (cols.processo > -1 && !r[cols.processo]) continue;
         raw++;
         const processo = String(r[cols.processo] || '').trim();
+        const n = fatNormalizeNPU(processo);
         const pasta = cols.pasta > -1 ? String(r[cols.pasta] || '').trim() : '';
         const dataCadastro = cols.dataCadastro > -1 ? fatExcelDateToStr(r[cols.dataCadastro]) : '';
         if (allowedNorm.includes(cad.toLowerCase())) {
-          filtrado++;
-          rows.push({ processo, pasta, dataCadastro, cadastrante: cad });
+          if (!sbkNPUs.has(n)) {
+            sbkNPUs.add(n);
+            fatCadastroConsolidado.rows.push({ processo, pasta, dataCadastro, cadastrante: cad });
+            novos++;
+          } else { duplicados++; }
         } else {
-          outrosPorCadastrante[cad] = (outrosPorCadastrante[cad] || 0) + 1;
-          outrosRows.push({ processo, pasta, dataCadastro, cadastrante: cad });
+          if (!outrosNPUs.has(n)) {
+            outrosNPUs.add(n);
+            fatCadastroConsolidado.outrosRows.push({ processo, pasta, dataCadastro, cadastrante: cad });
+            fatCadastroConsolidado.outrosPorCadastrante[cad] = (fatCadastroConsolidado.outrosPorCadastrante[cad] || 0) + 1;
+          }
         }
       }
-      fatState.cadastro = { rows, uploadedAt: new Date().toISOString(), totalRaw: raw, totalFiltrado: filtrado, fileName: file.name, outrosPorCadastrante, outrosRows };
-      await fatSaveMonthState(fatMonthKey, fatState);
+      fatCadastroConsolidado.uploads = fatCadastroConsolidado.uploads || [];
+      fatCadastroConsolidado.uploads.push({ fileName: file.name, uploadedAt: new Date().toISOString(), totalRaw: raw, novos });
+      await fatSaveCadastroConsolidado();
       fatRenderCadastro();
       fatRenderCapturas();
       fatRenderEspelho();
-      fatShowToast(`Base iiLex processada: ${filtrado} de ${raw} registros mantidos.`);
+      fatShowToast(`Base iiLex incorporada: ${novos} novos + ${duplicados} ja existiam. Total consolidado: ${fatCadastroConsolidado.rows.length}.`);
     } catch(err) {
       fatShowToast('Erro ao ler o arquivo: ' + err.message);
     }
