@@ -1707,9 +1707,10 @@ function extrairCampos(txt, seg) {
       }
     }
 
-    // Forma 2: "Origem: Processo nº XXXXX" no corpo da petição
+    // Forma 2: "Origem: ..." ou "Processo Origem:" ou "Referência:" no corpo da petição
     if (!origemEncontrada) {
-      const mOrig = txtFlat.match(/Origem:\s*Processo\s*n[ºo°]?\.?\s*(\d{7})\s*[-.]\s*(\d{2})\s*[-.]\s*(\d{4})\s*[-.]\s*(\d)\s*[-.]\s*(\d{2})\s*[-.]\s*(\d{4})/i);
+      const rxOrig2 = /(?:Origem[:\s]+(?:Processo\s+)?n[ºo°]?\.?\s*|Processo\s+Origem[:\s]+|Referência[:\s]+|Ação\s+de\s+Origem[:\s]+)(\d{7})\s*[-–]\s*(\d{2})\s*[.\s]\s*(\d{4})\s*[.\s]\s*(\d)\s*[.\s]\s*(\d{2})\s*[.\s]\s*(\d{4})/i;
+      const mOrig = txtFlat.match(rxOrig2);
       if (mOrig) origemEncontrada = `${mOrig[1]}-${mOrig[2]}.${mOrig[3]}.${mOrig[4]}.${mOrig[5]}.${mOrig[6]}`;
     }
 
@@ -1722,9 +1723,17 @@ function extrairCampos(txt, seg) {
       }
     }
 
-    // Forma 4: qualquer NPU distinto em TODO o texto (não só primeiros 3000)
+    // Forma 4a: NPU com separadores com espaco (antes da normalizacao do preprocessamento)
     if (!origemEncontrada && campos.npu) {
-      const txtNorm = txtFlat.replace(/\s*-\s*/g,'-').replace(/\s*\.\s*/g,'.');
+      const rxFlexNpu = /\b(\d{7})\s*[-–]\s*(\d{2})\s*\.\s*(\d{4})\s*\.\s*(\d)\s*\.\s*(\d{2})\s*\.\s*(\d{4})\b/g;
+      const todosFlexiveis = [...txtFlat.matchAll(rxFlexNpu)]
+        .map(m => `${m[1]}-${m[2]}.${m[3]}.${m[4]}.${m[5]}.${m[6]}`)
+        .filter(n => n !== campos.npu);
+      if (todosFlexiveis.length > 0) origemEncontrada = todosFlexiveis[0];
+    }
+    // Forma 4b: qualquer NPU distinto em TODO o texto com normalizacao agressiva
+    if (!origemEncontrada && campos.npu) {
+      const txtNorm = txtFlat.replace(/\s*[-–]\s*/g,'-').replace(/\s*\.\s*/g,'.');
       const npusDistintos = [...txtNorm.matchAll(/\b(\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4})\b/g)]
         .map(m=>m[1]).filter(n => n !== campos.npu);
       if (npusDistintos.length > 0) origemEncontrada = npusDistintos[0];
@@ -1758,7 +1767,8 @@ function extrairCampos(txt, seg) {
   const txtPartes = seg.partes || txt.substring(0, 3000);
 
   // Padrão 1: labels estruturados no cabecalho do processo (portal)
-  const mLabelAutor = txtPartes.match(/(?:AGRAVANTE|EXEQUENTE|REQUERENTE|APELANTE|EMBARGANTE|IMPETRANTE|AUTOR[AE]?):\s*([A-ZÁÉÍÓÚÂÊÔÃÕÇ][A-ZÁÉÍÓÚÂÊÔÃÕÇ\s]{3,60}?)(?:\n|,|\s{2,}|AGRAVADO|REQUERIDO|EXECUTADO)/i);
+  // Busca em txt completo — labels sao especificos o suficiente para evitar falsos positivos
+  const mLabelAutor = txt.match(/(?:AGRAVANTE|EXEQUENTE|REQUERENTE|APELANTE|EMBARGANTE|IMPETRANTE|AUTOR[AE]?):\s*([A-ZÁÉÍÓÚÂÊÔÃÕÇ][A-ZÁÉÍÓÚÂÊÔÃÕÇ\s]{3,60}?)(?:\n|,|\s{2,}|AGRAVADO|REQUERIDO|EXECUTADO)/i);
   if (mLabelAutor) {
     const n = mLabelAutor[1].trim().replace(/\s+/g,' ');
     if (!_FILTRO_AUTOR.test(n) && n.split(' ').length <= 7) campos.autor_nome = capitalizar(n);
@@ -1914,8 +1924,18 @@ function extrairCampos(txt, seg) {
       } catch(e) { /* normalize não suportado */ }
       reus.push({ nome: nomeReu, cnpj: melhorScore > 0 ? melhorCnpj : '' });
     });
-    // fallback: usar partesMap direto se sem agravados
+    // fallback 1: usar partesMap direto se sem agravados
     if (reus.length === 0) partesMap.forEach(({nome,cnpj}) => reus.push({nome:capitalizar(nome),cnpj}));
+    // fallback 2: buscar AGRAVADO: label diretamente em txt quando secoes de portal nao existem
+    if (reus.length === 0) {
+      const rxAgrLbl = /AGRAVADOS?[:\s]+([A-ZÁÉÍÓÚÂÊÔÃÕÇ][A-ZÁÉÍÓÚÂÊÔÃÕÇA-Za-záéíóúâêôãõç\s\.]{3,80}?)(?:\n|CPF|CNPJ|,\s*(?:inscrit|portad|pessoa|com\s+sede)|$)/gi;
+      for (const m of txt.matchAll(rxAgrLbl)) {
+        const nome = m[1].trim().replace(/\s+/g,' ');
+        if (nome.length < 3) continue;
+        if (_FILTRO_AUTOR.test(nome)) continue;
+        reus.push({ nome: capitalizar(nome), cnpj: '' });
+      }
+    }
     // FUTURO SOCIEDADE sempre primeiro
     const idxFuturo = reus.findIndex(r => r.cnpj === '45.745.537/0001-19');
     if (idxFuturo > 0) { const f = reus.splice(idxFuturo, 1)[0]; reus.unshift(f); }
@@ -2266,7 +2286,24 @@ function segmentarPeticao(txt) {
   const posPartes = posEnd >= 0 ? posEnd + (seg.enderecamento ? seg.enderecamento.length : 0) : 0;
   const txtAposEnd = txt.substring(posPartes);
   const mFatos = txtAposEnd.search(/\n\s*(?:[IVX]+[\.\s\-]+)?(?:DOS?\s+)?FATOS|BREVE\s+RELATO|SÍNTESE|RELATÓRIO|FUNDAMENTOS/i);
-  seg.partes = mFatos >= 0 ? txtAposEnd.substring(0, mFatos) : txtAposEnd.substring(0, 2500);
+
+  // Quando sem endereçamento (agravos de portal), garantir cobertura suficiente
+  // para incluir os labels AGRAVANTE:/AGRAVADO: que podem aparecer apos cabecalho de portal
+  if (mFatos >= 0) {
+    seg.partes = txtAposEnd.substring(0, mFatos);
+  } else if (posEnd < 0) {
+    // Sem EXCELENTISSIMO: expandir para cobrir labels de partes (agravos/portal)
+    // Procurar até onde terminam as partes (primeiro bloco de fatos ou 6000 chars)
+    const mPartesLabel = txt.search(/AGRAVANTE[:\s]|AGRAVADO[:\s]|REQUERENTE[:\s]|EXEQUENTE[:\s]/i);
+    if (mPartesLabel >= 0) {
+      // Expandir a partir do primeiro label de parte, cobrindo 3000 chars adicionais
+      seg.partes = txt.substring(mPartesLabel, Math.min(txt.length, mPartesLabel + 3000));
+    } else {
+      seg.partes = txtAposEnd.substring(0, 5000);
+    }
+  } else {
+    seg.partes = txtAposEnd.substring(0, 2500);
+  }
 
   // Pedidos: entre marcador "PEDIDO" e fim da petição
   const mPedidos = txt.search(/\n\s*(?:[IVX]+[\.\s\-]+)?(?:DOS?\s+)?PEDIDOS?[\s:]/i);
