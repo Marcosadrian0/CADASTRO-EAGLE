@@ -327,7 +327,8 @@ textarea{resize:vertical;min-height:52px}
 .fat-btn-download:hover{background:var(--off)}
 .fat-kpi-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-bottom:20px}
 .fat-kpi{background:#fff;border:1px solid var(--borda-l);border-radius:var(--rlg);padding:16px 14px;box-shadow:var(--shadow);text-align:center}
-.fat-kpi-warn{border-color:var(--err-b);background:var(--err-bg)}
+.fat-kpi-warn{border-color:var(--err-b);background:var(--err-bg);cursor:pointer;transition:box-shadow .15s}
+.fat-kpi-warn:hover{box-shadow:0 0 0 2px var(--err),var(--shadow-md)}
 .fat-kpi-ok{border-color:var(--vok-b);background:var(--vok-bg)}
 .fat-kpi-val{font-size:24px;font-weight:700;color:var(--verde);line-height:1.1;margin-bottom:4px}
 .fat-kpi-warn .fat-kpi-val{color:var(--err)}
@@ -580,7 +581,7 @@ textarea{resize:vertical;min-height:52px}
       <div class="fat-kpi"><div class="fat-kpi-val" id="fatKpiDje">—</div><div class="fat-kpi-lbl">Processos DJE</div></div>
       <div class="fat-kpi"><div class="fat-kpi-val" id="fatKpiDupl">—</div><div class="fat-kpi-lbl">Duplicados</div></div>
       <div class="fat-kpi" style="border-color:var(--auto-b);background:var(--auto-bg)"><div class="fat-kpi-val" id="fatKpiTotal" style="color:var(--ciano)">—</div><div class="fat-kpi-lbl">Volume sem duplicidade</div></div>
-      <div class="fat-kpi fat-kpi-warn"><div class="fat-kpi-val" id="fatKpiSemCad">—</div><div class="fat-kpi-lbl">Sem cadastro</div></div>
+      <div class="fat-kpi fat-kpi-warn" onclick="fatAbrirSemCadastro()" title="Clique para ver e gerenciar os casos sem cadastro"><div class="fat-kpi-val" id="fatKpiSemCad">—</div><div class="fat-kpi-lbl">Sem cadastro</div><div style="font-size:9px;color:var(--err);margin-top:4px;opacity:.8">clique para gerenciar</div></div>
     </div>
 
     <!-- GRÁFICOS -->
@@ -692,6 +693,50 @@ textarea{resize:vertical;min-height:52px}
     <div style="display:flex;justify-content:space-between;align-items:center">
       <button class="fat-btn-danger" onclick="fatResetMes()">Limpar dados do mês</button>
       <button class="fat-btn fat-btn-primary" onclick="fatFecharModal()">Concluir</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL SEM CADASTRO -->
+<div class="fat-modal" id="fatModalSemCad" onclick="if(event.target===this)fatFecharSemCadastro()">
+  <div class="fat-modal-box" style="max-width:700px">
+    <div class="fat-modal-hdr">
+      <div class="fat-modal-ttl">Casos sem cadastro</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="fat-btn fat-btn-ghost" style="font-size:11px;padding:6px 12px" onclick="fatDownloadSemCadastro()">Exportar lista (.xlsx)</button>
+        <button class="fat-modal-close" onclick="fatFecharSemCadastro()">&#xd7;</button>
+      </div>
+    </div>
+
+    <!-- Formulário adição manual -->
+    <div class="fat-card" style="margin-bottom:16px;background:var(--auto-bg);border-color:var(--auto-b)">
+      <div class="fat-card-ttl" style="color:var(--ciano)">Adicionar processo manualmente à base SBK</div>
+      <div class="fat-card-sub">Preencha os dados e clique em Adicionar para marcar o processo como cadastrado SBK.</div>
+      <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:8px;margin-bottom:10px">
+        <div>
+          <div style="font-size:10px;font-weight:600;color:var(--chumbo);margin-bottom:3px;text-transform:uppercase;letter-spacing:.3px">Nº do Processo (NPU)</div>
+          <input type="text" id="fatManualNPU" placeholder="0000000-00.0000.0.00.0000" style="width:100%;padding:7px 9px;border:1.5px solid var(--borda);border-radius:var(--r);font-family:inherit;font-size:12px;outline:none">
+        </div>
+        <div>
+          <div style="font-size:10px;font-weight:600;color:var(--chumbo);margin-bottom:3px;text-transform:uppercase;letter-spacing:.3px">Pasta</div>
+          <input type="text" id="fatManualPasta" placeholder="Ex: 12345" style="width:100%;padding:7px 9px;border:1.5px solid var(--borda);border-radius:var(--r);font-family:inherit;font-size:12px;outline:none">
+        </div>
+        <div>
+          <div style="font-size:10px;font-weight:600;color:var(--chumbo);margin-bottom:3px;text-transform:uppercase;letter-spacing:.3px">Cadastrante</div>
+          <input type="text" id="fatManualCadastrante" placeholder="Ex: api.sbk" style="width:100%;padding:7px 9px;border:1.5px solid var(--borda);border-radius:var(--r);font-family:inherit;font-size:12px;outline:none">
+        </div>
+        <div>
+          <div style="font-size:10px;font-weight:600;color:var(--chumbo);margin-bottom:3px;text-transform:uppercase;letter-spacing:.3px">Data cadastro</div>
+          <input type="text" id="fatManualData" placeholder="DD/MM/AAAA" style="width:100%;padding:7px 9px;border:1.5px solid var(--borda);border-radius:var(--r);font-family:inherit;font-size:12px;outline:none">
+        </div>
+      </div>
+      <button class="fat-btn fat-btn-primary" onclick="fatAdicionarManual()">+ Adicionar à base SBK</button>
+      <span id="fatManualMsg" style="font-size:11px;color:var(--chumbo);margin-left:10px"></span>
+    </div>
+
+    <!-- Lista de sem cadastro -->
+    <div id="fatSemCadLista" style="max-height:380px;overflow-y:auto">
+      <p style="font-size:11px;color:var(--chumbo)">Carregando...</p>
     </div>
   </div>
 </div>
@@ -3683,7 +3728,7 @@ function fatShowToast(msg) {
 
 function fatEmptyState() {
   return {
-    cadastro: { rows: [], uploadedAt: null, totalRaw: 0, totalFiltrado: 0, fileName: null, outrosPorCadastrante: {}, outrosRows: [] },
+    cadastro: { rows: [], manuaisRows: [], uploadedAt: null, totalRaw: 0, totalFiltrado: 0, fileName: null, outrosPorCadastrante: {}, outrosRows: [] },
     captura: { rows: [] },
     dje: { rows: [] }
   };
@@ -3820,6 +3865,8 @@ async function fatReadWorkbook(file) {
 function fatBuildCadastroLookups() {
   const sbkMap = new Map();
   fatState.cadastro.rows.forEach(r => sbkMap.set(fatNormalizeNPU(r.processo), r));
+  // Manuais também entram como SBK
+  (fatState.cadastro.manuaisRows || []).forEach(r => sbkMap.set(fatNormalizeNPU(r.processo), r));
   const outrosMap = new Map();
   (fatState.cadastro.outrosRows || []).forEach(r => outrosMap.set(fatNormalizeNPU(r.processo), r));
   return { sbkSet: sbkMap, outrosSet: outrosMap };
@@ -4214,6 +4261,113 @@ function fatAbrirModal() {
 }
 function fatFecharModal() {
   document.getElementById('fatModal').classList.remove('open');
+}
+
+function fatAbrirSemCadastro() {
+  document.getElementById('fatModalSemCad').classList.add('open');
+  fatRenderSemCadLista();
+}
+function fatFecharSemCadastro() {
+  document.getElementById('fatModalSemCad').classList.remove('open');
+}
+
+function fatGetSemCadRows() {
+  const { sbkSet, outrosSet } = fatBuildCadastroLookups();
+  const vistos = new Set();
+  const semCad = [];
+  [...fatState.captura.rows, ...fatState.dje.rows].forEach(r => {
+    const n = fatNormalizeNPU(r.processo);
+    if (vistos.has(n)) return;
+    vistos.add(n);
+    if (!sbkSet.has(n) && !outrosSet.has(n)) semCad.push(r);
+  });
+  return semCad;
+}
+
+function fatRenderSemCadLista() {
+  const lista = document.getElementById('fatSemCadLista');
+  const semCad = fatGetSemCadRows();
+  if (!semCad.length) {
+    lista.innerHTML = '<div style="text-align:center;padding:32px 0"><div style="font-size:28px;margin-bottom:8px">✓</div><p style="font-size:12px;color:var(--vok);font-weight:600">Nenhum caso sem cadastro neste mês.</p></div>';
+    return;
+  }
+  let html = `<div style="font-size:11px;color:var(--chumbo);margin-bottom:10px">${semCad.length} processo(s) sem cadastro — clique em "Marcar cadastrado" para registrar manualmente.</div>`;
+  html += `<table style="width:100%;border-collapse:collapse;font-size:11px">
+    <thead><tr style="background:var(--off)">
+      <th style="padding:7px 8px;text-align:left;color:var(--chumbo);font-size:10px;text-transform:uppercase;letter-spacing:.3px">Processo</th>
+      <th style="padding:7px 8px;text-align:left;color:var(--chumbo);font-size:10px;text-transform:uppercase;letter-spacing:.3px">Data</th>
+      <th style="padding:7px 8px;text-align:left;color:var(--chumbo);font-size:10px;text-transform:uppercase;letter-spacing:.3px">Tipo</th>
+      <th style="padding:7px 8px"></th>
+    </tr></thead><tbody>`;
+  semCad.forEach((r, i) => {
+    const bg = i % 2 === 0 ? '#fff' : 'var(--off)';
+    html += `<tr style="background:${bg};border-top:1px solid var(--borda-l)">
+      <td style="padding:6px 8px;font-family:monospace;font-size:10px;color:var(--verde)">${r.processo}</td>
+      <td style="padding:6px 8px;color:var(--chumbo)">${r.data || '—'}</td>
+      <td style="padding:6px 8px;color:var(--chumbo)">${r.tipoOcorrencia || '—'}</td>
+      <td style="padding:6px 8px;text-align:right">
+        <button onclick="fatPreencherManual('${r.processo.replace(/'/g,"\\'")}', '${r.data||''}')"
+          style="padding:4px 10px;background:var(--verde);color:#fff;border:none;border-radius:5px;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit">
+          Marcar cadastrado
+        </button>
+      </td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  lista.innerHTML = html;
+}
+
+function fatPreencherManual(npu, data) {
+  document.getElementById('fatManualNPU').value = npu;
+  document.getElementById('fatManualNPU').focus();
+  document.getElementById('fatManualMsg').textContent = '';
+  // Scroll para o formulário
+  document.getElementById('fatManualNPU').closest('.fat-card').scrollIntoView({ behavior: 'smooth' });
+}
+
+function fatAdicionarManual() {
+  const npu = document.getElementById('fatManualNPU').value.trim();
+  const pasta = document.getElementById('fatManualPasta').value.trim();
+  const cad = document.getElementById('fatManualCadastrante').value.trim();
+  const data = document.getElementById('fatManualData').value.trim();
+  const msg = document.getElementById('fatManualMsg');
+  if (!npu) { msg.textContent = 'Informe o número do processo.'; msg.style.color = 'var(--err)'; return; }
+  if (!cad) { msg.textContent = 'Informe o cadastrante.'; msg.style.color = 'var(--err)'; return; }
+
+  if (!fatState.cadastro.manuaisRows) fatState.cadastro.manuaisRows = [];
+  const jaExiste = fatState.cadastro.manuaisRows.some(r => fatNormalizeNPU(r.processo) === fatNormalizeNPU(npu));
+  if (jaExiste) { msg.textContent = 'Processo já adicionado manualmente.'; msg.style.color = 'var(--amb)'; return; }
+
+  fatState.cadastro.manuaisRows.push({ processo: npu, pasta, cadastrante: cad, dataCadastro: data, manual: true });
+  fatSaveMonthState(fatMonthKey, fatState);
+
+  // Limpar campos
+  document.getElementById('fatManualNPU').value = '';
+  document.getElementById('fatManualPasta').value = '';
+  document.getElementById('fatManualCadastrante').value = '';
+  document.getElementById('fatManualData').value = '';
+  msg.textContent = 'Adicionado com sucesso.';
+  msg.style.color = 'var(--vok)';
+  setTimeout(() => { msg.textContent = ''; }, 3000);
+
+  // Atualizar tudo
+  fatRenderAll();
+  fatRenderSemCadLista();
+  fatShowToast('Processo ' + npu + ' marcado como cadastrado SBK.');
+}
+
+function fatDownloadSemCadastro() {
+  const semCad = fatGetSemCadRows();
+  if (!semCad.length) { fatShowToast('Nenhum caso sem cadastro para exportar.'); return; }
+  const { mm, yyyy } = fatMonthLabel(fatMonthKey);
+  const aoa = [
+    ['DATA', 'Processo', 'Tipo Ocorrencia', 'Pasta', 'Data do Cadastro'],
+    ...semCad.map(r => [r.data, r.processo, r.tipoOcorrencia, r.pasta, r.dataCadastro])
+  ];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa), 'Sem Cadastro');
+  XLSX.writeFile(wb, `SEM_CADASTRO_${mm}.${yyyy}.xlsx`);
+  fatShowToast(`${semCad.length} casos exportados.`);
 }
 
 function fatInit() {
