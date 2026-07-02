@@ -699,7 +699,7 @@ textarea{resize:vertical;min-height:52px}
 
 <!-- MODAL SEM CADASTRO -->
 <div class="fat-modal" id="fatModalSemCad" onclick="if(event.target===this)fatFecharSemCadastro()">
-  <div class="fat-modal-box" style="max-width:700px">
+  <div class="fat-modal-box" style="max-width:720px">
     <div class="fat-modal-hdr">
       <div class="fat-modal-ttl">Casos sem cadastro</div>
       <div style="display:flex;gap:8px;align-items:center">
@@ -708,36 +708,52 @@ textarea{resize:vertical;min-height:52px}
       </div>
     </div>
 
-    <!-- Formulário adição manual -->
-    <div class="fat-card" style="margin-bottom:16px;background:var(--auto-bg);border-color:var(--auto-b)">
-      <div class="fat-card-ttl" style="color:var(--ciano)">Adicionar processo manualmente à base SBK</div>
-      <div class="fat-card-sub">Preencha os dados e clique em Adicionar para marcar o processo como cadastrado SBK.</div>
-      <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:8px;margin-bottom:10px">
-        <div>
-          <div style="font-size:10px;font-weight:600;color:var(--chumbo);margin-bottom:3px;text-transform:uppercase;letter-spacing:.3px">Nº do Processo (NPU)</div>
-          <input type="text" id="fatManualNPU" placeholder="0000000-00.0000.0.00.0000" style="width:100%;padding:7px 9px;border:1.5px solid var(--borda);border-radius:var(--r);font-family:inherit;font-size:12px;outline:none">
-        </div>
-        <div>
-          <div style="font-size:10px;font-weight:600;color:var(--chumbo);margin-bottom:3px;text-transform:uppercase;letter-spacing:.3px">Pasta</div>
-          <input type="text" id="fatManualPasta" placeholder="Ex: 12345" style="width:100%;padding:7px 9px;border:1.5px solid var(--borda);border-radius:var(--r);font-family:inherit;font-size:12px;outline:none">
-        </div>
-        <div>
-          <div style="font-size:10px;font-weight:600;color:var(--chumbo);margin-bottom:3px;text-transform:uppercase;letter-spacing:.3px">Cadastrante</div>
-          <input type="text" id="fatManualCadastrante" placeholder="Ex: api.sbk" style="width:100%;padding:7px 9px;border:1.5px solid var(--borda);border-radius:var(--r);font-family:inherit;font-size:12px;outline:none">
-        </div>
-        <div>
-          <div style="font-size:10px;font-weight:600;color:var(--chumbo);margin-bottom:3px;text-transform:uppercase;letter-spacing:.3px">Data cadastro</div>
-          <input type="text" id="fatManualData" placeholder="DD/MM/AAAA" style="width:100%;padding:7px 9px;border:1.5px solid var(--borda);border-radius:var(--r);font-family:inherit;font-size:12px;outline:none">
-        </div>
-      </div>
-      <button class="fat-btn fat-btn-primary" onclick="fatAdicionarManual()">+ Adicionar à base SBK</button>
-      <span id="fatManualMsg" style="font-size:11px;color:var(--chumbo);margin-left:10px"></span>
-    </div>
-
     <!-- Lista de sem cadastro -->
-    <div id="fatSemCadLista" style="max-height:380px;overflow-y:auto">
+    <div id="fatSemCadLista" style="max-height:500px;overflow-y:auto">
       <p style="font-size:11px;color:var(--chumbo)">Carregando...</p>
     </div>
+  </div>
+</div>
+
+<!-- MINI-MODAL CADASTRAR PROCESSO -->
+<div class="fat-modal" id="fatModalCadastrar" style="z-index:600" onclick="if(event.target===this)fatFecharCadastrar()">
+  <div class="fat-modal-box" style="max-width:460px">
+    <div class="fat-modal-hdr">
+      <div class="fat-modal-ttl">Registrar cadastro</div>
+      <button class="fat-modal-close" onclick="fatFecharCadastrar()">&#xd7;</button>
+    </div>
+
+    <!-- NPU (read-only, destaque) -->
+    <div style="background:var(--off);border:1.5px solid var(--borda);border-radius:var(--r);padding:10px 14px;margin-bottom:16px">
+      <div style="font-size:9px;font-weight:700;color:var(--chumbo);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Processo (NPU)</div>
+      <div id="fatCadNPUDisplay" style="font-family:monospace;font-size:13px;font-weight:700;color:var(--verde);word-break:break-all"></div>
+      <input type="hidden" id="fatManualNPU">
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+      <div>
+        <div style="font-size:10px;font-weight:600;color:var(--chumbo);margin-bottom:4px;text-transform:uppercase;letter-spacing:.3px">Pasta</div>
+        <input type="text" id="fatManualPasta" placeholder="Ex: 12345"
+          style="width:100%;padding:8px 10px;border:1.5px solid var(--borda);border-radius:var(--r);font-family:inherit;font-size:12px;outline:none;box-sizing:border-box">
+      </div>
+      <div>
+        <div style="font-size:10px;font-weight:600;color:var(--chumbo);margin-bottom:4px;text-transform:uppercase;letter-spacing:.3px">Data de cadastro</div>
+        <input type="text" id="fatManualData" placeholder="DD/MM/AAAA"
+          style="width:100%;padding:8px 10px;border:1.5px solid var(--borda);border-radius:var(--r);font-family:inherit;font-size:12px;outline:none;box-sizing:border-box">
+      </div>
+    </div>
+
+    <div style="margin-bottom:16px">
+      <div style="font-size:10px;font-weight:600;color:var(--chumbo);margin-bottom:4px;text-transform:uppercase;letter-spacing:.3px">Cadastrante</div>
+      <input type="text" id="fatManualCadastrante" placeholder="Ex: api.sbk"
+        style="width:100%;padding:8px 10px;border:1.5px solid var(--borda);border-radius:var(--r);font-family:inherit;font-size:12px;outline:none;box-sizing:border-box">
+    </div>
+
+    <div style="display:flex;gap:10px;align-items:center">
+      <button class="fat-btn fat-btn-primary" style="flex:1" onclick="fatAdicionarManual()">Confirmar cadastro</button>
+      <button class="fat-btn fat-btn-ghost" onclick="fatFecharCadastrar()">Cancelar</button>
+    </div>
+    <div id="fatManualMsg" style="font-size:11px;color:var(--err);margin-top:8px;min-height:16px"></div>
   </div>
 </div>
 
@@ -4319,10 +4335,17 @@ function fatRenderSemCadLista() {
 
 function fatPreencherManual(npu, data) {
   document.getElementById('fatManualNPU').value = npu;
-  document.getElementById('fatManualNPU').focus();
+  document.getElementById('fatCadNPUDisplay').textContent = npu;
+  document.getElementById('fatManualPasta').value = '';
+  document.getElementById('fatManualCadastrante').value = '';
+  document.getElementById('fatManualData').value = data || '';
   document.getElementById('fatManualMsg').textContent = '';
-  // Scroll para o formulário
-  document.getElementById('fatManualNPU').closest('.fat-card').scrollIntoView({ behavior: 'smooth' });
+  document.getElementById('fatModalCadastrar').classList.add('open');
+  setTimeout(() => document.getElementById('fatManualPasta').focus(), 80);
+}
+
+function fatFecharCadastrar() {
+  document.getElementById('fatModalCadastrar').classList.remove('open');
 }
 
 function fatAdicionarManual() {
@@ -4341,14 +4364,8 @@ function fatAdicionarManual() {
   fatState.cadastro.manuaisRows.push({ processo: npu, pasta, cadastrante: cad, dataCadastro: data, manual: true });
   fatSaveMonthState(fatMonthKey, fatState);
 
-  // Limpar campos
-  document.getElementById('fatManualNPU').value = '';
-  document.getElementById('fatManualPasta').value = '';
-  document.getElementById('fatManualCadastrante').value = '';
-  document.getElementById('fatManualData').value = '';
-  msg.textContent = 'Adicionado com sucesso.';
-  msg.style.color = 'var(--vok)';
-  setTimeout(() => { msg.textContent = ''; }, 3000);
+  // Fechar mini-modal
+  fatFecharCadastrar();
 
   // Atualizar tudo
   fatRenderAll();
