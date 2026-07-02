@@ -1595,6 +1595,14 @@ function extrairCampos(txt) {
     /causa\s+o\s+valor\s+de\s+R\$\s*(\d[\d.,]*\d)/i,
     /valor\s+de\s+R\$\s*(\d[\d.,]*\d)\s*\(/i,
     /[Vv]alor\s+da\s+[Cc]ausa\s*:?\s*R\$\s*(\d[\d.,]*\d)/i,
+    // Cumprimento de sentença: valor do débito/execução
+    /[Vv]alor\s+(?:do\s+d[eé]bito|da\s+execu[çc][aã]o|atualizado|executado|cobrado)\s*:?\s*R\$\s*(\d[\d.,]*\d)/i,
+    /[Vv]alor\s+total\s*:?\s*R\$\s*(\d[\d.,]*\d)/i,
+    /[Vv]alor\s+(?:de\s+R\$|:\s*R\$)\s*(\d[\d.,]*\d)\s*(?:\(|reais)/i,
+    // Padrão portal: "Valor da Ação: R$ X"
+    /[Vv]alor\s+da\s+[Aa][çc][aã]o\s*:?\s*R\$\s*(\d[\d.,]*\d)/i,
+    // "atribui-se o valor" (variante menos comum)
+    /atribui[\s-]+se\s+(?:o\s+)?valor\s+de\s+R\$\s*(\d[\d.,]*\d)/i,
   ];
   // Buscar na parte final do documento (último terço = onde fica o pedido + valor da causa)
   // Pega a ÚLTIMA ocorrência, não a primeira, para evitar pegar valores citados no corpo
@@ -1729,6 +1737,32 @@ function extrairCampos(txt) {
       if (!_FILTRO_AUTOR.test(n) && n.split(' ').length <= 7) campos.autor_nome = capitalizar(n);
     }
   }
+
+  // Padrão 5: estrutura clássica de petição inicial
+  // "NOME COMPLETO, [qualificação], vem, respeitosamente..."
+  // O nome aparece após o endereçamento (EXCELENTÍSSIMO) em parágrafo próprio
+  if (!campos.autor_nome) {
+    const posEnd = txt.search(/EXCELENT[ÍI]SS|MM\.?\s*(?:Senhor|Juiz|Dr)/i);
+    const txtAposEnd = posEnd >= 0 ? txt.substring(posEnd + 20) : txt;
+    const mVemResp = txtAposEnd.match(/\n\n([A-ZÁÉÍÓÚÂÊÔÃÕÇ][A-ZÁÉÍÓÚÂÊÔÃÕÇA-Za-záéíóúâêôãõç\s\.]{3,70}?)(?:,\s*(?:nation|brasil|portad|nascid|inscri|resid|casad|soltei|divorc|viúv|maior|menor|pens|aposen)|[\s,]+(?:vem\b|vem,|apresenta))/i);
+    if (mVemResp) {
+      const n = mVemResp[1].trim().replace(/\s+/g,' ');
+      if (!_FILTRO_AUTOR.test(n) && n.split(' ').length >= 2 && n.split(' ').length <= 8) {
+        campos.autor_nome = capitalizar(n);
+      }
+    }
+  }
+
+  // Padrão 6: "NOME, [qualif longa] vem, respeitosamente" sem duplo newline
+  if (!campos.autor_nome) {
+    const mVemRespFlat = txt.match(/\n([A-ZÁÉÍÓÚÂÊÔÃÕÇ][A-ZÁÉÍÓÚÂÊÔÃÕÇA-Za-záéíóúâêôãõç\s\.]{3,60}?),\s*(?:brasile|nation|portad|nascid|casad|soltei|divorc|maior\s+de\s+idade)/i);
+    if (mVemRespFlat) {
+      const n = mVemRespFlat[1].trim().replace(/\s+/g,' ');
+      if (!_FILTRO_AUTOR.test(n) && n.split(' ').length >= 2 && n.split(' ').length <= 8) {
+        campos.autor_nome = capitalizar(n);
+      }
+    }
+  }
   // CPF: priorizar próximo à palavra "CPF" ou "portador do CPF" (evita pegar CPF de réu)
   const cpfComContexto = [...txt.matchAll(/(?:CPF|portador[^.]{0,30}?CPF|inscrit[ao][^.]{0,30}?CPF)\s*[nºo.°]*\s*[:\s]\s*(\d{3}\.?\d{3}\.?\d{3}-?\d{2})/gi)];
   if (cpfComContexto.length > 0) {
@@ -1839,10 +1873,15 @@ function extrairCampos(txt) {
       // Filtrar texto de corpo de petição que não é nome de empresa:
       // 1. Começa com letra minúscula = trecho de meio de frase
       if (/^[a-záéíóúâêôãõç]/.test(ultimaParte)) continue;
-      // 2. Muitas palavras minúsculas = prosa jurídica, não razão social
+      // 2. Começa com preposição/artigo/conjunção = fragmento de corpo de texto
+      if (/^(?:Em|Na|No|Pe[lr]|Por|Se|Que|De[sr]?|Do|Da|Ao|[Àà]s?|Os|As|Um|Uma|Para|Com|Sem|Entre|Após|Antes|Quando|Onde|Como|Sendo|Tendo|Dado|Caso|Pois|Logo|Assim|Ainda|Então|Também|Além|Salvo|Exceto|Conforme)\b/.test(ultimaParte)) continue;
+      // 3. Muitas palavras minúsculas = prosa jurídica, não razão social
       const wordsMin = (ultimaParte.match(/\b[a-záéíóúâêôãõç]{4,}\b/g) || []).length;
       if (wordsMin > 5) continue;
-      // 3. Muito longo: tentar extrair razão social pelo padrão de empresa
+      // 4. Contém marcadores claros de texto corrido (verbos, conjunções subordinadas)
+      const _STOP_REU = /\b(?:que|pelo|pela|pelos|pelas|para|com\s+o|sem\s+o|entre\s+o|após\s+o|quando\s+o|sendo\s+que|tendo\s+em|dado\s+que|caso\s+o|pois\s+o|conforme\s+o|mediante\s+o|perante\s+o|durante\s+o|contra\s+o)\b/i;
+      if (_STOP_REU.test(ultimaParte)) continue;
+      // 5. Muito longo: tentar extrair razão social pelo padrão de empresa
       if (ultimaParte.length > 160) {
         const mEmp = ultimaParte.match(/([A-ZÁÉÍÓÚÂÊÔÃÕÇ][^\n;,–—]{3,80}?(?:S\.A\.?|LTDA\.?|EIRELI|S\/A|BANCO\b|FINANCEIRA\b|FUNDO\b|CRÉDITO\b|SOCIEDADE\b|CORRETORA\b|SEGUROS?\b))[^A-Z\n]{0,20}$/i);
         if (mEmp) ultimaParte = mEmp[1].trim();
@@ -1854,14 +1893,44 @@ function extrairCampos(txt) {
       else reus.push({ nome: ultimaParte, cnpj });
     }
   }
-  // Complemento: buscar réus por labels quando CNPJ não encontrou ninguém
+  // Complemento A: parser explícito do bloco "em face de:" para réus sem CNPJ
+  if (reus.length === 0 && !ehAgravo) {
+    const mEmFace = txt.match(/em\s+face\s+d[eo][:\s]+([\s\S]{5,600}?)(?:\n\n\n|\n\n(?:[IVXLC]+[\.\-\s]|[A-ZÁÉÍÓÚÂÊÔÃÕÇ]{4,}\s*\n)|\.[\s]*(?:DOS?\s+FATOS|FATOS|RELATÓRIO|BREVE\s+RELATO|SÍNTESE\s+DOS\s+FATOS))/i);
+    if (mEmFace) {
+      const blocoEmFace = mEmFace[1].replace(/\n/g,' ').replace(/\s{2,}/g,' ').trim();
+      // Dividir por ";" ou " e " (conjunção entre réus)
+      const partsEmFace = blocoEmFace.split(/;\s*|\s+e\s+(?=[A-ZÁÉÍÓÚÂÊÔÃÕÇ])/);
+      for (const parte of partsEmFace) {
+        let nome = parte
+          .replace(/,?\s*(?:inscrit[ao]|portador[ao]|pessoa\s+jur|com\s+sede|CNPJ|CPF|C\.N\.P\.J).*$/i, '')
+          .replace(/^\s*(?:\d+[\.\)]\s*)/, '')
+          .trim().replace(/\s+/g,' ');
+        if (nome.length < 3) continue;
+        if (/^[a-záéíóúâêôãõç]/.test(nome)) continue;
+        if (/^(?:Em|Na|No|Pe[lr]|Por|Se|Que|De[sr]?|Do|Da|Ao|Para|Com|Sem|Entre)\b/.test(nome)) continue;
+        // Extrair CNPJ inline se houver
+        const mCnpjInline = parte.match(/(\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2})/);
+        const cnpjInline = mCnpjInline ? mCnpjInline[1] : '';
+        if (reus.find(r => r.cnpj && r.cnpj === cnpjInline)) continue;
+        if (reus.find(r => r.nome.toLowerCase().startsWith(nome.toLowerCase().substring(0,6)))) continue;
+        reus.push({ nome: capitalizar(nome), cnpj: cnpjInline });
+      }
+    }
+  }
+
+  // Complemento B: buscar réus por labels estruturados (REQUERIDO:, EXECUTADO:, etc.)
   if (reus.length === 0 && !ehAgravo) {
     const labelsReu = ['REQUERIDO','EXECUTADO','IMPETRADO','APELADO','RÉU','REU'];
     for (const label of labelsReu) {
-      const rx = new RegExp(label + '[AE]?S?[:\\s]+([A-ZÁÉÍÓÚÂÊÔÃÕÇ][A-Za-záéíóúâêôãõç\\s,\\.]{3,80}?)(?:\\n|CPF|CNPJ|,\\s*(?:inscrit|portador)|\\s{3,})', 'gi');
+      // Regex mais restrita: para imediatamente em ponto/vírgula sem estar seguido de minúscula longa
+      const rx = new RegExp(label + '[AE]?S?[:\\s]+([A-ZÁÉÍÓÚÂÊÔÃÕÇ][A-Za-záéíóúâêôãõç\\s\\.]{3,60}?)(?:\\n|CPF|CNPJ|,\\s*(?:inscrit|portador|pessoa|com\\s+sede)|\\s{3,})', 'gi');
       for (const m of txt.matchAll(rx)) {
         const nome = m[1].trim().replace(/\s+/g,' ').replace(/,\s*$/, '');
         if (nome.length < 3) continue;
+        // Validar que parece nome de entidade (não corpo de texto)
+        if (/^(?:Em|Na|No|Por|Se|Que|De|Do|Da|Para|Com|Sem|Entre)\b/.test(nome)) continue;
+        const wMin = (nome.match(/\b[a-záéíóúâêôãõç]{5,}\b/g) || []).length;
+        if (wMin > 3) continue;
         if (reus.find(r => r.nome.toLowerCase().startsWith(nome.toLowerCase().substring(0,6)))) continue;
         reus.push({ nome: capitalizar(nome), cnpj: '' });
       }
