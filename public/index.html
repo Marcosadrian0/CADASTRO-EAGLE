@@ -4378,22 +4378,31 @@ function fatGetSemCadRows() {
   return semCad;
 }
 
+function fatBuildLookupsFromState(st) {
+  const sbkMap = new Map();
+  (st.cadastro?.rows || []).forEach(r => sbkMap.set(fatNormalizeNPU(r.processo), r));
+  (st.cadastro?.manuaisRows || []).forEach(r => sbkMap.set(fatNormalizeNPU(r.processo), r));
+  const outrosMap = new Map();
+  (st.cadastro?.outrosRows || []).forEach(r => outrosMap.set(fatNormalizeNPU(r.processo), r));
+  return { sbkSet: sbkMap, outrosSet: outrosMap };
+}
+
 async function fatGetAllSemCadRows() {
-  const { sbkSet, outrosSet } = fatBuildCadastroLookups();
   const vistos = new Set();
   const result = [];
 
-  // Mes atual
+  // Mes atual — usa cadastro do proprio mes
   const { mm: mmA, yyyy: yyyyA } = fatMonthLabel(fatMonthKey);
   const labelAtual = `${mmA}/${yyyyA}`;
+  const { sbkSet: sbkA, outrosSet: outrosA } = fatBuildCadastroLookups();
   [...fatState.captura.rows, ...fatState.dje.rows].forEach(r => {
     const n = fatNormalizeNPU(r.processo);
     if (vistos.has(n)) return;
     vistos.add(n);
-    if (!sbkSet.has(n) && !outrosSet.has(n)) result.push({ ...r, mesRef: labelAtual });
+    if (!sbkA.has(n) && !outrosA.has(n)) result.push({ ...r, mesRef: labelAtual });
   });
 
-  // Meses anteriores
+  // Meses anteriores — cada mes avaliado com sua propria base de cadastro
   try {
     const keys = await fatIDB.getAllKeys();
     const pastKeys = keys
@@ -4402,14 +4411,17 @@ async function fatGetAllSemCadRows() {
     for (const key of pastKeys) {
       const st = await fatIDB.get(key);
       if (!st) continue;
+      // So inclui meses que tinham base de cadastro carregada
+      if (!st.cadastro?.rows?.length && !st.cadastro?.manuaisRows?.length) continue;
       const mk = key.replace('mes:', '');
       const { mm, yyyy } = fatMonthLabel(mk);
       const label = `${mm}/${yyyy}`;
+      const { sbkSet: sbkP, outrosSet: outrosP } = fatBuildLookupsFromState(st);
       [...(st.captura?.rows || []), ...(st.dje?.rows || [])].forEach(r => {
         const n = fatNormalizeNPU(r.processo);
         if (vistos.has(n)) return;
         vistos.add(n);
-        if (!sbkSet.has(n) && !outrosSet.has(n)) result.push({ ...r, mesRef: label });
+        if (!sbkP.has(n) && !outrosP.has(n)) result.push({ ...r, mesRef: label });
       });
     }
   } catch(e) { console.warn('[fat] getAllSemCad error:', e); }
