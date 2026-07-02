@@ -1648,11 +1648,23 @@ function extrairCampos(txt, seg) {
       break;
     }
   }
-  // Fallback: texto completo — também pega a última ocorrência
+  // Fallback 1: texto completo — pega a última ocorrência
   if (!valorAchado) {
     for (const rx of valPatterns) {
       const todos = [...txtFlat.matchAll(new RegExp(rx.source, rx.flags + (rx.flags.includes('g') ? '' : 'g')))];
-      if (todos.length > 0) { campos.valor_causa = 'R$ ' + todos[todos.length - 1][1].trim(); break; }
+      if (todos.length > 0) { campos.valor_causa = 'R$ ' + todos[todos.length - 1][1].trim(); valorAchado = true; break; }
+    }
+  }
+  // Fallback 2 (agravo/cumprimento): buscar "Valor da Causa: R$ X" na capa (início do doc)
+  if (!valorAchado && (ehAgravo || ehCumprimento)) {
+    const txtCapaFlat = txt.substring(0, 3000).replace(/\n/g,' ').replace(/\s{2,}/g,' ');
+    const mCapa = txtCapaFlat.match(/[Vv]alor\s+da\s+[Cc]ausa\s*:?\s*R\$\s*([\d.,]+)/);
+    if (!mCapa) {
+      // Também tentar "Valor: R$ X" na capa
+      const mCapaSimples = txtCapaFlat.match(/[Vv]alor\s*:\s*R\$\s*([\d.,]+)/);
+      if (mCapaSimples) campos.valor_causa = 'R$ ' + mCapaSimples[1].trim();
+    } else {
+      campos.valor_causa = 'R$ ' + mCapa[1].trim();
     }
   }
 
@@ -1701,14 +1713,24 @@ function extrairCampos(txt, seg) {
       if (mOrig) origemEncontrada = `${mOrig[1]}-${mOrig[2]}.${mOrig[3]}.${mOrig[4]}.${mOrig[5]}.${mOrig[6]}`;
     }
 
-    // Forma 3: qualquer NPU distinto do agravo nos primeiros 3000 chars
+    // Forma 3: "Processo nº XXXXXXX" ou "Autos nº XXXXXXX" no corpo do agravo
+    if (!origemEncontrada) {
+      const mProcNo = txtFlat.match(/(?:Processo|Autos|processo\s+de\s+origem|ação\s+originária)\s*n[ºo°]?\.?\s*[:\s]*(\d{7})\s*[-–.]\s*(\d{2})\s*[-–.]\s*(\d{4})\s*[-–.]\s*(\d)\s*[-–.]\s*(\d{2})\s*[-–.]\s*(\d{4})/i);
+      if (mProcNo) {
+        const candidato = `${mProcNo[1]}-${mProcNo[2]}.${mProcNo[3]}.${mProcNo[4]}.${mProcNo[5]}.${mProcNo[6]}`;
+        if (candidato !== campos.npu) origemEncontrada = candidato;
+      }
+    }
+
+    // Forma 4: qualquer NPU distinto em TODO o texto (não só primeiros 3000)
     if (!origemEncontrada && campos.npu) {
-      const txtNorm = txtFlat.substring(0, 3000).replace(/\s*-\s*/g,'-').replace(/\s*\.\s*/g,'.');
+      const txtNorm = txtFlat.replace(/\s*-\s*/g,'-').replace(/\s*\.\s*/g,'.');
       const npusDistintos = [...txtNorm.matchAll(/\b(\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4})\b/g)]
         .map(m=>m[1]).filter(n => n !== campos.npu);
       if (npusDistintos.length > 0) origemEncontrada = npusDistintos[0];
     }
 
+    // Quando não encontrar origem distinta: deixar igual ao NPU (regra do usuário)
     campos.numero_origem = origemEncontrada || campos.npu || '';
   } else if (ehCumprimento) {
     // Cumprimento de sentença: origem é o processo de conhecimento
