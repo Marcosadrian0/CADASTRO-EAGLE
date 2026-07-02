@@ -1733,13 +1733,16 @@ function extrairCampos(txt, seg) {
       origemEncontrada = npuOrigemRotulado;
     }
 
-    // Forma 1 (mais confiável para TJSP): após "Processos relacionados", extrair NPU com separadores flexíveis
-    // Funciona mesmo se pdfjs inserir espaços em "4004396 - 60.2026.8.26.0609"
-    const mRelac = txtFlat.match(/Processos\s+relacionados[:\s]+(.{5,150})/i);
-    if (mRelac) {
-      const mNpuFlex = mRelac[1].match(/(\d{7})\s*[-–]\s*(\d{2})\s*\.\s*(\d{4})\s*\.\s*(\d)\s*\.\s*(\d{2})\s*\.\s*(\d{4})/);
-      if (mNpuFlex) {
-        origemEncontrada = `${mNpuFlex[1]}-${mNpuFlex[2]}.${mNpuFlex[3]}.${mNpuFlex[4]}.${mNpuFlex[5]}.${mNpuFlex[6]}`;
+    // Forma 1: "Processos relacionados: XXXXXXX-XX.XXXX.X.XX.XXXX[/UF] | Originário |"
+    // Cobre TJSP (separadores com espaço) e TJRJ (sufixo /UF após o NPU)
+    if (!origemEncontrada) {
+      const mRelac = txtFlat.match(/Processos\s+relacionados[:\s]+(.{5,200})/i);
+      if (mRelac) {
+        const mNpuFlex = mRelac[1].match(/(\d{7})\s*[-–]\s*(\d{2})\s*\.\s*(\d{4})\s*\.\s*(\d)\s*\.\s*(\d{2})\s*\.\s*(\d{4})/);
+        if (mNpuFlex) {
+          const candidato = `${mNpuFlex[1]}-${mNpuFlex[2]}.${mNpuFlex[3]}.${mNpuFlex[4]}.${mNpuFlex[5]}.${mNpuFlex[6]}`;
+          if (candidato !== campos.npu) origemEncontrada = candidato;
+        }
       }
     }
 
