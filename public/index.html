@@ -576,7 +576,7 @@ textarea{resize:vertical;min-height:52px}
 
     <!-- KPI CARDS -->
     <div class="fat-kpi-grid">
-      <div class="fat-kpi fat-kpi-ok"><div class="fat-kpi-val" id="fatKpiSBK">—</div><div class="fat-kpi-lbl">Cadastrados SBK</div></div>
+      <div class="fat-kpi fat-kpi-ok" onclick="fatAbrirCadastrados()" title="Clique para ver os processos cadastrados SBK neste mês" style="cursor:pointer"><div class="fat-kpi-val" id="fatKpiSBK">—</div><div class="fat-kpi-lbl">Cadastrados SBK</div><div style="font-size:9px;color:var(--vok);margin-top:4px;opacity:.8">clique para ver</div></div>
       <div class="fat-kpi"><div class="fat-kpi-val" id="fatKpiCaptura">—</div><div class="fat-kpi-lbl">Processos Captura</div></div>
       <div class="fat-kpi"><div class="fat-kpi-val" id="fatKpiDje">—</div><div class="fat-kpi-lbl">Processos DJE</div></div>
       <div class="fat-kpi"><div class="fat-kpi-val" id="fatKpiDupl">—</div><div class="fat-kpi-lbl">Duplicados</div></div>
@@ -693,6 +693,19 @@ textarea{resize:vertical;min-height:52px}
     <div style="display:flex;justify-content:space-between;align-items:center">
       <button class="fat-btn-danger" onclick="fatResetMes()">Limpar dados do mês</button>
       <button class="fat-btn fat-btn-primary" onclick="fatFecharModal()">Concluir</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CADASTRADOS SBK -->
+<div class="fat-modal" id="fatModalCadastrados" onclick="if(event.target===this)fatFecharCadastrados()">
+  <div class="fat-modal-box" style="max-width:780px">
+    <div class="fat-modal-hdr">
+      <div class="fat-modal-ttl">Cadastrados SBK — mês atual</div>
+      <button class="fat-modal-close" onclick="fatFecharCadastrados()">&#xd7;</button>
+    </div>
+    <div id="fatCadastradosLista" style="max-height:520px;overflow-y:auto">
+      <p style="font-size:11px;color:var(--chumbo)">Carregando...</p>
     </div>
   </div>
 </div>
@@ -4546,6 +4559,74 @@ function fatFecharSemCadastro() {
   document.getElementById('fatModalSemCad').classList.remove('open');
 }
 
+function fatAbrirCadastrados() {
+  document.getElementById('fatModalCadastrados').classList.add('open');
+  document.getElementById('fatCadastradosLista').innerHTML = '<p style="font-size:11px;color:var(--chumbo);padding:12px 0">Carregando...</p>';
+  fatRenderCadastradosLista();
+}
+function fatFecharCadastrados() {
+  document.getElementById('fatModalCadastrados').classList.remove('open');
+}
+
+function fatRenderCadastradosLista() {
+  const lista = document.getElementById('fatCadastradosLista');
+  if (!fatState || (!fatState.captura.rows.length && !fatState.dje.rows.length)) {
+    lista.innerHTML = '<p style="font-size:11px;color:var(--chumbo);padding:16px 0">Nenhum processo importado para o mês atual.</p>';
+    return;
+  }
+  const { sbkSet } = fatBuildCadastroLookups();
+  if (!sbkSet.size) {
+    lista.innerHTML = '<p style="font-size:11px;color:var(--chumbo);padding:16px 0">Base iiLex não carregada. Importe a base para ver os cadastrados.</p>';
+    return;
+  }
+
+  // Unir captura + DJE sem duplicar o mesmo NPU
+  const vistos = new Set();
+  const rows = [];
+  for (const r of [...fatState.captura.rows, ...fatState.dje.rows]) {
+    const n = fatNormalizeNPU(r.processo);
+    if (vistos.has(n)) continue;
+    vistos.add(n);
+    const info = sbkSet.get(n);
+    if (!info) continue;
+    rows.push({ processo: r.processo, data: r.data, tipoOcorrencia: r.tipoOcorrencia,
+      pasta: info.pasta || '', dataCadastro: info.dataCadastro || '',
+      cadastrante: info.cadastrante || '', origem: info._origem || 'iiLex' });
+  }
+
+  if (!rows.length) {
+    lista.innerHTML = '<div style="text-align:center;padding:32px 0"><p style="font-size:12px;color:var(--chumbo)">Nenhum processo cadastrado SBK encontrado para o mês atual.</p></div>';
+    return;
+  }
+
+  let html = `<div style="font-size:11px;color:var(--chumbo);margin-bottom:10px">${rows.length} processo(s) cadastrado(s) SBK neste mês</div>`;
+  html += `<table style="width:100%;border-collapse:collapse;font-size:11px">
+    <thead><tr style="background:var(--off)">
+      <th style="padding:7px 8px;text-align:left;color:var(--chumbo);font-size:10px;text-transform:uppercase;letter-spacing:.3px">Processo</th>
+      <th style="padding:7px 8px;text-align:left;color:var(--chumbo);font-size:10px;text-transform:uppercase;letter-spacing:.3px">Data</th>
+      <th style="padding:7px 8px;text-align:left;color:var(--chumbo);font-size:10px;text-transform:uppercase;letter-spacing:.3px">Pasta</th>
+      <th style="padding:7px 8px;text-align:left;color:var(--chumbo);font-size:10px;text-transform:uppercase;letter-spacing:.3px">Dt. Cadastro</th>
+      <th style="padding:7px 8px;text-align:left;color:var(--chumbo);font-size:10px;text-transform:uppercase;letter-spacing:.3px">Cadastrante</th>
+      <th style="padding:7px 8px;text-align:left;color:var(--chumbo);font-size:10px;text-transform:uppercase;letter-spacing:.3px">Origem</th>
+    </tr></thead><tbody>`;
+  rows.forEach((r, i) => {
+    const bg = i % 2 === 0 ? '#fff' : 'var(--off)';
+    const origemTag = r.origem === 'Manual'
+      ? `<span style="background:#e0f2fe;color:#0369a1;border-radius:4px;padding:1px 6px;font-size:9px;font-weight:700">Manual</span>`
+      : `<span style="background:var(--off);color:var(--chumbo);border-radius:4px;padding:1px 6px;font-size:9px">iiLex</span>`;
+    html += `<tr style="background:${bg};border-top:1px solid var(--borda-l)">
+      <td style="padding:6px 8px;font-family:monospace;font-size:10px;color:var(--verde)">${r.processo}</td>
+      <td style="padding:6px 8px;color:var(--chumbo)">${r.data || '—'}</td>
+      <td style="padding:6px 8px;color:var(--chumbo)">${r.pasta || '—'}</td>
+      <td style="padding:6px 8px;color:var(--chumbo)">${r.dataCadastro || '—'}</td>
+      <td style="padding:6px 8px;color:var(--chumbo)">${r.cadastrante || '—'}</td>
+      <td style="padding:6px 8px">${origemTag}</td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  lista.innerHTML = html;
+}
+
 function fatGetSemCadRows() {
   const { sbkSet, outrosSet } = fatBuildCadastroLookups();
   const vistos = new Set();
@@ -4681,7 +4762,7 @@ async function fatAdicionarManual() {
     || fatCadastroConsolidado.rows.some(r => fatNormalizeNPU(r.processo) === fatNormalizeNPU(npu));
   if (jaExiste) { msg.textContent = 'Processo ja consta na base consolidada.'; msg.style.color = 'var(--amb)'; return; }
 
-  fatCadastroConsolidado.manuaisRows.push({ processo: npu, pasta, cadastrante: cad, dataCadastro: data, manual: true });
+  fatCadastroConsolidado.manuaisRows.push({ processo: npu, pasta, cadastrante: cad, dataCadastro: data, manual: true, _origem: 'Manual' });
   await fatSaveCadastroConsolidado();
 
   // Fechar mini-modal
