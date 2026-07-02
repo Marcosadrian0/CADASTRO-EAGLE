@@ -1533,7 +1533,24 @@ function extrairCampos(txt, seg) {
   // Padrão exato CNJ: NNNNNNN-NN.AAAA.J.TT.OOOO
   const npuRx = /\b(\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4})\b/g;
   const todosNpu = [...txt.matchAll(npuRx)];
-  if (todosNpu.length > 0) campos.npu = todosNpu[0][1];
+
+  // Para agravos: o portal TJMT/outros colocam "Processo de origem: XORIGEM" ANTES
+  // do NPU do proprio agravo no texto — precisamos identificar qual e origem e qual e o agravo.
+  // Estrategia: achar NPU rotulado como "origem" → esse e a origem; o restante e o agravo.
+  const txtFlatNpu = txt.replace(/\n/g, ' ');
+  const rxOrigemLabel = /[Pp]rocesso\s+de\s+[Oo]rigem\s*:?\s*(\d{7})\s*[-–]\s*(\d{2})\s*[.\s]\s*(\d{4})\s*[.\s]\s*(\d)\s*[.\s]\s*(\d{2})\s*[.\s]\s*(\d{4})/;
+  const mOrigemLabel = txtFlatNpu.match(rxOrigemLabel);
+  const npuOrigemRotulado = mOrigemLabel
+    ? `${mOrigemLabel[1]}-${mOrigemLabel[2]}.${mOrigemLabel[3]}.${mOrigemLabel[4]}.${mOrigemLabel[5]}.${mOrigemLabel[6]}`
+    : null;
+
+  if (npuOrigemRotulado && todosNpu.length >= 1) {
+    // Preferir qualquer NPU que NAO seja o de origem como sendo o processo analisado
+    const npuAgravo = todosNpu.map(m => m[1]).find(n => n !== npuOrigemRotulado);
+    campos.npu = npuAgravo || todosNpu[0][1];
+  } else if (todosNpu.length > 0) {
+    campos.npu = todosNpu[0][1];
+  }
 
   // Fallback: extrair NPU do nome do arquivo carregado
   if (!campos.npu) {
@@ -1541,6 +1558,13 @@ function extrairCampos(txt, seg) {
     // Suporta separadores . e _ (ex: 0715896-03.2026.8.02.0001.PDF ou 0715896-03_2026_8_02_0001.PDF)
     const m = nomeArq.match(/(\d{7})[-_](\d{2})[-_.](\d{4})[-_.](\d)[-_.](\d{2})[-_.](\d{4})/);
     if (m) campos.npu = `${m[1]}-${m[2]}.${m[3]}.${m[4]}.${m[5]}.${m[6]}`;
+  }
+  // Fallback 2 para agravo: se so existe um NPU no texto (o de origem) e temos nome de arquivo
+  // usa o nome do arquivo como NPU do processo analisado
+  if (npuOrigemRotulado && (!campos.npu || campos.npu === npuOrigemRotulado)) {
+    const nomeArq2 = document.getElementById('fileName')?.textContent || '';
+    const m2 = nomeArq2.match(/(\d{7})[-_](\d{2})[-_.](\d{4})[-_.](\d)[-_.](\d{2})[-_.](\d{4})/);
+    if (m2) campos.npu = `${m2[1]}-${m2[2]}.${m2[3]}.${m2[4]}.${m2[5]}.${m2[6]}`;
   }
 
   // ── TIPO DE JUSTIÇA via dígito J do NPU ──────────────────────────────────
@@ -1700,7 +1724,13 @@ function extrairCampos(txt, seg) {
   if (ehAgravo) {
     const txtFlat = txt.replace(/\n/g, ' ');
 
-    // Forma 1 (mais confiável): após "Processos relacionados", extrair NPU com separadores flexíveis
+    // Forma 0 (mais confiável para TJMT): aproveitar npuOrigemRotulado ja extraido
+    // "Processo de origem: X" — já identificado antes para corrigir o NPU do agravo
+    if (npuOrigemRotulado && npuOrigemRotulado !== campos.npu) {
+      origemEncontrada = npuOrigemRotulado;
+    }
+
+    // Forma 1 (mais confiável para TJSP): após "Processos relacionados", extrair NPU com separadores flexíveis
     // Funciona mesmo se pdfjs inserir espaços em "4004396 - 60.2026.8.26.0609"
     const mRelac = txtFlat.match(/Processos\s+relacionados[:\s]+(.{5,150})/i);
     if (mRelac) {
