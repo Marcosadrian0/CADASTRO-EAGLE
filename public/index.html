@@ -785,6 +785,10 @@ textarea{resize:vertical;min-height:52px}
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       Analisar e preencher
     </button>
+    <button class="btn-lote" id="btnLote" onclick="abrirModalLote()">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      Análise em Lote
+    </button>
     <div class="progress" id="progressWrap">
       <div class="ps" id="ps1"><div class="psdot">✓</div><span>Lendo páginas do PDF</span></div>
       <div class="ps" id="ps2"><div class="psdot">✓</div><span>Extraindo texto</span></div>
@@ -1667,25 +1671,62 @@ function extrairCampos(txt) {
     }
 
     campos.numero_origem = origemEncontrada || campos.npu || '';
+  } else if (ehCumprimento) {
+    // Cumprimento de sentença: origem é o processo de conhecimento
+    let origemCump = null;
+    const txtFlatC = txt.replace(/\n/g,' ').replace(/\s{2,}/g,' ');
+    // Padrão 1: "processo de conhecimento nº XXXXXXX"
+    const mCumpOrig = txtFlatC.match(/(?:processo\s+de\s+conhecimento|processo\s+de\s+origem|processo\s+principal|cumprimento.*?processo)\s*n[ºo°]?\.?\s*[:\s]*(\d{7})\s*[-–]\s*(\d{2})\s*[.]\s*(\d{4})\s*[.]\s*(\d)\s*[.]\s*(\d{2})\s*[.]\s*(\d{4})/i);
+    if (mCumpOrig) origemCump = `${mCumpOrig[1]}-${mCumpOrig[2]}.${mCumpOrig[3]}.${mCumpOrig[4]}.${mCumpOrig[5]}.${mCumpOrig[6]}`;
+    // Padrão 2: qualquer NPU distinto nos primeiros 2000 chars
+    if (!origemCump && campos.npu) {
+      const npusDistC = [...txtFlatC.substring(0,3000).replace(/\s*-\s*/g,'-').replace(/\s*\.\s*/g,'.').matchAll(/\b(\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4})\b/g)]
+        .map(m=>m[1]).filter(n => n !== campos.npu);
+      if (npusDistC.length > 0) origemCump = npusDistC[0];
+    }
+    campos.numero_origem = origemCump || campos.npu || '';
   } else {
     campos.numero_origem = campos.npu || '';
   }
 
 
   // ── AUTOR e CPF ───────────────────────────────────────────────────────────
-  // Agravo: Autor = AGRAVANTE
-  const mAgravante = txt.match(/AGRAVANTE:\s*([A-ZÁÉÍÓÚÂÊÔÃÕÇ][A-ZÁÉÍÓÚÂÊÔÃÕÇ\s]{3,60}?)(?:\n|AGRAVADO)/i);
-  if (mAgravante) {
-    campos.autor_nome = capitalizar(mAgravante[1].trim().replace(/\s+/g,' '));
-  } else {
-    // Petição comum: nome em maiúsculas antes de "brasileiro/a"
+  const _FILTRO_AUTOR = /EXCELENTÍSSIMO|SENHOR|JUIZ|VARA|COMARCA|CONSTITUIÇÃO|CÓDIGO|ARTIGO|OUTORGANTE|PODER|TRIBUNAL|ESTADO|PROCESSO|JUSTIÇA/i;
+
+  // Padrão 1: labels estruturados no cabecalho do processo (portal)
+  const mLabelAutor = txt.match(/(?:AGRAVANTE|EXEQUENTE|REQUERENTE|APELANTE|EMBARGANTE|IMPETRANTE|AUTOR[AE]?):\s*([A-ZÁÉÍÓÚÂÊÔÃÕÇ][A-ZÁÉÍÓÚÂÊÔÃÕÇ\s]{3,60}?)(?:\n|,|\s{2,}|AGRAVADO|REQUERIDO|EXECUTADO)/i);
+  if (mLabelAutor) {
+    const n = mLabelAutor[1].trim().replace(/\s+/g,' ');
+    if (!_FILTRO_AUTOR.test(n) && n.split(' ').length <= 7) campos.autor_nome = capitalizar(n);
+  }
+
+  // Padrão 2: qualificacao com "brasileiro/a" (peticao inicial classica)
+  if (!campos.autor_nome) {
     const qualifRx = /\n\s*([A-ZÁÉÍÓÚÂÊÔÃÕÇ]{2}[A-ZÁÉÍÓÚÂÊÔÃÕÇ\s]{3,60}?),?\s*(?:brasileiro|brasileira)/gi;
     for (const m of txt.matchAll(qualifRx)) {
       const nome = m[1].trim().replace(/\s+/g, ' ');
-      if (/EXCELENTÍSSIMO|SENHOR|JUIZ|VARA|COMARCA|CONSTITUIÇÃO|CÓDIGO|ARTIGO|OUTORGANTE|PODER/i.test(nome)) continue;
-      if (nome.split(' ').length > 6) continue;
+      if (_FILTRO_AUTOR.test(nome)) continue;
+      if (nome.split(' ').length > 7) continue;
       campos.autor_nome = capitalizar(nome);
       break;
+    }
+  }
+
+  // Padrão 3: "NOME, portador(a) do CPF" ou "NOME, inscrito(a) no CPF"
+  if (!campos.autor_nome) {
+    const mPortCpf = txt.match(/([A-ZÁÉÍÓÚÂÊÔÃÕÇ][A-ZÁÉÍÓÚÂÊÔÃÕÇ\s]{3,60}?),?\s*(?:portador[ao]?\s+d[ao]\s+CPF|inscrit[ao]\s+(?:no|na)\s+CPF)/i);
+    if (mPortCpf) {
+      const n = mPortCpf[1].trim().replace(/\s+/g,' ');
+      if (!_FILTRO_AUTOR.test(n) && n.split(' ').length <= 7) campos.autor_nome = capitalizar(n);
+    }
+  }
+
+  // Padrão 4: cumprimento de sentenca — "EXEQUENTE:" pode aparecer depois de "CUMPRIMENTO"
+  if (!campos.autor_nome && ehCumprimento) {
+    const mExeq = txt.match(/EXEQUENTE[:\s]+([A-ZÁÉÍÓÚÂÊÔÃÕÇ][A-Za-záéíóúâêôãõç\s]{3,60}?)(?:\n|CPF|RG|,)/i);
+    if (mExeq) {
+      const n = mExeq[1].trim().replace(/\s+/g,' ');
+      if (!_FILTRO_AUTOR.test(n) && n.split(' ').length <= 7) campos.autor_nome = capitalizar(n);
     }
   }
   // CPF: priorizar próximo à palavra "CPF" ou "portador do CPF" (evita pegar CPF de réu)
@@ -1811,6 +1852,20 @@ function extrairCampos(txt) {
       const reuEx = reus.find(r => !r.cnpj && ultimaParte.toLowerCase().startsWith(r.nome.toLowerCase().substring(0,8)));
       if (reuEx) { reuEx.cnpj = cnpj; }
       else reus.push({ nome: ultimaParte, cnpj });
+    }
+  }
+  // Complemento: buscar réus por labels quando CNPJ não encontrou ninguém
+  if (reus.length === 0 && !ehAgravo) {
+    const labelsReu = ['REQUERIDO','EXECUTADO','IMPETRADO','APELADO','RÉU','REU'];
+    for (const label of labelsReu) {
+      const rx = new RegExp(label + '[AE]?S?[:\\s]+([A-ZÁÉÍÓÚÂÊÔÃÕÇ][A-Za-záéíóúâêôãõç\\s,\\.]{3,80}?)(?:\\n|CPF|CNPJ|,\\s*(?:inscrit|portador)|\\s{3,})', 'gi');
+      for (const m of txt.matchAll(rx)) {
+        const nome = m[1].trim().replace(/\s+/g,' ').replace(/,\s*$/, '');
+        if (nome.length < 3) continue;
+        if (reus.find(r => r.nome.toLowerCase().startsWith(nome.toLowerCase().substring(0,6)))) continue;
+        reus.push({ nome: capitalizar(nome), cnpj: '' });
+      }
+      if (reus.length > 0) break;
     }
   }
   campos.reus = reus;
@@ -2052,7 +2107,7 @@ function preencherFormulario(c) {
   set('f_data_citacao', c.data_ajuizamento);
   set('f_valor_causa', c.valor_causa);
   set('f_vara_cartorio', c.vara_cartorio);
-  set('f_numero_origem', c.npu);
+  set('f_numero_origem', c.numero_origem || c.npu);
   set('f_tipo_justica', c.tipo_justica);
   set('f_rito', c.rito);
   set('f_fase_processual', c.fase_processual);
@@ -2689,6 +2744,7 @@ REGRAS DE INTERPRETAÇÃO:
 - objeto_principal: uma de: "SUPERENDIVIDAMENTO", "DÉBITO EM CONTA - ASSISTÊNCIA VERBIN", "EMPRÉSTIMO CONSIGNADO", "COBRANÇA INDEVIDA", "REVISÃO CONTRATUAL".
 - causa_raiz: uma de: "Superendividamento", "DÉBITO EM CONTA - ASSISTÊNCIA VERBIN", "Empréstimo consignado", "Cobrança indevida de seguro", "Desconto indevido", "Revisão contratual".
 - autor_cpf: CPF do AUTOR (requerente/polo ativo) no formato NNN.NNN.NNN-NN. Buscar próximo ao nome do autor ou "portador do CPF". NUNCA usar CPF de réu/empresa.
+- autor_nome: nome COMPLETO do autor/requerente/exequente (polo ativo). Buscar após "AGRAVANTE:", "EXEQUENTE:", "REQUERENTE:", "AUTOR:" ou antes de "brasileiro/a" ou "portador do CPF". Nome proprio, não empresa.
 - advogado_nome: nome COMPLETO do advogado do autor (antes de "OAB/" ou após "Dr./Dra."). Nome próprio, não empresa.
 - advogado_uf: UF da OAB (duas letras, ex: SP, AL, RJ).
 - advogado_oab: somente o NÚMERO da OAB com 6 dígitos com zeros à esquerda (ex: 015800, 377573). Sem "OAB/" ou letras.
@@ -2704,6 +2760,7 @@ Responda SOMENTE em JSON puro sem markdown:
   "objeto_principal": "valor ou null",
   "causa_raiz": "valor ou null",
   "autor_cpf": "NNN.NNN.NNN-NN ou null",
+  "autor_nome": "Nome Completo do Autor ou null",
   "advogado_nome": "nome completo ou null",
   "advogado_uf": "UF ou null",
   "advogado_oab": "000000 ou null",
@@ -2719,7 +2776,7 @@ Responda SOMENTE em JSON puro sem markdown:
     const resultado = JSON.parse(raw);
 
     // Aplicar campos simples que estão em branco
-    const camposAplicar = ['valor_causa','rito','vara_cartorio','data_ajuizamento','objeto_principal','causa_raiz'];
+    const camposAplicar = ['valor_causa','rito','vara_cartorio','data_ajuizamento','objeto_principal','causa_raiz','autor_nome'];
     const aplicados = [];
 
     function aplicarCampoIA(campo, valor) {
@@ -4665,6 +4722,173 @@ async function fatInit() {
   await fatSetMonth(savedMonth);
 }
 
+</script>
+
+<!-- Modal Análise em Lote -->
+<div id="modalLote" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.55);align-items:center;justify-content:center;">
+  <div style="background:var(--bg2,#1a1a1a);border:1px solid var(--verde,#2e7d32);border-radius:10px;width:min(95vw,1100px);max-height:90vh;display:flex;flex-direction:column;overflow:hidden;">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid #333;background:var(--bg3,#111);">
+      <span style="font-weight:700;font-size:15px;color:var(--verde,#2e7d32);">Análise em Lote</span>
+      <button onclick="fecharModalLote()" style="background:none;border:none;color:#aaa;font-size:20px;cursor:pointer;line-height:1;">&times;</button>
+    </div>
+    <div style="padding:14px 18px;border-bottom:1px solid #222;">
+      <label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;background:var(--verde,#2e7d32);color:#fff;padding:7px 14px;border-radius:6px;font-size:13px;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Selecionar PDFs
+        <input type="file" id="inputLote" multiple accept=".pdf" style="display:none" onchange="processarLote(this.files)">
+      </label>
+      <span id="loteProgresso" style="margin-left:14px;font-size:13px;color:#aaa;"></span>
+    </div>
+    <div style="flex:1;overflow:auto;padding:14px 18px;">
+      <table id="tabelaLote" style="width:100%;border-collapse:collapse;font-size:12px;">
+        <thead>
+          <tr style="background:var(--bg3,#111);color:#aaa;text-align:left;">
+            <th style="padding:7px 8px;border-bottom:1px solid #333;">Arquivo</th>
+            <th style="padding:7px 8px;border-bottom:1px solid #333;">NPU</th>
+            <th style="padding:7px 8px;border-bottom:1px solid #333;">Autor</th>
+            <th style="padding:7px 8px;border-bottom:1px solid #333;">Réus</th>
+            <th style="padding:7px 8px;border-bottom:1px solid #333;">Nr. Origem</th>
+            <th style="padding:7px 8px;border-bottom:1px solid #333;">Valor</th>
+            <th style="padding:7px 8px;border-bottom:1px solid #333;">Vara</th>
+            <th style="padding:7px 8px;border-bottom:1px solid #333;">Advogado</th>
+          </tr>
+        </thead>
+        <tbody id="corpoLote">
+          <tr><td colspan="8" style="text-align:center;padding:20px;color:#666;">Selecione arquivos PDF para iniciar a análise.</td></tr>
+        </tbody>
+        <tfoot id="rodapeLote" style="display:none;">
+          <tr style="background:var(--bg3,#111);color:#aaa;font-size:11px;">
+            <td style="padding:6px 8px;border-top:1px solid #333;font-weight:700;">Preenchimento</td>
+            <td id="loteFootNpu" style="padding:6px 8px;border-top:1px solid #333;text-align:center;"></td>
+            <td id="loteFootAutor" style="padding:6px 8px;border-top:1px solid #333;text-align:center;"></td>
+            <td id="loteFootReus" style="padding:6px 8px;border-top:1px solid #333;text-align:center;"></td>
+            <td id="loteFootOrigem" style="padding:6px 8px;border-top:1px solid #333;text-align:center;"></td>
+            <td id="loteFootValor" style="padding:6px 8px;border-top:1px solid #333;text-align:center;"></td>
+            <td id="loteFootVara" style="padding:6px 8px;border-top:1px solid #333;text-align:center;"></td>
+            <td id="loteFootAdv" style="padding:6px 8px;border-top:1px solid #333;text-align:center;"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+    <div style="display:flex;justify-content:flex-end;padding:12px 18px;border-top:1px solid #333;">
+      <button onclick="fecharModalLote()" style="background:#333;color:#ccc;border:none;padding:7px 18px;border-radius:6px;cursor:pointer;font-size:13px;">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<style>
+.btn-lote {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  padding: 6px 12px;
+  background: transparent;
+  border: 1px solid var(--verde, #2e7d32);
+  color: var(--verde, #2e7d32);
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  width: 100%;
+  justify-content: center;
+  transition: background .15s;
+}
+.btn-lote:hover { background: rgba(46,125,50,.12); }
+</style>
+
+<script>
+function abrirModalLote() {
+  const m = document.getElementById('modalLote');
+  m.style.display = 'flex';
+}
+
+function fecharModalLote() {
+  const m = document.getElementById('modalLote');
+  m.style.display = 'none';
+}
+
+document.getElementById('modalLote').addEventListener('click', function(e) {
+  if (e.target === this) fecharModalLote();
+});
+
+async function processarLote(files) {
+  if (!files || files.length === 0) return;
+  const corpo = document.getElementById('corpoLote');
+  const rodape = document.getElementById('rodapeLote');
+  const prog = document.getElementById('loteProgresso');
+  corpo.innerHTML = '';
+  rodape.style.display = 'none';
+
+  const colunas = ['npu','autor_nome','reus','numero_origem','valor_causa','vara_cartorio','advogado_nome'];
+  const contadores = { npu:0, autor_nome:0, reus:0, numero_origem:0, valor_causa:0, vara_cartorio:0, advogado_nome:0 };
+  const total = files.length;
+
+  for (let i = 0; i < total; i++) {
+    const file = files[i];
+    prog.textContent = `Processando ${i+1}/${total}...`;
+
+    let campos = {};
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      let textoCompleto = '';
+      for (let p = 1; p <= Math.min(pdf.numPages, 15); p++) {
+        const page = await pdf.getPage(p);
+        const content = await page.getTextContent();
+        textoCompleto += content.items.map(it => it.str).join(' ') + '\n';
+      }
+      campos = extrairCampos(textoCompleto);
+    } catch(err) {
+      campos = { _erro: err.message };
+    }
+
+    // Contar preenchimento
+    if (campos.npu) contadores.npu++;
+    if (campos.autor_nome) contadores.autor_nome++;
+    if (campos.reus && campos.reus.length > 0) contadores.reus++;
+    if (campos.numero_origem) contadores.numero_origem++;
+    if (campos.valor_causa) contadores.valor_causa++;
+    if (campos.vara_cartorio) contadores.vara_cartorio++;
+    if (campos.advogado_nome) contadores.advogado_nome++;
+
+    function cel(val) {
+      const preenchido = val && val !== '' && !(Array.isArray(val) && val.length === 0);
+      const bg = preenchido ? 'rgba(46,125,50,.18)' : 'rgba(183,28,28,.18)';
+      const cor = preenchido ? '#81c784' : '#e57373';
+      let texto = '';
+      if (Array.isArray(val)) texto = val.map(r => r.nome || r).join('; ');
+      else texto = val || '';
+      return `<td style="padding:6px 8px;border-bottom:1px solid #222;background:${bg};color:${cor};max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${(texto+'').replace(/"/g,'&quot;')}">${texto || '-'}</td>`;
+    }
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td style="padding:6px 8px;border-bottom:1px solid #222;color:#ccc;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${file.name}">${file.name}</td>
+      ${cel(campos.npu)}
+      ${cel(campos.autor_nome)}
+      ${cel(campos.reus)}
+      ${cel(campos.numero_origem)}
+      ${cel(campos.valor_causa)}
+      ${cel(campos.vara_cartorio)}
+      ${cel(campos.advogado_nome)}
+    `;
+    corpo.appendChild(tr);
+  }
+
+  prog.textContent = `Concluido: ${total} arquivo(s).`;
+
+  // Rodape com percentuais
+  function pct(c) { return total > 0 ? Math.round(c/total*100)+'%' : '-'; }
+  function estilo(c) { const p = total > 0 ? c/total : 0; return `color:${p >= .7 ? '#81c784' : p >= .4 ? '#ffb74d' : '#e57373'};font-weight:700;`; }
+  document.getElementById('loteFootNpu').innerHTML = `<span style="${estilo(contadores.npu)}">${pct(contadores.npu)}</span>`;
+  document.getElementById('loteFootAutor').innerHTML = `<span style="${estilo(contadores.autor_nome)}">${pct(contadores.autor_nome)}</span>`;
+  document.getElementById('loteFootReus').innerHTML = `<span style="${estilo(contadores.reus)}">${pct(contadores.reus)}</span>`;
+  document.getElementById('loteFootOrigem').innerHTML = `<span style="${estilo(contadores.numero_origem)}">${pct(contadores.numero_origem)}</span>`;
+  document.getElementById('loteFootValor').innerHTML = `<span style="${estilo(contadores.valor_causa)}">${pct(contadores.valor_causa)}</span>`;
+  document.getElementById('loteFootVara').innerHTML = `<span style="${estilo(contadores.vara_cartorio)}">${pct(contadores.vara_cartorio)}</span>`;
+  document.getElementById('loteFootAdv').innerHTML = `<span style="${estilo(contadores.advogado_nome)}">${pct(contadores.advogado_nome)}</span>`;
+  rodape.style.display = '';
+}
 </script>
 </body>
 </html>
