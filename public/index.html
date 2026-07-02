@@ -1802,24 +1802,23 @@ function extrairCampos(txt, seg) {
   // Usar bloco de partes para extração direcionada (menos ruído do corpo da petição)
   const txtPartes = seg.partes || txt.substring(0, 3000);
 
-  // Padrão 0: bloco "Partes" do portal TJMT — "NOME (REQUERENTE)" e "NOME (REQUERIDO)"
-  // Aparece em PDFs de portal que incluem a ficha processual completa (ex. pag 17)
-  const mPortalPartes = txt.match(/\bPartes\b[\s\S]{0,30}?\n((?:[^\n]+\((?:REQUERENTE|REQUERIDO|AGRAVANTE|AGRAVADO|EXEQUENTE|EXECUTADO|AUTOR[AE]?|R[EÉ]U)\)[^\n]*\n)+)/i);
-  if (mPortalPartes) {
-    const linhasPartes = mPortalPartes[1].split('\n').map(l => l.trim()).filter(Boolean);
-    for (const linha of linhasPartes) {
-      const mParte = linha.match(/^([A-ZÁÉÍÓÚÂÊÔÃÕÇ][^\(]{3,70}?)\s*\((REQUERENTE|REQUERIDO|AGRAVANTE|AGRAVADO|EXEQUENTE|EXECUTADO|AUTOR[AE]?|R[EÉ]U)\)/i);
-      if (!mParte) continue;
-      const nome = mParte[1].trim().replace(/\s+/g,' ');
-      const papel = mParte[2].toUpperCase();
-      if (_FILTRO_AUTOR.test(nome)) continue;
-      if (/ADVOGAD|ADVOGADO/i.test(nome)) continue;
-      if (/REQUERENTE|AGRAVANTE|EXEQUENTE|AUTOR/.test(papel) && !campos.autor_nome) {
-        if (nome.split(' ').length >= 2 && nome.split(' ').length <= 8) campos.autor_nome = capitalizar(nome);
-      } else if (/REQUERIDO|AGRAVADO|EXECUTADO|RÉU|REU/.test(papel)) {
-        if (!campos._reusPortal) campos._reusPortal = [];
+  // Padrão 0: scan global por linhas com "(REQUERENTE)" / "(REQUERIDO)" — portal TJMT
+  // Usa [^\n]+? para permitir parênteses no nome (ex: "BANCO SANTANDER (BRASIL) S.A.")
+  // Não ancora em "\bPartes\b" para evitar falsos positivos no corpo da petição
+  const rxPortalLinha = /\n([^\n]+?)\s*\((REQUERENTE|REQUERIDO|AGRAVANTE|AGRAVADO|EXEQUENTE|EXECUTADO|AUTOR[AE]?|R[EÉ]U)(?:\([^)]*\))?\)/gi;
+  for (const mLinha of txt.matchAll(rxPortalLinha)) {
+    const nome = mLinha[1].trim().replace(/\s+/g,' ');
+    const papel = mLinha[2].toUpperCase();
+    if (!nome || nome.length < 3) continue;
+    if (_FILTRO_AUTOR.test(nome)) continue;
+    if (/ADVOGAD/i.test(papel)) continue;
+    if (/REQUERENTE|AGRAVANTE|EXEQUENTE|AUTOR/.test(papel) && !campos.autor_nome) {
+      const words = nome.split(' ').filter(Boolean);
+      if (words.length >= 2 && words.length <= 8) campos.autor_nome = capitalizar(nome);
+    } else if (/REQUERIDO|AGRAVADO|EXECUTADO|RÉU|REU/.test(papel)) {
+      if (!campos._reusPortal) campos._reusPortal = [];
+      if (!campos._reusPortal.find(r => r.nome.toUpperCase() === capitalizar(nome).toUpperCase()))
         campos._reusPortal.push({ nome: capitalizar(nome), cnpj: '' });
-      }
     }
   }
 
