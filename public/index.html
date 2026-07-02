@@ -1433,8 +1433,11 @@ async function analisarPDF() {
     const pdf = await pdfjsLib.getDocument({ data: pdfArrayBuffer }).promise;
     setStep(2);
 
+    // Limite de paginas: 50 para cobrir PDFs de portal com documentos anexados
+    // (agravo TJMT tem metadados na pag 17 e peticao original nas pags 20+)
+    const MAX_PAGES = Math.min(pdf.numPages, 50);
     let texto = '';
-    for (let p = 1; p <= Math.min(pdf.numPages, 12); p++) {
+    for (let p = 1; p <= MAX_PAGES; p++) {
       const page = await pdf.getPage(p);
       const content = await page.getTextContent();
       let ultima = null;
@@ -1799,6 +1802,27 @@ function extrairCampos(txt, seg) {
   // Usar bloco de partes para extração direcionada (menos ruído do corpo da petição)
   const txtPartes = seg.partes || txt.substring(0, 3000);
 
+  // Padrão 0: bloco "Partes" do portal TJMT — "NOME (REQUERENTE)" e "NOME (REQUERIDO)"
+  // Aparece em PDFs de portal que incluem a ficha processual completa (ex. pag 17)
+  const mPortalPartes = txt.match(/\bPartes\b[\s\S]{0,30}?\n((?:[^\n]+\((?:REQUERENTE|REQUERIDO|AGRAVANTE|AGRAVADO|EXEQUENTE|EXECUTADO|AUTOR[AE]?|R[EÉ]U)\)[^\n]*\n)+)/i);
+  if (mPortalPartes) {
+    const linhasPartes = mPortalPartes[1].split('\n').map(l => l.trim()).filter(Boolean);
+    for (const linha of linhasPartes) {
+      const mParte = linha.match(/^([A-ZÁÉÍÓÚÂÊÔÃÕÇ][^\(]{3,70}?)\s*\((REQUERENTE|REQUERIDO|AGRAVANTE|AGRAVADO|EXEQUENTE|EXECUTADO|AUTOR[AE]?|R[EÉ]U)\)/i);
+      if (!mParte) continue;
+      const nome = mParte[1].trim().replace(/\s+/g,' ');
+      const papel = mParte[2].toUpperCase();
+      if (_FILTRO_AUTOR.test(nome)) continue;
+      if (/ADVOGAD|ADVOGADO/i.test(nome)) continue;
+      if (/REQUERENTE|AGRAVANTE|EXEQUENTE|AUTOR/.test(papel) && !campos.autor_nome) {
+        if (nome.split(' ').length >= 2 && nome.split(' ').length <= 8) campos.autor_nome = capitalizar(nome);
+      } else if (/REQUERIDO|AGRAVADO|EXECUTADO|RÉU|REU/.test(papel)) {
+        if (!campos._reusPortal) campos._reusPortal = [];
+        campos._reusPortal.push({ nome: capitalizar(nome), cnpj: '' });
+      }
+    }
+  }
+
   // Padrão 1: labels estruturados no cabecalho do processo (portal)
   // Busca em txt completo — labels sao especificos o suficiente para evitar falsos positivos
   const mLabelAutor = txt.match(/(?:AGRAVANTE|EXEQUENTE|REQUERENTE|APELANTE|EMBARGANTE|IMPETRANTE|AUTOR[AE]?):\s*([A-ZÁÉÍÓÚÂÊÔÃÕÇ][A-ZÁÉÍÓÚÂÊÔÃÕÇ\s]{3,60}?)(?:\n|,|\s{2,}|AGRAVADO|REQUERIDO|EXECUTADO)/i);
@@ -2096,6 +2120,44 @@ function extrairCampos(txt, seg) {
       if (reus.length > 0) break;
     }
   }
+  // Enriquecer réus com dados do bloco portal (Padrao 0) se disponivel
+  // O bloco portal tem os nomes sem CNPJ; o scan por CNPJ tem CNPJ sem nome confiável
+  // Estrategia: usar nomes do portal e associar CNPJs achados no texto
+  if (campos._reusPortal && campos._reusPortal.length > 0) {
+    // Coletar todos CNPJs do texto com nome anterior
+    const cnpjsNoTexto = [];
+    for (const m of txt.matchAll(/\b(\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2})\b/g)) {
+      cnpjsNoTexto.push({ cnpj: m[1], index: m.index });
+    }
+    // Para cada reu do portal, tentar associar CNPJ por proximidade de nome
+    campos._reusPortal.forEach(rp => {
+      const nomeNorm = rp.nome.normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase();
+      const palavrasNome = nomeNorm.split(/\s+/).filter(w => w.length > 3);
+      let melhorCnpj = ''; let melhorScore = 0;
+      for (const {cnpj, index} of cnpjsNoTexto) {
+        const ctx = txt.substring(Math.max(0, index - 400), index);
+        const ctxNorm = ctx.normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase();
+        const score = palavrasNome.filter(w => ctxNorm.includes(w)).length;
+        if (score > melhorScore) { melhorScore = score; melhorCnpj = cnpj; }
+      }
+      rp.cnpj = melhorScore > 0 ? melhorCnpj : '';
+      // Remapear Eagle SCD para Futuro
+      if (rp.cnpj === '45.745.537/0001-19' || /EAGLE\s+SOC/i.test(rp.nome)) {
+        rp.nome = 'Futuro Sociedade de Crédito Direto S/A';
+        rp.cnpj = rp.cnpj || '45.745.537/0001-19';
+      }
+    });
+    // Mesclar: réus do portal prevalecem; réus do scan CNPJ complementam se trouxerem CNPJ novo
+    const reusFinais = [...campos._reusPortal];
+    for (const r of reus) {
+      const jaExiste = reusFinais.find(rf => rf.cnpj && rf.cnpj === r.cnpj);
+      if (!jaExiste && r.cnpj) reusFinais.push(r);
+    }
+    reus.length = 0;
+    reusFinais.forEach(r => reus.push(r));
+    delete campos._reusPortal;
+  }
+
   campos.reus = reus;
 
   // ── ADVOGADOS e OAB ────────────────────────────────────────────────────────
