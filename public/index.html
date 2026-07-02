@@ -325,7 +325,7 @@ textarea{resize:vertical;min-height:52px}
 .fat-download-sub{font-size:12px;color:rgba(255,255,255,.7);margin-bottom:18px}
 .fat-btn-download{background:#fff;color:var(--verde);padding:12px 28px;border-radius:8px;font-size:13px;font-weight:700;border:none;cursor:pointer;font-family:inherit;transition:background .15s}
 .fat-btn-download:hover{background:var(--off)}
-.fat-kpi-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-bottom:20px}
+.fat-kpi-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:12px;margin-bottom:20px}
 .fat-kpi{background:#fff;border:1px solid var(--borda-l);border-radius:var(--rlg);padding:16px 14px;box-shadow:var(--shadow);text-align:center}
 .fat-kpi-warn{border-color:var(--err-b);background:var(--err-bg);cursor:pointer;transition:box-shadow .15s}
 .fat-kpi-warn:hover{box-shadow:0 0 0 2px var(--err),var(--shadow-md)}
@@ -577,6 +577,7 @@ textarea{resize:vertical;min-height:52px}
     <!-- KPI CARDS -->
     <div class="fat-kpi-grid">
       <div class="fat-kpi fat-kpi-ok" onclick="fatAbrirCadastrados()" title="Clique para ver os processos cadastrados SBK neste mês" style="cursor:pointer"><div class="fat-kpi-val" id="fatKpiSBK">—</div><div class="fat-kpi-lbl">Cadastrados SBK</div><div style="font-size:9px;color:var(--vok);margin-top:4px;opacity:.8">clique para ver</div></div>
+      <div class="fat-kpi" onclick="fatAbrirCadastradosOutros()" title="Clique para ver os processos cadastrados por outros" style="cursor:pointer;border-color:#FDE68A;background:#FFFBEB"><div class="fat-kpi-val" id="fatKpiOutros" style="color:#B45309">—</div><div class="fat-kpi-lbl">Cadastrados Outros</div><div style="font-size:9px;color:#B45309;margin-top:4px;opacity:.8">clique para ver</div></div>
       <div class="fat-kpi"><div class="fat-kpi-val" id="fatKpiCaptura">—</div><div class="fat-kpi-lbl">Processos Captura</div></div>
       <div class="fat-kpi"><div class="fat-kpi-val" id="fatKpiDje">—</div><div class="fat-kpi-lbl">Processos DJE</div></div>
       <div class="fat-kpi"><div class="fat-kpi-val" id="fatKpiDupl">—</div><div class="fat-kpi-lbl">Duplicados</div></div>
@@ -705,6 +706,19 @@ textarea{resize:vertical;min-height:52px}
       <button class="fat-modal-close" onclick="fatFecharCadastrados()">&#xd7;</button>
     </div>
     <div id="fatCadastradosLista" style="max-height:520px;overflow-y:auto">
+      <p style="font-size:11px;color:var(--chumbo)">Carregando...</p>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CADASTRADOS OUTROS -->
+<div class="fat-modal" id="fatModalCadastradosOutros" onclick="if(event.target===this)fatFecharCadastradosOutros()">
+  <div class="fat-modal-box" style="max-width:780px">
+    <div class="fat-modal-hdr">
+      <div class="fat-modal-ttl">Cadastrados por outros — mês atual</div>
+      <button class="fat-modal-close" onclick="fatFecharCadastradosOutros()">&#xd7;</button>
+    </div>
+    <div id="fatCadastradosOutrosLista" style="max-height:520px;overflow-y:auto">
       <p style="font-size:11px;color:var(--chumbo)">Carregando...</p>
     </div>
   </div>
@@ -4254,6 +4268,7 @@ async function fatRenderCapturas() {
   // KPI cards
   const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
   set('fatKpiSBK', sbk.toLocaleString('pt-BR'));
+  set('fatKpiOutros', outros.toLocaleString('pt-BR'));
   set('fatKpiCaptura', fatState.captura.rows.length.toLocaleString('pt-BR'));
   set('fatKpiDje', fatState.dje.rows.length.toLocaleString('pt-BR'));
   set('fatKpiDupl', dupl.toLocaleString('pt-BR'));
@@ -4566,6 +4581,75 @@ function fatAbrirCadastrados() {
 }
 function fatFecharCadastrados() {
   document.getElementById('fatModalCadastrados').classList.remove('open');
+}
+
+function fatAbrirCadastradosOutros() {
+  document.getElementById('fatModalCadastradosOutros').classList.add('open');
+  document.getElementById('fatCadastradosOutrosLista').innerHTML = '<p style="font-size:11px;color:var(--chumbo);padding:12px 0">Carregando...</p>';
+  fatRenderCadastradosOutrosLista();
+}
+function fatFecharCadastradosOutros() {
+  document.getElementById('fatModalCadastradosOutros').classList.remove('open');
+}
+
+function fatRenderCadastradosOutrosLista() {
+  const lista = document.getElementById('fatCadastradosOutrosLista');
+  if (!fatState || (!fatState.captura.rows.length && !fatState.dje.rows.length)) {
+    lista.innerHTML = '<p style="font-size:11px;color:var(--chumbo);padding:16px 0">Nenhum processo importado para o mês atual.</p>';
+    return;
+  }
+  const { sbkSet, outrosSet } = fatBuildCadastroLookups();
+  if (!outrosSet.size) {
+    lista.innerHTML = '<p style="font-size:11px;color:var(--chumbo);padding:16px 0">Nenhum processo cadastrado por outros encontrado.</p>';
+    return;
+  }
+
+  const vistos = new Set();
+  const rows = [];
+  for (const r of [...fatState.captura.rows, ...fatState.dje.rows]) {
+    const n = fatNormalizeNPU(r.processo);
+    if (vistos.has(n)) continue;
+    vistos.add(n);
+    if (sbkSet.has(n)) continue;
+    const info = outrosSet.get(n);
+    if (!info) continue;
+    rows.push({ processo: r.processo, data: r.data, tipoOcorrencia: r.tipoOcorrencia,
+      pasta: info.pasta || '', dataCadastro: info.dataCadastro || '',
+      cadastrante: info.cadastrante || '' });
+  }
+
+  if (!rows.length) {
+    lista.innerHTML = '<p style="font-size:11px;color:var(--chumbo);padding:16px 0">Nenhum processo cadastrado por outros neste mês.</p>';
+    return;
+  }
+
+  // Agrupar por cadastrante para mostrar resumo
+  const porCad = {};
+  rows.forEach(r => { porCad[r.cadastrante] = (porCad[r.cadastrante] || 0) + 1; });
+  const resumoCad = Object.entries(porCad).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`${k} (${v})`).join(', ');
+
+  let html = `<div style="font-size:11px;color:var(--chumbo);margin-bottom:6px">${rows.length} processo(s) cadastrado(s) por outros neste mês</div>`;
+  html += `<div style="font-size:10px;color:#B45309;background:#FFFBEB;border:1px solid #FDE68A;border-radius:6px;padding:6px 10px;margin-bottom:10px">${resumoCad}</div>`;
+  html += `<table style="width:100%;border-collapse:collapse;font-size:11px">
+    <thead><tr style="background:var(--off)">
+      <th style="padding:7px 8px;text-align:left;color:var(--chumbo);font-size:10px;text-transform:uppercase;letter-spacing:.3px">Processo</th>
+      <th style="padding:7px 8px;text-align:left;color:var(--chumbo);font-size:10px;text-transform:uppercase;letter-spacing:.3px">Data</th>
+      <th style="padding:7px 8px;text-align:left;color:var(--chumbo);font-size:10px;text-transform:uppercase;letter-spacing:.3px">Pasta</th>
+      <th style="padding:7px 8px;text-align:left;color:var(--chumbo);font-size:10px;text-transform:uppercase;letter-spacing:.3px">Dt. Cadastro</th>
+      <th style="padding:7px 8px;text-align:left;color:var(--chumbo);font-size:10px;text-transform:uppercase;letter-spacing:.3px">Cadastrante</th>
+    </tr></thead><tbody>`;
+  rows.forEach((r, i) => {
+    const bg = i % 2 === 0 ? '#fff' : 'var(--off)';
+    html += `<tr style="background:${bg};border-top:1px solid var(--borda-l)">
+      <td style="padding:6px 8px;font-family:monospace;font-size:10px;color:#B45309">${r.processo}</td>
+      <td style="padding:6px 8px;color:var(--chumbo)">${r.data || '—'}</td>
+      <td style="padding:6px 8px;color:var(--chumbo)">${r.pasta || '—'}</td>
+      <td style="padding:6px 8px;color:var(--chumbo)">${r.dataCadastro || '—'}</td>
+      <td style="padding:6px 8px;font-weight:600;color:#92400E">${r.cadastrante || '—'}</td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  lista.innerHTML = html;
 }
 
 function fatRenderCadastradosLista() {
