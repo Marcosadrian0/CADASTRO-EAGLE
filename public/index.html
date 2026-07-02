@@ -1488,7 +1488,8 @@ async function analisarPDF() {
       campos = extrairCamposComAprendizado(texto);
     } catch(e) {
       console.error('Erro na extração:', e);
-      campos = extrairCampos(texto); // fallback sem aprendizado
+      const _txtFallback = preprocessarTexto(texto);
+      campos = extrairCampos(_txtFallback, segmentarPeticao(_txtFallback)); // fallback sem aprendizado
     }
 
     setStep(4);
@@ -1519,7 +1520,9 @@ async function analisarPDF() {
   }
 }
 
-function extrairCampos(txt) {
+function extrairCampos(txt, seg) {
+  // seg é opcional — gerado internamente se não fornecido (ex: chamada de fallback)
+  if (!seg) seg = segmentarPeticao(txt);
   const campos = {};
 
   // ── TIPO DE PROCESSO — detectar logo no início (usado em várias seções) ──
@@ -1631,9 +1634,10 @@ function extrairCampos(txt) {
     // "atribui-se o valor" (variante menos comum)
     /atribui[\s-]+se\s+(?:o\s+)?valor\s+de\s+R\$\s*(\d[\d.,]*\d)/i,
   ];
-  // Buscar na parte final do documento (último terço = onde fica o pedido + valor da causa)
-  // Pega a ÚLTIMA ocorrência, não a primeira, para evitar pegar valores citados no corpo
-  const txtFlatFinal = txt.substring(Math.floor(txt.length * 0.55)).replace(/\n/g, ' ').replace(/\s{2,}/g, ' ');
+  // Buscar no bloco de valor/assinatura (seg.valorAssinatura = último 30%)
+  // Pegar a ÚLTIMA ocorrência para evitar valores citados no corpo
+  const txtFlatFinal = (seg.valorAssinatura || txt.substring(Math.floor(txt.length * 0.55)))
+    .replace(/\n/g, ' ').replace(/\s{2,}/g, ' ');
   let valorAchado = false;
   for (const rx of valPatterns) {
     const todos = [...txtFlatFinal.matchAll(new RegExp(rx.source, rx.flags + (rx.flags.includes('g') ? '' : 'g')))];
@@ -1728,8 +1732,11 @@ function extrairCampos(txt) {
   // ── AUTOR e CPF ───────────────────────────────────────────────────────────
   const _FILTRO_AUTOR = /EXCELENTÍSSIMO|SENHOR|JUIZ|VARA|COMARCA|CONSTITUIÇÃO|CÓDIGO|ARTIGO|OUTORGANTE|PODER|TRIBUNAL|ESTADO|PROCESSO|JUSTIÇA/i;
 
+  // Usar bloco de partes para extração direcionada (menos ruído do corpo da petição)
+  const txtPartes = seg.partes || txt.substring(0, 3000);
+
   // Padrão 1: labels estruturados no cabecalho do processo (portal)
-  const mLabelAutor = txt.match(/(?:AGRAVANTE|EXEQUENTE|REQUERENTE|APELANTE|EMBARGANTE|IMPETRANTE|AUTOR[AE]?):\s*([A-ZÁÉÍÓÚÂÊÔÃÕÇ][A-ZÁÉÍÓÚÂÊÔÃÕÇ\s]{3,60}?)(?:\n|,|\s{2,}|AGRAVADO|REQUERIDO|EXECUTADO)/i);
+  const mLabelAutor = txtPartes.match(/(?:AGRAVANTE|EXEQUENTE|REQUERENTE|APELANTE|EMBARGANTE|IMPETRANTE|AUTOR[AE]?):\s*([A-ZÁÉÍÓÚÂÊÔÃÕÇ][A-ZÁÉÍÓÚÂÊÔÃÕÇ\s]{3,60}?)(?:\n|,|\s{2,}|AGRAVADO|REQUERIDO|EXECUTADO)/i);
   if (mLabelAutor) {
     const n = mLabelAutor[1].trim().replace(/\s+/g,' ');
     if (!_FILTRO_AUTOR.test(n) && n.split(' ').length <= 7) campos.autor_nome = capitalizar(n);
@@ -1738,7 +1745,7 @@ function extrairCampos(txt) {
   // Padrão 2: qualificacao com "brasileiro/a" (peticao inicial classica)
   if (!campos.autor_nome) {
     const qualifRx = /\n\s*([A-ZÁÉÍÓÚÂÊÔÃÕÇ]{2}[A-ZÁÉÍÓÚÂÊÔÃÕÇ\s]{3,60}?),?\s*(?:brasileiro|brasileira)/gi;
-    for (const m of txt.matchAll(qualifRx)) {
+    for (const m of txtPartes.matchAll(qualifRx)) {
       const nome = m[1].trim().replace(/\s+/g, ' ');
       if (_FILTRO_AUTOR.test(nome)) continue;
       if (nome.split(' ').length > 7) continue;
@@ -1749,7 +1756,7 @@ function extrairCampos(txt) {
 
   // Padrão 3: "NOME, portador(a) do CPF" ou "NOME, inscrito(a) no CPF"
   if (!campos.autor_nome) {
-    const mPortCpf = txt.match(/([A-ZÁÉÍÓÚÂÊÔÃÕÇ][A-ZÁÉÍÓÚÂÊÔÃÕÇ\s]{3,60}?),?\s*(?:portador[ao]?\s+d[ao]\s+CPF|inscrit[ao]\s+(?:no|na)\s+CPF)/i);
+    const mPortCpf = txtPartes.match(/([A-ZÁÉÍÓÚÂÊÔÃÕÇ][A-ZÁÉÍÓÚÂÊÔÃÕÇ\s]{3,60}?),?\s*(?:portador[ao]?\s+d[ao]\s+CPF|inscrit[ao]\s+(?:no|na)\s+CPF)/i);
     if (mPortCpf) {
       const n = mPortCpf[1].trim().replace(/\s+/g,' ');
       if (!_FILTRO_AUTOR.test(n) && n.split(' ').length <= 7) campos.autor_nome = capitalizar(n);
@@ -1765,13 +1772,10 @@ function extrairCampos(txt) {
     }
   }
 
-  // Padrão 5: estrutura clássica de petição inicial
-  // "NOME COMPLETO, [qualificação], vem, respeitosamente..."
-  // O nome aparece após o endereçamento (EXCELENTÍSSIMO) em parágrafo próprio
+  // Padrão 5: estrutura clássica — nome em parágrafo próprio após endereçamento
+  // Usar seg.partes que já começa após o endereçamento
   if (!campos.autor_nome) {
-    const posEnd = txt.search(/EXCELENT[ÍI]SS|MM\.?\s*(?:Senhor|Juiz|Dr)/i);
-    const txtAposEnd = posEnd >= 0 ? txt.substring(posEnd + 20) : txt;
-    const mVemResp = txtAposEnd.match(/\n\n([A-ZÁÉÍÓÚÂÊÔÃÕÇ][A-ZÁÉÍÓÚÂÊÔÃÕÇA-Za-záéíóúâêôãõç\s\.]{3,70}?)(?:,\s*(?:nation|brasil|portad|nascid|inscri|resid|casad|soltei|divorc|viúv|maior|menor|pens|aposen)|[\s,]+(?:vem\b|vem,|apresenta))/i);
+    const mVemResp = txtPartes.match(/\n\n([A-ZÁÉÍÓÚÂÊÔÃÕÇ][A-ZÁÉÍÓÚÂÊÔÃÕÇA-Za-záéíóúâêôãõç\s\.]{3,70}?)(?:,\s*(?:nation|brasil|portad|nascid|inscri|resid|casad|soltei|divorc|viúv|maior|menor|pens|aposen)|[\s,]+(?:vem\b|vem,|apresenta))/i);
     if (mVemResp) {
       const n = mVemResp[1].trim().replace(/\s+/g,' ');
       if (!_FILTRO_AUTOR.test(n) && n.split(' ').length >= 2 && n.split(' ').length <= 8) {
@@ -1780,9 +1784,9 @@ function extrairCampos(txt) {
     }
   }
 
-  // Padrão 6: "NOME, [qualif longa] vem, respeitosamente" sem duplo newline
+  // Padrão 6: nome antes de qualificação sem duplo newline (partes ainda)
   if (!campos.autor_nome) {
-    const mVemRespFlat = txt.match(/\n([A-ZÁÉÍÓÚÂÊÔÃÕÇ][A-ZÁÉÍÓÚÂÊÔÃÕÇA-Za-záéíóúâêôãõç\s\.]{3,60}?),\s*(?:brasile|nation|portad|nascid|casad|soltei|divorc|maior\s+de\s+idade)/i);
+    const mVemRespFlat = txtPartes.match(/\n([A-ZÁÉÍÓÚÂÊÔÃÕÇ][A-ZÁÉÍÓÚÂÊÔÃÕÇA-Za-záéíóúâêôãõç\s\.]{3,60}?),\s*(?:brasile|nation|portad|nascid|casad|soltei|divorc|maior\s+de\s+idade)/i);
     if (mVemRespFlat) {
       const n = mVemRespFlat[1].trim().replace(/\s+/g,' ');
       if (!_FILTRO_AUTOR.test(n) && n.split(' ').length >= 2 && n.split(' ').length <= 8) {
@@ -1921,8 +1925,10 @@ function extrairCampos(txt) {
     }
   }
   // Complemento A: parser explícito do bloco "em face de:" para réus sem CNPJ
+  // Preferir seg.partes (menos ruído) mas fallback para txt completo
   if (reus.length === 0 && !ehAgravo) {
-    const mEmFace = txt.match(/em\s+face\s+d[eo][:\s]+([\s\S]{5,600}?)(?:\n\n\n|\n\n(?:[IVXLC]+[\.\-\s]|[A-ZÁÉÍÓÚÂÊÔÃÕÇ]{4,}\s*\n)|\.[\s]*(?:DOS?\s+FATOS|FATOS|RELATÓRIO|BREVE\s+RELATO|SÍNTESE\s+DOS\s+FATOS))/i);
+    const srcEmFace = seg.partes || txt;
+    const mEmFace = srcEmFace.match(/em\s+face\s+d[eo][:\s]+([\s\S]{5,600}?)(?:\n\n\n|\n\n(?:[IVXLC]+[\.\-\s]|[A-ZÁÉÍÓÚÂÊÔÃÕÇ]{4,}\s*\n)|\.[\s]*(?:DOS?\s+FATOS|FATOS|RELATÓRIO|BREVE\s+RELATO|SÍNTESE\s+DOS\s+FATOS))/i);
     if (mEmFace) {
       const blocoEmFace = mEmFace[1].replace(/\n/g,' ').replace(/\s{2,}/g,' ').trim();
       // Dividir por ";" ou " e " (conjunção entre réus)
@@ -2159,12 +2165,112 @@ function extrairCampos(txt) {
   // (trabalhista: preencher manualmente)
   campos.pedido = '';
 
+  // ── CACHE OAB: salvar campos estáveis descobertos ─────────────────────────
+  // Só salva se tiver OAB identificado (chamada do fluxo normal, não batch)
+  if (campos.advogado_oab && (campos.advogado_uf || campos.uf)) {
+    oabCacheSave(campos);
+  }
+
   return campos;
 }
 
+// ── PRÉ-PROCESSAMENTO DO TEXTO DO PDF ────────────────────────────────────────
+// Corrige artefatos comuns do PDF.js antes de qualquer extração
+function preprocessarTexto(txt) {
+  return txt
+    // Palavras cortadas por hífen no final de linha (ex: "REQUE-\nRIDO" → "REQUERIDO")
+    .replace(/([A-Za-záéíóúâêôãõçÁÉÍÓÚÂÊÔÃÕÇ])-\n([A-Za-záéíóúâêôãõçÁÉÍÓÚÂÊÔÃÕÇ])/g, '$1$2')
+    // Valores monetários fragmentados: "R$ 1 .500 ,00" → "R$1.500,00"
+    .replace(/R\$\s*([\d\s]+?)\s*[,\.]\s*(\d{2})\b/g, (_, inteiros, cents) =>
+      'R$' + inteiros.replace(/\s/g, '') + ',' + cents)
+    // NPU com espaços extras: "0715896 - 03 . 2026" já tratado pelo regex, mas normalizar
+    .replace(/(\d{7})\s*-\s*(\d{2})\s*\.\s*(\d{4})\s*\.\s*(\d)\s*\.\s*(\d{2})\s*\.\s*(\d{4})/g,
+      '$1-$2.$3.$4.$5.$6')
+    // CNPJ fragmentado: "45.745 .537/0001 -19" → "45.745.537/0001-19"
+    .replace(/(\d{2})\s*\.\s*(\d{3})\s*\.\s*(\d{3})\s*\/\s*(\d{4})\s*-\s*(\d{2})/g,
+      '$1.$2.$3/$4-$5')
+    // Recolher 3+ quebras de linha em dupla (preservar separação de parágrafos)
+    .replace(/\n{3,}/g, '\n\n')
+    // Espaços antes de pontuação
+    .replace(/ +([,;:](?!\d))/g, '$1');
+}
+
+// ── SEGMENTAÇÃO EM SEÇÕES DA PETIÇÃO ─────────────────────────────────────────
+// Divide o texto em blocos lógicos para extração direcionada
+function segmentarPeticao(txt) {
+  const seg = { completo: txt };
+
+  // Endereçamento: tudo até o primeiro parágrafo vazio após o cabeçalho
+  const posEnd = txt.search(/EXCELENT[ÍI]SS|MM\.?\s*(?:Senhor|Juiz|Dr\.)/i);
+  if (posEnd >= 0) {
+    const aposEnd = txt.substring(posEnd);
+    const idxBlanco = aposEnd.indexOf('\n\n');
+    seg.enderecamento = idxBlanco >= 0 ? aposEnd.substring(0, idxBlanco) : aposEnd.substring(0, 400);
+  }
+
+  // Partes: do fim do endereçamento até o primeiro marcador de seção de fatos
+  const posPartes = posEnd >= 0 ? posEnd + (seg.enderecamento ? seg.enderecamento.length : 0) : 0;
+  const txtAposEnd = txt.substring(posPartes);
+  const mFatos = txtAposEnd.search(/\n\s*(?:[IVX]+[\.\s\-]+)?(?:DOS?\s+)?FATOS|BREVE\s+RELATO|SÍNTESE|RELATÓRIO|FUNDAMENTOS/i);
+  seg.partes = mFatos >= 0 ? txtAposEnd.substring(0, mFatos) : txtAposEnd.substring(0, 2500);
+
+  // Pedidos: entre marcador "PEDIDO" e fim da petição
+  const mPedidos = txt.search(/\n\s*(?:[IVX]+[\.\s\-]+)?(?:DOS?\s+)?PEDIDOS?[\s:]/i);
+  if (mPedidos >= 0) seg.pedidos = txt.substring(mPedidos);
+
+  // Valor e assinatura: último 30% do texto (onde fica "dá-se à causa" e data)
+  seg.valorAssinatura = txt.substring(Math.floor(txt.length * 0.70));
+
+  return seg;
+}
+
+// ── CACHE DE PADRÕES POR OAB ─────────────────────────────────────────────────
+// Salva campos estáveis (vara, comarca, uf) por OAB para reutilização futura
+const _OAB_CACHE_KEY = 'eagle_oab_cache_v1';
+let _oabCache = JSON.parse(localStorage.getItem(_OAB_CACHE_KEY) || '{}');
+// Estrutura: { "377573_SP": { vara_cartorio, comarca, uf, contador } }
+
+function oabCacheGet(oab, uf) {
+  if (!oab || !uf) return null;
+  return _oabCache[`${oab}_${uf}`] || null;
+}
+
+function oabCacheSave(campos) {
+  const oab = campos.advogado_oab;
+  const uf  = campos.advogado_uf || campos.uf;
+  if (!oab || !uf) return;
+  const chave = `${oab}_${uf}`;
+  const atual = _oabCache[chave] || { contador: 0 };
+  // Só salvar campos estáveis (não mudam por processo)
+  const CAMPOS_ESTAVEIS = ['vara_cartorio', 'comarca', 'uf', 'tipo_justica', 'advogado_nome',
+                            'advogado_escritorio', 'advogado_uf'];
+  CAMPOS_ESTAVEIS.forEach(c => { if (campos[c]) atual[c] = campos[c]; });
+  atual.contador = (atual.contador || 0) + 1;
+  _oabCache[chave] = atual;
+  try { localStorage.setItem(_OAB_CACHE_KEY, JSON.stringify(_oabCache)); } catch(e) {}
+}
+
 function extrairCamposComAprendizado(txt) {
-  const camposBase = extrairCampos(txt);
-  return aplicarPadroesAprendidos(txt, camposBase);
+  const txtLimpo = preprocessarTexto(txt);
+  const seg = segmentarPeticao(txtLimpo);
+  const camposBase = extrairCampos(txtLimpo, seg);
+
+  // Aplicar padrões aprendidos (correcoes manuais anteriores)
+  const camposAposAprendido = aplicarPadroesAprendidos(txtLimpo, camposBase);
+
+  // Sobrepor com cache OAB para campos estáveis ainda vazios
+  const oab = camposAposAprendido.advogado_oab;
+  const ufAdv = camposAposAprendido.advogado_uf || camposAposAprendido.uf;
+  const cache = oabCacheGet(oab, ufAdv);
+  if (cache) {
+    const CAMPOS_ESTAVEIS = ['vara_cartorio', 'comarca', 'uf', 'tipo_justica', 'advogado_nome',
+                              'advogado_escritorio', 'advogado_uf'];
+    CAMPOS_ESTAVEIS.forEach(c => {
+      if (!camposAposAprendido[c] && cache[c]) camposAposAprendido[c] = cache[c];
+    });
+  }
+
+  return camposAposAprendido;
 }
 
 function capitalizar(str) {
@@ -5071,7 +5177,8 @@ async function processarLote(files) {
         const content = await page.getTextContent();
         textoCompleto += content.items.map(it => it.str).join(' ') + '\n';
       }
-      campos = extrairCampos(textoCompleto);
+      const textoLimpo = preprocessarTexto(textoCompleto);
+      campos = extrairCampos(textoLimpo, segmentarPeticao(textoLimpo));
     } catch(err) {
       campos = { _erro: err.message };
     }
