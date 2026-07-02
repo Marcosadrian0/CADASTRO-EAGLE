@@ -1920,7 +1920,8 @@ function extrairCampos(txt, seg) {
         .replace(/,?\s*(?:inscrit[ao]\s+(?:no|na|sob)\s+)?(?:CNPJ|C\.N\.P\.J).*$/i, '')
         .replace(/,?\s*(?:inscrit[ao]|portador[ao]|com\s+sede|pessoa\s+jur\w*).*$/i, '')
         .replace(/^\s*(?:\(?\d+\)?\s*[\.\)]\s*|\(\d+\)\s*)/, '') // remover numeração "(01)", "1.", "1)"
-        .replace(/\b([A-ZÁÉÍÓÚÂÊÔÃÕÇ])\s+([A-ZÁÉÍÓÚÂÊÔÃÕÇ]{3,})\b/g, '$1$2') // juntar letra solta: "F UTURO" → "FUTURO"
+        .replace(/(?<!\w)([A-ZÁÉÍÓÚÂÊÔÃÕÇ])\s+([A-ZÁÉÍÓÚÂÊÔÃÕÇ]{3,})(?!\w)/g, (_, a, b) =>
+          b === b.toUpperCase() ? a + b : a + ' ' + b) // juntar letra solta só quando próxima palavra é toda maiúscula
         .trim();
 
       if (ultimaParte.length < 3) continue;
@@ -2220,8 +2221,10 @@ function preprocessarTexto(txt) {
     .replace(/\n{3,}/g, '\n\n')
     // Espaços antes de pontuação
     .replace(/ +([,;:](?!\d))/g, '$1')
-    // Letra maiúscula isolada colada à próxima palavra maiúscula (artefato PDF: "F UTURO" → "FUTURO")
-    .replace(/\b([A-ZÁÉÍÓÚÂÊÔÃÕÇ])\s+([A-ZÁÉÍÓÚÂÊÔÃÕÇ]{3,})\b/g, '$1$2');
+    // Letra maiúscula isolada colada à próxima palavra TODA maiúscula (artefato PDF: "F UTURO" → "FUTURO")
+    // Apenas quando o fragmento seguinte é todo maiúsculo (não une nomes como "José Guilherme")
+    .replace(/(?<!\w)([A-ZÁÉÍÓÚÂÊÔÃÕÇ])\s+([A-ZÁÉÍÓÚÂÊÔÃÕÇ]{3,})(?!\w)/g, (_, a, b) =>
+      b === b.toUpperCase() ? a + b : a + ' ' + b);
 }
 
 // ── SEGMENTAÇÃO EM SEÇÕES DA PETIÇÃO ─────────────────────────────────────────
