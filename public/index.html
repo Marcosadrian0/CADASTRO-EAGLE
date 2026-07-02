@@ -3765,9 +3765,36 @@ const fatIDB = (() => {
         req.onsuccess = () => resolve();
         req.onerror = () => reject(req.error);
       });
+    },
+    async getAllKeys() {
+      const db = await open();
+      return new Promise((resolve, reject) => {
+        const req = db.transaction(STORE, 'readonly').objectStore(STORE).getAllKeys();
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
     }
   };
 })();
+
+async function fatMigrateLocalStorage() {
+  const toMigrate = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (k && k.startsWith('eagle_fat:mes:')) toMigrate.push(k);
+  }
+  for (const k of toMigrate) {
+    try {
+      const mk = k.replace('eagle_fat:mes:', '');
+      const existing = await fatIDB.get('mes:' + mk);
+      if (!existing) {
+        const val = JSON.parse(localStorage.getItem(k));
+        if (val) await fatIDB.set('mes:' + mk, val);
+      }
+      localStorage.removeItem(k);
+    } catch(e) { console.warn('[fat] migration error:', e); }
+  }
+}
 
 function fatShowToast(msg) {
   let t = document.getElementById('fatToast');
@@ -4016,7 +4043,7 @@ function fatRenderCadastro() {
   tbl.innerHTML = `<div style="font-size:11px;color:var(--chumbo);margin-top:8px">Arquivo: ${c.fileName} — carregado em ${new Date(c.uploadedAt).toLocaleString('pt-BR')}</div>${outrosDetalhe}`;
 }
 
-function fatRenderCapturas() {
+async function fatRenderCapturas() {
   const stCapEl = document.getElementById('fatStatsCaptura');
   const stDjeEl = document.getElementById('fatStatsDje');
   if (stCapEl) stCapEl.innerHTML = `<div class="fat-stat"><div class="n">${fatState.captura.rows.length}</div><div class="l">processos (Captura)</div></div>`;
@@ -4038,7 +4065,9 @@ function fatRenderCapturas() {
   set('fatKpiDje', fatState.dje.rows.length.toLocaleString('pt-BR'));
   set('fatKpiDupl', dupl.toLocaleString('pt-BR'));
   set('fatKpiTotal', uniao.size.toLocaleString('pt-BR'));
+  // KPI sem cadastro inclui meses anteriores (async, atualiza em seguida)
   set('fatKpiSemCad', semCad.toLocaleString('pt-BR'));
+  fatGetAllSemCadRows().then(all => set('fatKpiSemCad', all.length.toLocaleString('pt-BR'))).catch(() => {});
 
   // Gráfico 1: processos por cadastrante (captura + DJE combinados)
   const porCad = {};
@@ -4326,9 +4355,11 @@ function fatFecharModal() {
   document.getElementById('fatModal').classList.remove('open');
 }
 
-function fatAbrirSemCadastro() {
+async function fatAbrirSemCadastro() {
   document.getElementById('fatModalSemCad').classList.add('open');
-  fatRenderSemCadLista();
+  document.getElementById('fatSemCadLista').innerHTML = '<p style="font-size:11px;color:var(--chumbo);padding:12px 0">Carregando...</p>';
+  const semCad = await fatGetAllSemCadRows();
+  fatRenderSemCadLista(semCad);
 }
 function fatFecharSemCadastro() {
   document.getElementById('fatModalSemCad').classList.remove('open');
@@ -4347,26 +4378,75 @@ function fatGetSemCadRows() {
   return semCad;
 }
 
-function fatRenderSemCadLista() {
+async function fatGetAllSemCadRows() {
+  const { sbkSet, outrosSet } = fatBuildCadastroLookups();
+  const vistos = new Set();
+  const result = [];
+
+  // Mes atual
+  const { mm: mmA, yyyy: yyyyA } = fatMonthLabel(fatMonthKey);
+  const labelAtual = `${mmA}/${yyyyA}`;
+  [...fatState.captura.rows, ...fatState.dje.rows].forEach(r => {
+    const n = fatNormalizeNPU(r.processo);
+    if (vistos.has(n)) return;
+    vistos.add(n);
+    if (!sbkSet.has(n) && !outrosSet.has(n)) result.push({ ...r, mesRef: labelAtual });
+  });
+
+  // Meses anteriores
+  try {
+    const keys = await fatIDB.getAllKeys();
+    const pastKeys = keys
+      .filter(k => typeof k === 'string' && k.startsWith('mes:') && k !== 'mes:' + fatMonthKey)
+      .sort().reverse();
+    for (const key of pastKeys) {
+      const st = await fatIDB.get(key);
+      if (!st) continue;
+      const mk = key.replace('mes:', '');
+      const { mm, yyyy } = fatMonthLabel(mk);
+      const label = `${mm}/${yyyy}`;
+      [...(st.captura?.rows || []), ...(st.dje?.rows || [])].forEach(r => {
+        const n = fatNormalizeNPU(r.processo);
+        if (vistos.has(n)) return;
+        vistos.add(n);
+        if (!sbkSet.has(n) && !outrosSet.has(n)) result.push({ ...r, mesRef: label });
+      });
+    }
+  } catch(e) { console.warn('[fat] getAllSemCad error:', e); }
+
+  return result;
+}
+
+function fatRenderSemCadLista(semCad) {
   const lista = document.getElementById('fatSemCadLista');
-  const semCad = fatGetSemCadRows();
-  if (!semCad.length) {
-    lista.innerHTML = '<div style="text-align:center;padding:32px 0"><div style="font-size:28px;margin-bottom:8px">✓</div><p style="font-size:12px;color:var(--vok);font-weight:600">Nenhum caso sem cadastro neste mês.</p></div>';
+  if (!semCad || !semCad.length) {
+    lista.innerHTML = '<div style="text-align:center;padding:32px 0"><div style="font-size:28px;margin-bottom:8px">&#x2713;</div><p style="font-size:12px;color:var(--vok);font-weight:600">Nenhum caso sem cadastro pendente.</p></div>';
     return;
   }
-  let html = `<div style="font-size:11px;color:var(--chumbo);margin-bottom:10px">${semCad.length} processo(s) sem cadastro — clique em "Marcar cadastrado" para registrar manualmente.</div>`;
+  const { mm, yyyy } = fatMonthLabel(fatMonthKey);
+  const totalAntes = semCad.filter(r => r.mesRef !== `${mm}/${yyyy}`).length;
+  const totalAtual = semCad.length - totalAntes;
+  let resumo = `${semCad.length} processo(s) sem cadastro`;
+  if (totalAntes > 0) resumo += ` — ${totalAtual} deste mês + ${totalAntes} de meses anteriores`;
+  let html = `<div style="font-size:11px;color:var(--chumbo);margin-bottom:10px">${resumo}</div>`;
   html += `<table style="width:100%;border-collapse:collapse;font-size:11px">
     <thead><tr style="background:var(--off)">
       <th style="padding:7px 8px;text-align:left;color:var(--chumbo);font-size:10px;text-transform:uppercase;letter-spacing:.3px">Processo</th>
       <th style="padding:7px 8px;text-align:left;color:var(--chumbo);font-size:10px;text-transform:uppercase;letter-spacing:.3px">Data</th>
+      <th style="padding:7px 8px;text-align:left;color:var(--chumbo);font-size:10px;text-transform:uppercase;letter-spacing:.3px">Mes Ref.</th>
       <th style="padding:7px 8px;text-align:left;color:var(--chumbo);font-size:10px;text-transform:uppercase;letter-spacing:.3px">Tipo</th>
       <th style="padding:7px 8px"></th>
     </tr></thead><tbody>`;
   semCad.forEach((r, i) => {
     const bg = i % 2 === 0 ? '#fff' : 'var(--off)';
+    const isAnterior = r.mesRef && r.mesRef !== `${mm}/${yyyy}`;
+    const mesTag = isAnterior
+      ? `<span style="background:var(--amb-bg,#fff8e1);color:var(--amb,#b45309);border:1px solid var(--amb-b,#fde68a);border-radius:4px;padding:1px 6px;font-size:9px;font-weight:700">${r.mesRef}</span>`
+      : `<span style="color:var(--chumbo);font-size:10px">${r.mesRef || ''}</span>`;
     html += `<tr style="background:${bg};border-top:1px solid var(--borda-l)">
       <td style="padding:6px 8px;font-family:monospace;font-size:10px;color:var(--verde)">${r.processo}</td>
       <td style="padding:6px 8px;color:var(--chumbo)">${r.data || '—'}</td>
+      <td style="padding:6px 8px">${mesTag}</td>
       <td style="padding:6px 8px;color:var(--chumbo)">${r.tipoOcorrencia || '—'}</td>
       <td style="padding:6px 8px;text-align:right">
         <button onclick="fatPreencherManual('${r.processo.replace(/'/g,"\\'")}', '${r.data||''}')"
@@ -4420,23 +4500,26 @@ async function fatAdicionarManual() {
   fatShowToast('Processo ' + npu + ' marcado como cadastrado SBK.');
 }
 
-function fatDownloadSemCadastro() {
-  const semCad = fatGetSemCadRows();
+async function fatDownloadSemCadastro() {
+  const semCad = await fatGetAllSemCadRows();
   if (!semCad.length) { fatShowToast('Nenhum caso sem cadastro para exportar.'); return; }
   const { mm, yyyy } = fatMonthLabel(fatMonthKey);
   const aoa = [
-    ['DATA', 'Processo', 'Tipo Ocorrencia', 'Pasta', 'Data do Cadastro'],
-    ...semCad.map(r => [r.data, r.processo, r.tipoOcorrencia, r.pasta, r.dataCadastro])
+    ['Mes Ref.', 'DATA', 'Processo', 'Tipo Ocorrencia', 'Pasta', 'Data do Cadastro'],
+    ...semCad.map(r => [r.mesRef || `${mm}/${yyyy}`, r.data, r.processo, r.tipoOcorrencia, r.pasta, r.dataCadastro])
   ];
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa), 'Sem Cadastro');
-  XLSX.writeFile(wb, `SEM_CADASTRO_${mm}.${yyyy}.xlsx`);
+  XLSX.writeFile(wb, `SEM_CADASTRO_acumulado_${mm}.${yyyy}.xlsx`);
   fatShowToast(`${semCad.length} casos exportados.`);
 }
 
 async function fatInit() {
   if (fatInitialized) return;
   fatInitialized = true;
+
+  // Migra dados antigos do localStorage para IndexedDB (executa uma vez)
+  await fatMigrateLocalStorage();
 
   document.getElementById('fatFileCadastro').addEventListener('change', async (e) => {
     const file = e.target.files[0];
