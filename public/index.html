@@ -3630,7 +3630,6 @@ function aplicarPadroesAprendidos(txt, camposJaExtraidos) {
   const resultado = { ...camposJaExtraidos };
 
   Object.entries(padroesAprendidos).forEach(([campo, padroes]) => {
-    if (resultado[campo]) return; // já preenchido — não sobrescrever
     padroes.forEach(({ padrao, tipo }) => {
       if (resultado[campo]) return;
       try {
@@ -4317,6 +4316,16 @@ async function salvarEContabilizar() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ processo_id: processoIdBanco, validacoes })
       });
+    }
+
+    // 4. Aprender com campos corrigidos automaticamente
+    if (textoPeticaoGlobal) {
+      const camposCorrigidos = validacoes.filter(v =>
+        !v.acertou && v.valor_correto && ROTULOS_CAMPO_APREND[v.campo]
+      );
+      for (const v of camposCorrigidos) {
+        salvarCorrecaoEAprenderIA(v.campo, v.valor_correto, textoPeticaoGlobal);
+      }
     }
 
     // 4. Feedback visual
