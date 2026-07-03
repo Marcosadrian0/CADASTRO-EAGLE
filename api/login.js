@@ -7,6 +7,7 @@
 
 import { neon } from '@neondatabase/serverless';
 import { randomBytes, pbkdf2Sync } from 'node:crypto';
+import { ipBloqueado } from './_ipGuard.js';
 
 export const config = { maxDuration: 30 };
 
@@ -43,6 +44,7 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Methods', 'POST, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
+  if (ipBloqueado(req, res)) return;
 
   const DB = process.env.DATABASE_URL;
   if (!DB) return res.status(500).json({ error: 'DATABASE_URL não configurada.' });
@@ -77,7 +79,7 @@ export default async function handler(req, res) {
     const hash = hashSenha(senha);
     const rows = await sql`
       SELECT id, nome, perfil, abas FROM usuarios
-      WHERE usuario = ${usuario} AND senha_hash = ${hash} AND ativo = true
+      WHERE LOWER(usuario) = LOWER(${usuario}) AND senha_hash = ${hash} AND ativo = true
     `;
     const user = rows[0];
     if (!user) return res.status(401).json({ error: 'Usuário ou senha incorretos.' });

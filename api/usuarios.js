@@ -8,6 +8,7 @@
 
 import { neon } from '@neondatabase/serverless';
 import { pbkdf2Sync } from 'node:crypto';
+import { ipBloqueado } from './_ipGuard.js';
 
 export const config = { maxDuration: 30 };
 
@@ -31,6 +32,7 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
+  if (ipBloqueado(req, res)) return;
 
   const DB = process.env.DATABASE_URL;
   if (!DB) return res.status(500).json({ error: 'DATABASE_URL não configurada.' });
