@@ -2590,6 +2590,22 @@ function preencherFormulario(c) {
   }
   set('f_advogado_uf', c.advogado_uf);
 
+  // Fallback Defensoria Pública — quando nenhum advogado foi encontrado
+  if (!c.advogado_nome) {
+    const elNome = document.getElementById('f_advogado_nome');
+    const elOab  = document.getElementById('f_advogado_oab');
+    const elUf   = document.getElementById('f_advogado_uf');
+    const elEscr = document.getElementById('f_advogado_escritorio');
+    if (elNome) { elNome.value = 'Defensoria Pública'; elNome.classList.add('auto'); }
+    if (elOab)  { elOab.value  = '0000';               elOab.classList.add('auto'); }
+    if (elEscr) { elEscr.value = 'Defensoria Pública do Distrito Federal'; elEscr.classList.add('auto'); }
+    if (elUf) {
+      for (const opt of elUf.options) {
+        if (opt.value === 'DF' || opt.text === 'DF') { opt.selected = true; elUf.classList.add('auto'); break; }
+      }
+    }
+  }
+
   // Advogados adicionais: exibir abaixo do campo principal
   const extraAdvWrap = document.getElementById('extraAdvogados');
   if (extraAdvWrap) {
