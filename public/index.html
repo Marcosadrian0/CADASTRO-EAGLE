@@ -3914,6 +3914,7 @@ function abrirFormNovoUsuario() {
   document.getElementById('abaAnalise').checked = true;
   document.getElementById('abaAcuracia').checked = false;
   document.getElementById('abaFaturamento').checked = false;
+  document.getElementById('abaDashboard').checked = false;
   document.getElementById('abaUsuarios').checked = false;
   document.getElementById('usrEditId').value = '';
   document.getElementById('usrMsg').textContent = '';
@@ -3930,6 +3931,7 @@ function editarUsuario(id, login, nome, perfil, abas) {
   document.getElementById('abaAnalise').checked = abaList.includes('analise');
   document.getElementById('abaAcuracia').checked = abaList.includes('acuracia');
   document.getElementById('abaFaturamento').checked = abaList.includes('faturamento');
+  document.getElementById('abaDashboard').checked = abaList.includes('dashboard');
   document.getElementById('abaUsuarios').checked = abaList.includes('usuarios');
   document.getElementById('usrEditId').value = id;
   document.getElementById('usrMsg').textContent = '';
@@ -3946,7 +3948,7 @@ async function salvarUsuario() {
   const nome = document.getElementById('usrNome').value.trim();
   const senha = document.getElementById('usrSenha').value;
   const perfil = document.getElementById('usrPerfil').value;
-  const abasArr = ['analise','acuracia','faturamento','usuarios'].filter(a => document.getElementById('aba' + a.charAt(0).toUpperCase() + a.slice(1)).checked);
+  const abasArr = ['analise','acuracia','faturamento','dashboard','usuarios'].filter(a => document.getElementById('aba' + a.charAt(0).toUpperCase() + a.slice(1)).checked);
   const abas = abasArr.join(',');
   const msg = document.getElementById('usrMsg');
   if (!nome) { msg.textContent = 'Informe o nome completo.'; return; }
