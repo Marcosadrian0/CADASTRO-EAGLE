@@ -50,7 +50,31 @@ export default async function handler(req, res) {
       LIMIT 30
     `;
 
-    return res.status(200).json({ processos, stats, erros });
+    const acuraciaEvolucao = await sql`
+      SELECT
+        TO_CHAR(DATE_TRUNC('week', data_validacao), 'DD/MM') AS semana,
+        COUNT(*)::int AS total,
+        SUM(CASE WHEN acertou THEN 1 ELSE 0 END)::int AS acertos,
+        ROUND(100.0 * SUM(CASE WHEN acertou THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0))::int AS pct
+      FROM validacoes
+      WHERE data_validacao > NOW() - INTERVAL '8 weeks'
+      GROUP BY DATE_TRUNC('week', data_validacao)
+      ORDER BY DATE_TRUNC('week', data_validacao)
+    `;
+
+    const acuraciaFields = await sql`
+      SELECT campo,
+        COUNT(*)::int AS total,
+        SUM(CASE WHEN acertou THEN 1 ELSE 0 END)::int AS acertos,
+        ROUND(100.0 * SUM(CASE WHEN acertou THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0))::int AS pct
+      FROM validacoes
+      WHERE data_validacao > NOW() - INTERVAL '30 days'
+      GROUP BY campo
+      ORDER BY pct ASC
+      LIMIT 8
+    `;
+
+    return res.status(200).json({ processos, stats, erros, acuraciaEvolucao, acuraciaFields });
   } catch (err) {
     console.error('[EAGLE DB] historico:', err.message);
     return res.status(500).json({ error: err.message });
