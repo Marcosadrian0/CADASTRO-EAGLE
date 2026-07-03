@@ -377,6 +377,14 @@ textarea{resize:vertical;min-height:52px}
     border:1.5px solid var(--borda);border-radius:var(--r);padding:6px 8px;
     font-family:inherit;font-size:11px;font-weight:300;color:#1a2421;background:var(--branco)
   }
+  @media print {
+    body > *:not(#panel-dashboard) { display:none !important; }
+    #panel-dashboard { display:block !important; }
+    .tab-bar, #loginOverlay, #userMenuWrap { display:none !important; }
+    .tab-panel { display:block !important; padding:0 !important; }
+    .fat-card { box-shadow:none !important; break-inside:avoid; }
+    #dashPrintBtn, #dashMesSelect, #dashMesLabel { display:none !important; }
+  }
 </style>
 </head>
 <body>
@@ -5580,29 +5588,68 @@ function dashKpi(label, value, sub, color) {
   </div>`;
 }
 
-async function dashRender() {
+// Mês anterior a um fatMonthKey (YYYY-MM)
+function dashMesAnterior(mk) {
+  const [y, m] = mk.split('-').map(Number);
+  const d = m === 1 ? { y: y - 1, m: 12 } : { y, m: m - 1 };
+  return `${d.y}-${String(d.m).padStart(2,'0')}`;
+}
+
+// Converte "DD/MM/AAAA" para timestamp ms
+function dashDateToMs(str) {
+  if (!str || str.length < 10) return null;
+  const [dd, mm, yyyy] = str.split('/');
+  return new Date(`${yyyy}-${mm}-${dd}`).getTime();
+}
+
+async function dashRender(mkOverride) {
   const el = document.getElementById('dashContent');
   if (!el) return;
 
-  // Garantir dados carregados
-  if (!fatInitialized) { el.innerHTML = '<p style="font-size:12px;color:var(--chumbo);text-align:center;padding:40px 0">Vá até Faturamento e carregue os dados do mês primeiro.</p>'; return; }
+  if (!fatInitialized) {
+    el.innerHTML = '<p style="font-size:12px;color:var(--chumbo);text-align:center;padding:40px 0">Vá até Faturamento e carregue os dados do mês primeiro.</p>';
+    return;
+  }
 
-  const { mm, yyyy } = fatMonthLabel(fatMonthKey);
+  const mk = mkOverride || fatMonthKey;
+  const { mm, yyyy } = fatMonthLabel(mk);
   const mesLabel = `${mm}/${yyyy}`;
   const sufixo = `/${mm}/${yyyy}`;
+
+  // Mês anterior
+  const mkAnt = dashMesAnterior(mk);
+  const { mm: mmA, yyyy: yyyyA } = fatMonthLabel(mkAnt);
+  const sufixoAnt = `/${mmA}/${yyyyA}`;
+  let stateAnt = null;
+  try { stateAnt = await fatIDB.get('mes:' + mkAnt); } catch {}
+  const capAnt = stateAnt ? new Set([
+    ...(stateAnt.captura?.rows || []).map(r => fatNormalizeNPU(r.processo)),
+    ...(stateAnt.dje?.rows || []).map(r => fatNormalizeNPU(r.processo))
+  ]).size : null;
+
+  // Estado do mês selecionado — pode ser diferente do fatMonthKey ativo
+  let stateAtual = fatState;
+  if (mk !== fatMonthKey) {
+    try { stateAtual = await fatIDB.get('mes:' + mk) || fatEmptyState(); } catch { stateAtual = fatEmptyState(); }
+  }
 
   const consolidado = fatCadastroConsolidado || { rows: [], manuaisRows: [], outrosRows: [] };
   const todasRows = [...(consolidado.rows || []), ...(consolidado.manuaisRows || [])];
 
-  // Filtrar mês atual
   const rowsMes = todasRows.filter(r => (r.dataCadastro || '').trim().endsWith(sufixo));
-  const capturados = fatVolumeCapturaTotal();
+  const rowsAnt = todasRows.filter(r => (r.dataCadastro || '').trim().endsWith(sufixoAnt));
+
+  const capturados = new Set([
+    ...(stateAtual.captura?.rows || []).map(r => fatNormalizeNPU(r.processo)),
+    ...(stateAtual.dje?.rows || []).map(r => fatNormalizeNPU(r.processo))
+  ]).size;
   const cadastradosMes = rowsMes.length;
+  const cadastradosAnt = rowsAnt.length;
   const semCadastro = Math.max(0, capturados - cadastradosMes);
 
   // Faturamento
   fatPrecosAtuais = fatLoadPrecos();
-  const volCobrado = fatLoadVolumeCobrado(fatMonthKey);
+  const volCobrado = fatLoadVolumeCobrado(mk);
   let fatReal = 0, fatGerado = 0;
   FAT_ESPELHO_ITENS.forEach(item => {
     let vol = 0;
@@ -5619,68 +5666,166 @@ async function dashRender() {
   rowsMes.forEach(r => { const c = r.cadastrante || 'N/D'; porCadastrante[c] = (porCadastrante[c] || 0) + 1; });
   const rankCad = Object.entries(porCadastrante).sort((a, b) => b[1] - a[1]).slice(0, 6);
 
-  // Evolução diária — cadastros por dia do mês
+  // Cadastros por dia
   const porDia = {};
   rowsMes.forEach(r => { const d = (r.dataCadastro || '').substring(0, 5); porDia[d] = (porDia[d] || 0) + 1; });
-  const diasOrdenados = Object.keys(porDia).sort();
-  const barDias = diasOrdenados.map(d => ({ label: d.substring(0, 5), value: porDia[d] }));
+  const barDias = Object.keys(porDia).sort().map(d => ({ label: d, value: porDia[d] }));
 
-  // Captura vs DJE por dia — gráfico de linhas
-  const porDiaCaptura = {}, porDiaDje = {};
-  (fatState.captura.rows || []).forEach(r => {
-    const d = (r.data || r.dataCadastro || '').substring(0, 5);
-    if (d) porDiaCaptura[d] = (porDiaCaptura[d] || 0) + 1;
-  });
-  (fatState.dje.rows || []).forEach(r => {
-    const d = (r.data || r.dataCadastro || '').substring(0, 5);
-    if (d) porDiaDje[d] = (porDiaDje[d] || 0) + 1;
-  });
-  const diasLine = [...new Set([...Object.keys(porDiaCaptura), ...Object.keys(porDiaDje)])].sort();
-  const lineCaptura = diasLine.map(d => porDiaCaptura[d] || 0);
-  const lineDje = diasLine.map(d => porDiaDje[d] || 0);
+  // Captura vs DJE por dia
+  const porDiaCap = {}, porDiaDje = {};
+  (stateAtual.captura?.rows || []).forEach(r => { const d = (r.data || '').substring(0, 5); if (d) porDiaCap[d] = (porDiaCap[d] || 0) + 1; });
+  (stateAtual.dje?.rows || []).forEach(r => { const d = (r.data || '').substring(0, 5); if (d) porDiaDje[d] = (porDiaDje[d] || 0) + 1; });
+  const diasLine = [...new Set([...Object.keys(porDiaCap), ...Object.keys(porDiaDje)])].sort();
 
-  // Evolução 2026 — todos os meses de jan a mês atual
+  // Taxa de conversão por dia (cadastrados ÷ capturados, por data do cadastro)
+  const porDiaCapAll = {};
+  [...(stateAtual.captura?.rows || []), ...(stateAtual.dje?.rows || [])].forEach(r => {
+    const d = (r.data || '').substring(0, 5); if (d) porDiaCapAll[d] = (porDiaCapAll[d] || 0) + 1;
+  });
+  const diasConv = [...new Set([...Object.keys(porDia), ...Object.keys(porDiaCapAll)])].sort();
+  const lineConv = diasConv.map(d => {
+    const cap = porDiaCapAll[d] || 0;
+    const cad = porDia[d] || 0;
+    return cap > 0 ? Math.round(cad / cap * 100) : 0;
+  });
+
+  // Evolução 2026
   const porMes2026 = {};
   todasRows.forEach(r => {
     const d = (r.dataCadastro || '').trim();
-    if (d.length === 10 && d.endsWith('/2026')) { const mk = d.substring(3, 10); porMes2026[mk] = (porMes2026[mk] || 0) + 1; }
+    if (d.length === 10 && d.endsWith(`/${yyyy}`)) { const k = d.substring(3, 10); porMes2026[k] = (porMes2026[k] || 0) + 1; }
   });
-  const mesesOrdem = ['01/2026','02/2026','03/2026','04/2026','05/2026','06/2026','07/2026','08/2026','09/2026','10/2026','11/2026','12/2026'];
-  const mesAtualIdx = mesesOrdem.indexOf(`${mm}/2026`);
+  const mesesOrdem = ['01','02','03','04','05','06','07','08','09','10','11','12'].map(m => `${m}/${yyyy}`);
+  const mesAtualIdx = mesesOrdem.indexOf(`${mm}/${yyyy}`);
   const meses2026 = mesesOrdem.slice(0, mesAtualIdx + 1).map(k => ({ label: k.substring(0, 2) + '/' + k.substring(5, 7), value: porMes2026[k] || 0 }));
+
+  // Painel de alertas — processos sem cadastro há mais de 2 dias
+  const hoje = new Date(); hoje.setHours(0,0,0,0);
+  const sbkNPUs = new Set(todasRows.map(r => fatNormalizeNPU(r.processo)));
+  const alertas = [];
+  [...(stateAtual.captura?.rows || []), ...(stateAtual.dje?.rows || [])].forEach(r => {
+    const npu = fatNormalizeNPU(r.processo);
+    if (sbkNPUs.has(npu)) return;
+    const ts = dashDateToMs(r.data || r.dataCadastro || '');
+    if (!ts) return;
+    const diasAtraso = Math.floor((hoje - ts) / 86400000);
+    if (diasAtraso >= 2) alertas.push({ processo: r.processo, pasta: r.pasta || '', dias: diasAtraso, data: r.data || r.dataCadastro });
+  });
+  alertas.sort((a, b) => b.dias - a.dias);
+
+  // Opções de mês disponíveis (meses com dados no IDB)
+  let allMks = [fatMonthKey];
+  try {
+    const keys = await fatIDB.getAllKeys();
+    allMks = keys.filter(k => typeof k === 'string' && k.startsWith('mes:')).map(k => k.replace('mes:', '')).sort().reverse();
+    if (!allMks.includes(fatMonthKey)) allMks.unshift(fatMonthKey);
+  } catch {}
+  const selectOpts = allMks.map(m => {
+    const { mm: mo, yyyy: yo } = fatMonthLabel(m);
+    return `<option value="${m}" ${m === mk ? 'selected' : ''}>${mo}/${yo}</option>`;
+  }).join('');
 
   const VERDE = 'var(--verde)';
   const AZUL = '#2e7fc2';
+  const LARANJA = '#f0aa00';
+
+  // Helper de variação mês anterior
+  const delta = (atual, ant) => {
+    if (ant === null || ant === 0) return '';
+    const d = atual - ant;
+    const pct = Math.round(d / ant * 100);
+    const sinal = d >= 0 ? '+' : '';
+    const cor = d >= 0 ? VERDE : 'var(--err)';
+    return `<span style="font-size:10px;color:${cor};font-weight:600">${sinal}${pct}% vs ${mmA}/${yyyyA}</span>`;
+  };
 
   el.innerHTML = `
-    <div style="margin-bottom:20px;display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:8px">
+    <!-- Cabeçalho com seletor de mês + botão PDF -->
+    <div style="margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
       <div>
-        <div style="font-size:16px;font-weight:700;color:var(--verde)">Dashboard — ${mesLabel}</div>
-        <div style="font-size:11px;color:var(--chumbo);margin-top:2px">Visão consolidada do mês selecionado no Faturamento</div>
+        <div style="font-size:16px;font-weight:700;color:var(--verde)" id="dashMesLabel">Dashboard — ${mesLabel}</div>
+        <div style="font-size:11px;color:var(--chumbo);margin-top:2px">Visão consolidada do mês selecionado</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="display:flex;align-items:center;gap:6px">
+          <label style="font-size:11px;color:var(--chumbo);font-weight:600">Mês:</label>
+          <select id="dashMesSelect" style="font-size:11px;padding:5px 8px;border:1px solid var(--borda);border-radius:6px;background:var(--branco);color:#1a2421;cursor:pointer">
+            ${selectOpts}
+          </select>
+        </div>
+        <button id="dashPrintBtn" onclick="window.print()" style="font-size:11px;padding:6px 14px;background:var(--verde);color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:600">
+          Exportar PDF
+        </button>
       </div>
     </div>
 
-    <!-- KPIs — 5 cards lado a lado -->
+    <!-- KPIs — 5 cards com comparativo mês anterior -->
     <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px">
-      ${dashKpi('Processos Capturados', dashFmt(capturados), 'Captura + DJE', AZUL)}
-      ${dashKpi('Cadastrados no Mês', dashFmt(cadastradosMes), 'Base iiLex SBK', VERDE)}
-      ${dashKpi('Sem Cadastro', dashFmt(semCadastro), 'Capturados sem cadastro', semCadastro > 0 ? '#f0aa00' : VERDE)}
-      ${dashKpi('Faturamento Real', dashBRL(fatReal), 'Volume cobrado × preço', VERDE)}
-      ${dashKpi('Faturamento Gerado', dashBRL(fatGerado), 'Volume automático × preço', 'var(--chumbo)')}
+      <div class="fat-card" style="padding:16px 18px;text-align:center">
+        <div style="font-size:22px;font-weight:700;color:${AZUL};line-height:1">${dashFmt(capturados)}</div>
+        <div style="font-size:11px;font-weight:600;color:var(--chumbo);margin-top:4px">Processos Capturados</div>
+        <div style="font-size:10px;color:var(--chumbo);margin-top:2px">Captura + DJE</div>
+        ${capAnt !== null ? `<div style="margin-top:4px">${delta(capturados, capAnt)}</div>` : ''}
+      </div>
+      <div class="fat-card" style="padding:16px 18px;text-align:center">
+        <div style="font-size:22px;font-weight:700;color:${VERDE};line-height:1">${dashFmt(cadastradosMes)}</div>
+        <div style="font-size:11px;font-weight:600;color:var(--chumbo);margin-top:4px">Cadastrados no Mês</div>
+        <div style="font-size:10px;color:var(--chumbo);margin-top:2px">Base iiLex SBK</div>
+        ${cadastradosAnt ? `<div style="margin-top:4px">${delta(cadastradosMes, cadastradosAnt)}</div>` : ''}
+      </div>
+      <div class="fat-card" style="padding:16px 18px;text-align:center">
+        <div style="font-size:22px;font-weight:700;color:${semCadastro > 0 ? LARANJA : VERDE};line-height:1">${dashFmt(semCadastro)}</div>
+        <div style="font-size:11px;font-weight:600;color:var(--chumbo);margin-top:4px">Sem Cadastro</div>
+        <div style="font-size:10px;color:var(--chumbo);margin-top:2px">Capturados sem cadastro</div>
+        ${alertas.length > 0 ? `<div style="margin-top:4px;font-size:10px;color:var(--err);font-weight:600">${alertas.length} com atraso +2 dias</div>` : ''}
+      </div>
+      <div class="fat-card" style="padding:16px 18px;text-align:center">
+        <div style="font-size:20px;font-weight:700;color:${VERDE};line-height:1">${dashBRL(fatReal)}</div>
+        <div style="font-size:11px;font-weight:600;color:var(--chumbo);margin-top:4px">Faturamento Real</div>
+        <div style="font-size:10px;color:var(--chumbo);margin-top:2px">Volume cobrado × preço</div>
+      </div>
+      <div class="fat-card" style="padding:16px 18px;text-align:center">
+        <div style="font-size:20px;font-weight:700;color:var(--chumbo);line-height:1">${dashBRL(fatGerado)}</div>
+        <div style="font-size:11px;font-weight:600;color:var(--chumbo);margin-top:4px">Faturamento Gerado</div>
+        <div style="font-size:10px;color:var(--chumbo);margin-top:2px">Volume automático × preço</div>
+      </div>
     </div>
 
-    <!-- Linha 1 — Captura vs DJE (linha, larga) + Ranking cadastrantes -->
+    <!-- Alertas de atraso -->
+    ${alertas.length > 0 ? `
+    <div class="fat-card" style="padding:14px 18px;margin-bottom:14px;border-color:var(--err);background:var(--err-bg)">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--err);margin-bottom:8px">
+        Processos sem cadastro há mais de 2 dias (${alertas.length})
+      </div>
+      <div style="max-height:160px;overflow-y:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:11px">
+          <thead><tr style="border-bottom:1px solid var(--err)">
+            <th style="text-align:left;padding:3px 6px;color:var(--err);font-size:10px">Processo</th>
+            <th style="text-align:left;padding:3px 6px;color:var(--err);font-size:10px">Pasta</th>
+            <th style="text-align:left;padding:3px 6px;color:var(--err);font-size:10px">Capturado em</th>
+            <th style="text-align:right;padding:3px 6px;color:var(--err);font-size:10px">Atraso</th>
+          </tr></thead>
+          <tbody>
+            ${alertas.slice(0, 20).map(a => `<tr style="border-bottom:1px solid rgba(0,0,0,.05)">
+              <td style="padding:4px 6px;font-family:monospace;font-size:10px">${a.processo}</td>
+              <td style="padding:4px 6px">${a.pasta}</td>
+              <td style="padding:4px 6px">${a.data}</td>
+              <td style="padding:4px 6px;text-align:right;font-weight:700;color:var(--err)">${a.dias}d</td>
+            </tr>`).join('')}
+            ${alertas.length > 20 ? `<tr><td colspan="4" style="padding:4px 6px;font-size:10px;color:var(--err);text-align:center">... e mais ${alertas.length - 20} processos</td></tr>` : ''}
+          </tbody>
+        </table>
+      </div>
+    </div>` : ''}
+
+    <!-- Linha 1 — Captura vs DJE + Ranking -->
     <div style="display:grid;grid-template-columns:1.8fr 1fr;gap:14px;margin-bottom:14px">
       ${dashCard('Captura vs DJE — evolução diária',
         dashSvgLine(
-          [
-            { label: 'Captura', color: AZUL, points: lineCaptura },
-            { label: 'DJE', color: VERDE, points: lineDje }
-          ],
+          [{ label: 'Captura', color: AZUL, points: diasLine.map(d => porDiaCap[d] || 0) },
+           { label: 'DJE', color: VERDE, points: diasLine.map(d => porDiaDje[d] || 0) }],
           diasLine.map(d => d.substring(0, 5))
-        ),
-        diasLine.length ? null : 'Sem dados de captura/DJE para o mês'
-      )}
+        ), diasLine.length ? null : 'Sem dados de captura/DJE')}
       ${dashCard('Ranking de cadastrantes — ' + mesLabel, rankCad.length
         ? rankCad.map(([nome, qtd]) => {
             const pct = Math.round(qtd / Math.max(cadastradosMes, 1) * 100);
@@ -5688,7 +5833,7 @@ async function dashRender() {
               <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
                 <span style="font-size:11px;color:var(--chumbo);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${nome}</span>
                 <span style="font-size:11px;font-weight:600;color:${VERDE}">${dashFmt(qtd)}</span>
-                <span style="font-size:10px;color:var(--chumbo);width:30px;text-align:right">${pct}%</span>
+                <span style="font-size:10px;color:var(--chumbo);width:32px;text-align:right">${pct}%</span>
               </div>
               <div style="display:flex;align-items:center;gap:6px">${dashBar(pct, VERDE)}</div>
             </div>`;
@@ -5697,22 +5842,28 @@ async function dashRender() {
       )}
     </div>
 
-    <!-- Linha 2 — Cadastros por dia + Evolução 2026 -->
-    <div style="display:grid;grid-template-columns:1fr 1.4fr;gap:14px;margin-bottom:14px">
+    <!-- Linha 2 — Taxa de conversão + Cadastros por dia -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+      ${dashCard('Taxa de conversão diária (%)',
+        dashSvgLine([{ label: 'Cadastrados / Capturados (%)', color: LARANJA, points: lineConv }], diasConv.map(d => d.substring(0,5))),
+        diasConv.length ? 'Percentual dos capturados que foram cadastrados no dia' : 'Sem dados'
+      )}
       ${dashCard('Cadastros por dia — ' + mesLabel, dashSvgBar(barDias, VERDE), barDias.length ? null : 'Sem dados de cadastro no mês')}
-      ${dashCard('Evolução mensal — 2026', dashSvgBar(meses2026, AZUL), 'Cadastros SBK acumulados por mês em 2026')}
     </div>
 
-    <!-- Linha 3 — Faturamento por item -->
+    <!-- Linha 3 — Evolução 2026 (larga) -->
+    ${dashCard(`Evolução mensal — ${yyyy}`, dashSvgBar(meses2026, AZUL), `Cadastros SBK acumulados por mês em ${yyyy}`)}
+
+    <!-- Linha 4 — Faturamento por item -->
     ${dashCard('Faturamento por item de serviço — ' + mesLabel, (() => {
-      let rows = '';
+      let trs = '';
       FAT_ESPELHO_ITENS.forEach(item => {
         let vol = 0;
         if (item.regra === 'auto_captura') vol = capturados;
         else if (item.regra === 'auto_cadastro_total') vol = cadastradosMes;
         const preco = fatPrecosAtuais[item.codigo] !== undefined ? fatPrecosAtuais[item.codigo] : item.precoDefault;
         const cobrado = volCobrado[item.codigo] !== undefined ? volCobrado[item.codigo] : vol;
-        rows += `<tr>
+        trs += `<tr>
           <td style="font-family:monospace;font-size:10px;color:var(--chumbo);padding:6px">${item.codigo}</td>
           <td style="font-size:11px;padding:6px">${item.nome}</td>
           <td style="text-align:right;font-size:11px;padding:6px">${dashFmt(vol)}</td>
@@ -5730,7 +5881,7 @@ async function dashRender() {
           <th style="text-align:right;padding:4px 6px;font-size:10px;color:var(--chumbo)">Preço Unit.</th>
           <th style="text-align:right;padding:4px 6px;font-size:10px;color:var(--chumbo)">Fat. Real</th>
         </tr></thead>
-        <tbody>${rows}</tbody>
+        <tbody>${trs}</tbody>
         <tfoot><tr style="border-top:2px solid var(--borda-l)">
           <td colspan="5" style="text-align:right;padding:6px;font-size:11px;font-weight:600;color:var(--chumbo)">Total faturamento real</td>
           <td style="text-align:right;padding:6px;font-size:13px;font-weight:700;color:${VERDE}">${dashBRL(fatReal)}</td>
@@ -5738,6 +5889,9 @@ async function dashRender() {
       </table>`;
     })())}
   `;
+
+  // Listener do seletor de mês
+  document.getElementById('dashMesSelect')?.addEventListener('change', e => dashRender(e.target.value));
 }
 </script>
 </body>
