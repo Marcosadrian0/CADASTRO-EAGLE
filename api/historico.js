@@ -26,6 +26,7 @@ export default async function handler(req, res) {
       SELECT p.id, p.npu, p.arquivo_nome, p.data_upload, p.status, u.nome AS usuario_nome
       FROM processos p
       LEFT JOIN usuarios u ON u.id = p.usuario_id
+      WHERE p.status = 'validado'
       ORDER BY p.data_upload DESC
       LIMIT 100
     `;
