@@ -5527,29 +5527,40 @@ function dashSvgBar(data, color) {
   return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px">${bars}${labels}${vals}</svg>`;
 }
 
-function dashDonut(slices, size) {
-  // slices: [{label, value, color}]
-  const total = slices.reduce((s, d) => s + d.value, 0);
-  if (!total) return '<p style="font-size:11px;color:var(--chumbo);text-align:center;padding:16px 0">Sem dados</p>';
-  const R = size / 2, r = R * 0.58, cx = R, cy = R;
-  let paths = '', angle = -Math.PI / 2;
-  slices.forEach(s => {
-    const a = (s.value / total) * Math.PI * 2;
-    const x1 = cx + R * Math.cos(angle), y1 = cy + R * Math.sin(angle);
-    const x2 = cx + R * Math.cos(angle + a), y2 = cy + R * Math.sin(angle + a);
-    const x3 = cx + r * Math.cos(angle + a), y3 = cy + r * Math.sin(angle + a);
-    const x4 = cx + r * Math.cos(angle), y4 = cy + r * Math.sin(angle);
-    const lg = a > Math.PI ? 1 : 0;
-    paths += `<path d="M${x1},${y1} A${R},${R} 0 ${lg} 1 ${x2},${y2} L${x3},${y3} A${r},${r} 0 ${lg} 0 ${x4},${y4} Z" fill="${s.color}" opacity=".9"/>`;
-    angle += a;
+// Gráfico de linhas SVG — múltiplas séries [{label, color, points:[{x,y}]}]
+function dashSvgLine(series, labelsX) {
+  if (!series.length || !labelsX.length) return '<p style="font-size:11px;color:var(--chumbo);text-align:center;padding:16px 0">Sem dados</p>';
+  const W = 400, H = 150, padL = 28, padR = 10, padT = 14, padB = 24;
+  const allVals = series.flatMap(s => s.points);
+  const maxV = Math.max(...allVals, 1);
+  const n = labelsX.length;
+  const xPos = i => padL + (i / Math.max(n - 1, 1)) * (W - padL - padR);
+  const yPos = v => padT + (1 - v / maxV) * (H - padT - padB);
+
+  let paths = '', dots = '', legend = '';
+  series.forEach(s => {
+    const pts = s.points.map((v, i) => `${xPos(i).toFixed(1)},${yPos(v).toFixed(1)}`).join(' ');
+    paths += `<polyline points="${pts}" fill="none" stroke="${s.color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" opacity=".9"/>`;
+    s.points.forEach((v, i) => {
+      if (v > 0) dots += `<circle cx="${xPos(i).toFixed(1)}" cy="${yPos(v).toFixed(1)}" r="3" fill="${s.color}"/>`;
+    });
+    legend += `<div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--chumbo)"><div style="width:16px;height:2px;background:${s.color};border-radius:2px"></div>${s.label}</div>`;
   });
-  const legend = slices.map(s => `<div style="display:flex;align-items:center;gap:5px;font-size:10px;color:var(--chumbo)">
-    <div style="width:8px;height:8px;border-radius:2px;background:${s.color};flex-shrink:0"></div>
-    <span>${s.label}</span><span style="font-weight:600;margin-left:auto;padding-left:8px">${Math.round(s.value / total * 100)}%</span>
-  </div>`).join('');
-  return `<div style="display:flex;align-items:center;gap:16px">
-    <svg viewBox="0 0 ${size} ${size}" style="width:${size}px;height:${size}px;flex-shrink:0">${paths}</svg>
-    <div style="flex:1;display:flex;flex-direction:column;gap:5px">${legend}</div>
+
+  // Eixo X — labels (mostrar só alguns para não sobrepor)
+  const step = Math.ceil(n / 8);
+  let xLabels = '';
+  labelsX.forEach((lbl, i) => {
+    if (i % step === 0 || i === n - 1)
+      xLabels += `<text x="${xPos(i).toFixed(1)}" y="${H - 4}" text-anchor="middle" font-size="8" fill="var(--chumbo)">${lbl}</text>`;
+  });
+
+  // Linha base
+  const base = `<line x1="${padL}" y1="${(H - padB).toFixed(1)}" x2="${(W - padR).toFixed(1)}" y2="${(H - padB).toFixed(1)}" stroke="var(--borda-l)" stroke-width="1"/>`;
+
+  return `<div>
+    <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px">${base}${paths}${dots}${xLabels}</svg>
+    <div style="display:flex;gap:12px;justify-content:center;margin-top:4px">${legend}</div>
   </div>`;
 }
 
@@ -5608,26 +5619,35 @@ async function dashRender() {
   rowsMes.forEach(r => { const c = r.cadastrante || 'N/D'; porCadastrante[c] = (porCadastrante[c] || 0) + 1; });
   const rankCad = Object.entries(porCadastrante).sort((a, b) => b[1] - a[1]).slice(0, 6);
 
-  // Evolução diária (últimos 30 dias do mês)
+  // Evolução diária — cadastros por dia do mês
   const porDia = {};
   rowsMes.forEach(r => { const d = (r.dataCadastro || '').substring(0, 5); porDia[d] = (porDia[d] || 0) + 1; });
   const diasOrdenados = Object.keys(porDia).sort();
-  const barDias = diasOrdenados.slice(-12).map(d => ({ label: d.substring(0, 5), value: porDia[d] }));
+  const barDias = diasOrdenados.map(d => ({ label: d.substring(0, 5), value: porDia[d] }));
 
-  // Captura vs Cadastro vs Sem cadastro
-  const donutSlices = [
-    { label: 'Cadastrados SBK', value: cadastradosMes, color: 'var(--verde)' },
-    { label: 'Sem cadastro', value: semCadastro, color: '#f0aa00' },
-    { label: 'Outros', value: (consolidado.outrosRows || []).length, color: '#8e8e8e' }
-  ].filter(s => s.value > 0);
+  // Captura vs DJE por dia — gráfico de linhas
+  const porDiaCaptura = {}, porDiaDje = {};
+  (fatState.captura.rows || []).forEach(r => {
+    const d = (r.data || r.dataCadastro || '').substring(0, 5);
+    if (d) porDiaCaptura[d] = (porDiaCaptura[d] || 0) + 1;
+  });
+  (fatState.dje.rows || []).forEach(r => {
+    const d = (r.data || r.dataCadastro || '').substring(0, 5);
+    if (d) porDiaDje[d] = (porDiaDje[d] || 0) + 1;
+  });
+  const diasLine = [...new Set([...Object.keys(porDiaCaptura), ...Object.keys(porDiaDje)])].sort();
+  const lineCaptura = diasLine.map(d => porDiaCaptura[d] || 0);
+  const lineDje = diasLine.map(d => porDiaDje[d] || 0);
 
-  // Acumulado histórico por mês (últimos 6 meses do consolidado)
-  const porMesHist = {};
+  // Evolução 2026 — todos os meses de jan a mês atual
+  const porMes2026 = {};
   todasRows.forEach(r => {
     const d = (r.dataCadastro || '').trim();
-    if (d.length === 10) { const mk = d.substring(3, 10); porMesHist[mk] = (porMesHist[mk] || 0) + 1; }
+    if (d.length === 10 && d.endsWith('/2026')) { const mk = d.substring(3, 10); porMes2026[mk] = (porMes2026[mk] || 0) + 1; }
   });
-  const mesesHist = Object.keys(porMesHist).sort().slice(-6).map(k => ({ label: k, value: porMesHist[k] }));
+  const mesesOrdem = ['01/2026','02/2026','03/2026','04/2026','05/2026','06/2026','07/2026','08/2026','09/2026','10/2026','11/2026','12/2026'];
+  const mesAtualIdx = mesesOrdem.indexOf(`${mm}/2026`);
+  const meses2026 = mesesOrdem.slice(0, mesAtualIdx + 1).map(k => ({ label: k.substring(0, 2) + '/' + k.substring(5, 7), value: porMes2026[k] || 0 }));
 
   const VERDE = 'var(--verde)';
   const AZUL = '#2e7fc2';
@@ -5649,14 +5669,22 @@ async function dashRender() {
       ${dashKpi('Faturamento Gerado', dashBRL(fatGerado), 'Volume automático × preço', 'var(--chumbo)')}
     </div>
 
-    <!-- Gráficos linha 1 — 3 colunas: dias (maior) + donut + ranking -->
-    <div style="display:grid;grid-template-columns:1.6fr 1fr 1fr;gap:14px;margin-bottom:14px">
-      ${dashCard('Cadastros por dia — ' + mesLabel, dashSvgBar(barDias, VERDE), barDias.length ? null : 'Sem dados diários')}
-      ${dashCard('Distribuição de processos', dashDonut(donutSlices, 110), 'Cadastrados SBK vs Sem cadastro vs Outros')}
+    <!-- Linha 1 — Captura vs DJE (linha, larga) + Ranking cadastrantes -->
+    <div style="display:grid;grid-template-columns:1.8fr 1fr;gap:14px;margin-bottom:14px">
+      ${dashCard('Captura vs DJE — evolução diária',
+        dashSvgLine(
+          [
+            { label: 'Captura', color: AZUL, points: lineCaptura },
+            { label: 'DJE', color: VERDE, points: lineDje }
+          ],
+          diasLine.map(d => d.substring(0, 5))
+        ),
+        diasLine.length ? null : 'Sem dados de captura/DJE para o mês'
+      )}
       ${dashCard('Ranking de cadastrantes — ' + mesLabel, rankCad.length
         ? rankCad.map(([nome, qtd]) => {
             const pct = Math.round(qtd / Math.max(cadastradosMes, 1) * 100);
-            return `<div style="margin-bottom:8px">
+            return `<div style="margin-bottom:9px">
               <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
                 <span style="font-size:11px;color:var(--chumbo);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${nome}</span>
                 <span style="font-size:11px;font-weight:600;color:${VERDE}">${dashFmt(qtd)}</span>
@@ -5669,10 +5697,13 @@ async function dashRender() {
       )}
     </div>
 
-    <!-- Linha 2 — evolução mensal + faturamento por item -->
+    <!-- Linha 2 — Cadastros por dia + Evolução 2026 -->
     <div style="display:grid;grid-template-columns:1fr 1.4fr;gap:14px;margin-bottom:14px">
-      ${dashCard('Evolução mensal — histórico', dashSvgBar(mesesHist, AZUL), 'Cadastros SBK acumulados por mês')}
-    <!-- Faturamento por item -->
+      ${dashCard('Cadastros por dia — ' + mesLabel, dashSvgBar(barDias, VERDE), barDias.length ? null : 'Sem dados de cadastro no mês')}
+      ${dashCard('Evolução mensal — 2026', dashSvgBar(meses2026, AZUL), 'Cadastros SBK acumulados por mês em 2026')}
+    </div>
+
+    <!-- Linha 3 — Faturamento por item -->
     ${dashCard('Faturamento por item de serviço — ' + mesLabel, (() => {
       let rows = '';
       FAT_ESPELHO_ITENS.forEach(item => {
@@ -5682,27 +5713,30 @@ async function dashRender() {
         const preco = fatPrecosAtuais[item.codigo] !== undefined ? fatPrecosAtuais[item.codigo] : item.precoDefault;
         const cobrado = volCobrado[item.codigo] !== undefined ? volCobrado[item.codigo] : vol;
         rows += `<tr>
-          <td style="font-family:monospace;font-size:10px;color:var(--chumbo)">${item.codigo}</td>
-          <td style="font-size:11px">${item.nome}</td>
-          <td style="text-align:right;font-size:11px">${dashFmt(vol)}</td>
-          <td style="text-align:right;font-size:11px;font-weight:600;color:${VERDE}">${dashFmt(cobrado)}</td>
-          <td style="text-align:right;font-size:11px">${dashBRL(preco)}</td>
-          <td style="text-align:right;font-size:11px;font-weight:700;color:${VERDE}">${dashBRL(cobrado * preco)}</td>
+          <td style="font-family:monospace;font-size:10px;color:var(--chumbo);padding:6px">${item.codigo}</td>
+          <td style="font-size:11px;padding:6px">${item.nome}</td>
+          <td style="text-align:right;font-size:11px;padding:6px">${dashFmt(vol)}</td>
+          <td style="text-align:right;font-size:11px;padding:6px;font-weight:600;color:${VERDE}">${dashFmt(cobrado)}</td>
+          <td style="text-align:right;font-size:11px;padding:6px">${dashBRL(preco)}</td>
+          <td style="text-align:right;font-size:11px;padding:6px;font-weight:700;color:${VERDE}">${dashBRL(cobrado * preco)}</td>
         </tr>`;
       });
-      return `<table style="width:100%;border-collapse:collapse;font-size:11px">
-        <thead><tr style="border-bottom:1px solid var(--borda-l)">
+      return `<table style="width:100%;border-collapse:collapse">
+        <thead><tr style="border-bottom:2px solid var(--borda-l)">
           <th style="text-align:left;padding:4px 6px;font-size:10px;color:var(--chumbo)">Código</th>
-          <th style="text-align:left;padding:4px 6px;font-size:10px;color:var(--chumbo)">Item</th>
+          <th style="text-align:left;padding:4px 6px;font-size:10px;color:var(--chumbo)">Item de Serviço</th>
           <th style="text-align:right;padding:4px 6px;font-size:10px;color:var(--chumbo)">Vol. Auto</th>
           <th style="text-align:right;padding:4px 6px;font-size:10px;color:var(--chumbo)">Vol. Cobrado</th>
           <th style="text-align:right;padding:4px 6px;font-size:10px;color:var(--chumbo)">Preço Unit.</th>
           <th style="text-align:right;padding:4px 6px;font-size:10px;color:var(--chumbo)">Fat. Real</th>
         </tr></thead>
         <tbody>${rows}</tbody>
+        <tfoot><tr style="border-top:2px solid var(--borda-l)">
+          <td colspan="5" style="text-align:right;padding:6px;font-size:11px;font-weight:600;color:var(--chumbo)">Total faturamento real</td>
+          <td style="text-align:right;padding:6px;font-size:13px;font-weight:700;color:${VERDE}">${dashBRL(fatReal)}</td>
+        </tr></tfoot>
       </table>`;
     })())}
-    </div>
   `;
 }
 </script>
