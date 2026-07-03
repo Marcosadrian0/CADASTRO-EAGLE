@@ -4482,7 +4482,7 @@ function fatAutoDetectCadastroCols(headers) {
   };
 }
 
-function fatAutoDetectCapturaCols(headers) {
+function fatAutoDetectCapturaCols(headers, tipo) {
   const norm = headers.map(fatNormalizeHeader);
   const find = (subs, excl = []) => {
     for (let i = 0; i < norm.length; i++) {
@@ -4491,11 +4491,18 @@ function fatAutoDetectCapturaCols(headers) {
     }
     return -1;
   };
+  // Captura: data principal = DATA_CADASTRO_MANAGER
+  // DJE:     data principal = DATA_CAPTURA
+  const dataCol = tipo === 'dje'
+    ? find(['data captura', 'datacaptura', 'captura'])
+    : find(['data cadastro manager', 'cadastro manager', 'manager']);
+  // Fallback genérico se a coluna específica não for encontrada
+  const dataFallback = dataCol > -1 ? dataCol : find(['data'], ['processo', 'ajuiz', 'cit']);
   return {
-    data: find(['data'], ['cadastro']),
+    data: dataFallback,
     processo: find(['processo', 'cnj']),
     pasta: find(['pasta']),
-    dataCadastro: find(['data do cadastro', 'data cadastro']),
+    dataCadastro: find(['data do cadastro', 'data cadastro'], ['manager']),
     tipoOcorrencia: find(['ocorrencia', 'tipo'])
   };
 }
@@ -4848,7 +4855,7 @@ async function fatProcessCapturaBatch(tipo, files, startIdx, acc, totalFiles) {
       const headerRowIdx = fatFindHeaderRow(aoa);
       const headers = aoa[headerRowIdx];
       const mapping = fatLoadMapping(tipo);
-      const detected = fatAutoDetectCapturaCols(headers);
+      const detected = fatAutoDetectCapturaCols(headers, tipo);
       if (!mapping || detected.processo === -1) {
         fatPendingMapping[tipo] = { headers, headerRowIdx, aoa, detected, file, remainingFiles: files.slice(i + 1), acc, totalFiles };
         fatRenderMappingUI(tipo, headers, detected);
@@ -5693,17 +5700,21 @@ async function dashRender(mkOverride) {
   (stateAtual.dje?.rows || []).forEach(r => { const d = (r.data || '').substring(0, 5); if (d) porDiaDje[d] = (porDiaDje[d] || 0) + 1; });
   const diasLine = [...new Set([...Object.keys(porDiaCap), ...Object.keys(porDiaDje)])].sort();
 
-  // Taxa de conversão por dia (cadastrados ÷ capturados, por data do cadastro)
-  const porDiaCapAll = {};
+  // Taxa de conversão semanal — capturados vs cadastrados por semana do mês
+  const semCap = { 'S1': 0, 'S2': 0, 'S3': 0, 'S4': 0 };
+  const semCad = { 'S1': 0, 'S2': 0, 'S3': 0, 'S4': 0 };
+  const semIdx = dd => dd <= 7 ? 'S1' : dd <= 14 ? 'S2' : dd <= 21 ? 'S3' : 'S4';
   [...(stateAtual.captura?.rows || []), ...(stateAtual.dje?.rows || [])].forEach(r => {
-    const d = (r.data || '').substring(0, 5); if (d) porDiaCapAll[d] = (porDiaCapAll[d] || 0) + 1;
+    const d = (r.data || '').trim();
+    const dd = parseInt(d.substring(0, 2), 10);
+    if (dd >= 1 && dd <= 31) semCap[semIdx(dd)]++;
   });
-  const diasConv = [...new Set([...Object.keys(porDia), ...Object.keys(porDiaCapAll)])].sort();
-  const lineConv = diasConv.map(d => {
-    const cap = porDiaCapAll[d] || 0;
-    const cad = porDia[d] || 0;
-    return cap > 0 ? Math.round(cad / cap * 100) : 0;
+  rowsMes.forEach(r => {
+    const d = (r.dataCadastro || '').trim();
+    const dd = parseInt(d.substring(0, 2), 10);
+    if (dd >= 1 && dd <= 31) semCad[semIdx(dd)]++;
   });
+  const semanasConv = ['S1', 'S2', 'S3', 'S4'];
 
   // Evolução 2026
   const porMes2026 = {};
@@ -5860,9 +5871,12 @@ async function dashRender(mkOverride) {
 
     <!-- Linha 2 — Taxa de conversão + Cadastros por dia -->
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
-      ${dashCard('Taxa de conversão diária (%)',
-        dashSvgLine([{ label: 'Cadastrados / Capturados (%)', color: LARANJA, points: lineConv }], diasConv.map(d => d.substring(0,5))),
-        diasConv.length ? 'Percentual dos capturados que foram cadastrados no dia' : 'Sem dados'
+      ${dashCard('Capturados vs Cadastrados (semanal)',
+        dashSvgLine([
+          { label: 'Capturados', color: AZUL, points: semanasConv.map(s => semCap[s]) },
+          { label: 'Cadastrados', color: VERDE, points: semanasConv.map(s => semCad[s]) }
+        ], semanasConv),
+        (() => { const tc = semanasConv.reduce((a,s)=>a+semCap[s],0); const td = semanasConv.reduce((a,s)=>a+semCad[s],0); return tc > 0 ? `Taxa de conversão: ${Math.round(td/tc*100)}% (${td} cadastrados de ${tc} capturados)` : 'Sem dados de captura no mês'; })()
       )}
       ${dashCard('Cadastros por dia — ' + mesLabel, dashSvgBar(barDias, VERDE), barDias.length ? null : 'Sem dados de cadastro no mês')}
     </div>
