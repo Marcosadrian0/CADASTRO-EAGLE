@@ -174,6 +174,7 @@ input[type=text],select,textarea{
 }
 input:focus,select:focus,textarea:focus{border-color:var(--ciano);box-shadow:0 0 0 3px rgba(7,80,86,.07)}
 input.auto,select.auto,textarea.auto{border-color:var(--auto-b);background:var(--auto-bg)}
+.conf-badge { transition: opacity .2s; }
 input.locked,select.locked,textarea.locked{border-color:var(--ciano);background:var(--auto-bg);font-weight:600;color:var(--ciano);cursor:default}
 input.field-ok,select.field-ok{border-color:var(--vok)!important;background:var(--vok-bg)}
 input.field-err,select.field-err{border-color:var(--err)!important;background:var(--err-bg)}
@@ -2661,6 +2662,55 @@ function preencherFormulario(c) {
   if (!c.advogado_oab) alertas.push({ tipo: 'warn', msg: 'OAB não encontrada no formato padrão — verifique e ajuste.' });
   if (alertas.length === 0) alertas.push({ tipo: 'ok', msg: 'Nenhuma inconsistência crítica detectada. Revise e valide os campos.' });
   renderAlertas(alertas);
+  setTimeout(atualizarConfiancaCampos, 100);
+}
+
+function atualizarConfiancaCampos() {
+  const ACURACIA_CACHE_KEY = 'eagle_acuracia_campos';
+  const cached = (() => { try { return JSON.parse(localStorage.getItem(ACURACIA_CACHE_KEY) || 'null'); } catch(e) { return null; } })();
+  if (!cached || !cached.fields) return;
+  const now = Date.now();
+  if (now - cached.ts > 5 * 60 * 1000) {
+    // cache expirado, busca em background
+    fetch('/api/historico').then(r => r.json()).then(d => {
+      if (d.acuraciaFields) {
+        localStorage.setItem(ACURACIA_CACHE_KEY, JSON.stringify({ ts: Date.now(), fields: d.acuraciaFields }));
+        _aplicarConfiancaUI(d.acuraciaFields);
+      }
+    }).catch(() => {});
+    return;
+  }
+  _aplicarConfiancaUI(cached.fields);
+}
+
+function _aplicarConfiancaUI(fields) {
+  const map = {};
+  fields.forEach(f => map[f.campo] = f.pct);
+  const CAMPO_IDS = {
+    npu: 'f_npu', autor_nome: 'f_autor_nome', reu_nome: 'f_reu_nome',
+    advogado_nome: 'f_advogado_nome', advogado_oab: 'f_advogado_oab',
+    tribunal: 'f_tribunal', vara: 'f_vara', comarca: 'f_comarca',
+    assunto: 'f_assunto', classe: 'f_classe', valor_causa: 'f_valor_causa',
+    data_distribuicao: 'f_data_distribuicao'
+  };
+  Object.entries(CAMPO_IDS).forEach(([campo, elId]) => {
+    const el = document.getElementById(elId);
+    if (!el) return;
+    const wrapper = el.parentElement;
+    if (!wrapper) return;
+    wrapper.querySelectorAll('.conf-badge').forEach(b => b.remove());
+    const pct = map[campo];
+    if (pct === undefined) return;
+    const cor = pct >= 80 ? '#16a34a' : pct >= 60 ? '#d97706' : '#dc2626';
+    const badge = document.createElement('span');
+    badge.className = 'conf-badge';
+    badge.title = `Acurácia histórica deste campo: ${pct}%`;
+    badge.style.cssText = `position:absolute;top:4px;right:6px;font-size:9px;font-weight:700;color:${cor};background:${cor}18;border-radius:4px;padding:1px 5px;pointer-events:none`;
+    badge.textContent = pct + '%';
+    const pos = getComputedStyle(wrapper).position;
+    if (pos === 'static') wrapper.style.position = 'relative';
+    wrapper.appendChild(badge);
+  });
 }
 
 function definirEscritorio(c) {
@@ -4015,6 +4065,7 @@ async function desativarUsuario(id) {
 
 // Verificar sessão ao carregar
 document.addEventListener('DOMContentLoaded', verificarSessao);
+fetch('/api/historico').then(r=>r.json()).then(d=>{if(d.acuraciaFields)localStorage.setItem('eagle_acuracia_campos',JSON.stringify({ts:Date.now(),fields:d.acuraciaFields}))}).catch(()=>{});
 
 // ── INTEGRAÇÃO BANCO DE DADOS ─────────────────────────────────────────────────
 
@@ -5824,6 +5875,17 @@ async function dashRender(mkOverride) {
         <div style="font-size:11px;font-weight:600;color:var(--chumbo);margin-top:4px">Faturamento Gerado</div>
         <div style="font-size:10px;color:var(--chumbo);margin-top:2px">Volume automático × preço</div>
       </div>
+      ${(() => {
+        const pctAcc = acuraciaEvolucao.length ? acuraciaEvolucao[acuraciaEvolucao.length-1].pct : null;
+        const pctAnt = acuraciaEvolucao.length >= 2 ? acuraciaEvolucao[acuraciaEvolucao.length-2].pct : null;
+        const corAcc = pctAcc === null ? 'var(--chumbo)' : pctAcc >= 80 ? '#16a34a' : pctAcc >= 60 ? '#d97706' : '#dc2626';
+        return `<div class="fat-card" style="padding:16px 18px;text-align:center">
+          <div style="font-size:22px;font-weight:700;line-height:1;color:${corAcc}">${pctAcc !== null ? pctAcc + '%' : '--'}</div>
+          <div style="font-size:11px;font-weight:600;color:var(--chumbo);margin-top:4px">Acurácia da IA</div>
+          <div style="font-size:10px;color:var(--chumbo);margin-top:2px">Última semana</div>
+          ${pctAcc !== null && pctAnt !== null ? `<div style="margin-top:4px">${delta(pctAcc, pctAnt)}</div>` : ''}
+        </div>`;
+      })()}
     </div>
 
     <!-- Alertas de atraso -->
@@ -5853,6 +5915,25 @@ async function dashRender(mkOverride) {
       </div>
     </div>` : ''}
 
+    <!-- Alerta de queda de acurácia por campo -->
+    ${(() => {
+      if (!acuraciaFields.length) return '';
+      const camposEmQueda = acuraciaFields.filter(f => f.pct < 70);
+      if (!camposEmQueda.length) return '';
+      return `<div class="fat-card" style="padding:14px 18px;margin-bottom:14px;border-color:#d97706;background:#FFFBEB">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#d97706;margin-bottom:8px">
+          Campos com acurácia abaixo de 70% nos últimos 30 dias (${camposEmQueda.length})
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          ${camposEmQueda.map(f => {
+            const label = CAMPO_LABELS[f.campo] || f.campo;
+            const cor = f.pct < 50 ? '#dc2626' : '#d97706';
+            return `<span style="background:#fff;border:1px solid ${cor};border-radius:6px;padding:3px 10px;font-size:11px;color:${cor};font-weight:600">${label}: ${f.pct}%</span>`;
+          }).join('')}
+        </div>
+      </div>`;
+    })()}
+
     <!-- Linha 1 — Captura vs DJE + Ranking -->
     <div style="display:grid;grid-template-columns:1.8fr 1fr;gap:14px;margin-bottom:14px">
       ${dashCard('Captura vs DJE — evolução diária',
@@ -5877,17 +5958,14 @@ async function dashRender(mkOverride) {
       )}
     </div>
 
-    <!-- Linha 2 — Taxa de conversão + Cadastros por dia -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
-      ${dashCard('Capturados vs Cadastrados (semanal)',
-        dashSvgLine([
-          { label: 'Capturados', color: AZUL, points: semanasConv.map(s => semCap[s]) },
-          { label: 'Cadastrados', color: VERDE, points: semanasConv.map(s => semCad[s]) }
-        ], semanasConv),
-        (() => { const tc = semanasConv.reduce((a,s)=>a+semCap[s],0); const td = semanasConv.reduce((a,s)=>a+semCad[s],0); return tc > 0 ? `Taxa de conversão: ${Math.round(td/tc*100)}% (${td} cadastrados de ${tc} capturados)` : 'Sem dados de captura no mês'; })()
-      )}
-      ${dashCard('Cadastros por dia — ' + mesLabel, dashSvgBar(barDias, VERDE), barDias.length ? null : 'Sem dados de cadastro no mês')}
-    </div>
+    <!-- Linha 2 — Capturados vs Cadastrados -->
+    ${dashCard('Capturados vs Cadastrados (semanal)',
+      dashSvgLine([
+        { label: 'Capturados', color: AZUL, points: semanasConv.map(s => semCap[s]) },
+        { label: 'Cadastrados', color: VERDE, points: semanasConv.map(s => semCad[s]) }
+      ], semanasConv),
+      (() => { const tc = semanasConv.reduce((a,s)=>a+semCap[s],0); const td = semanasConv.reduce((a,s)=>a+semCad[s],0); return tc > 0 ? `Taxa de conversão: ${Math.round(td/tc*100)}% (${td} cadastrados de ${tc} capturados)` : 'Sem dados de captura no mês'; })()
+    )}
 
     <!-- Linha 3 — Evolução 2026 (larga) -->
     ${dashCard(`Evolução mensal — ${yyyy}`, dashSvgBar(meses2026, AZUL), `Cadastros SBK acumulados por mês em ${yyyy}`)}
@@ -5921,40 +5999,23 @@ async function dashRender(mkOverride) {
       )}
     </div>
 
-    <!-- Linha 5 — Faturamento por item -->
-    ${dashCard('Faturamento por item de serviço — ' + mesLabel, (() => {
-      let trs = '';
-      FAT_ESPELHO_ITENS.forEach(item => {
-        let vol = 0;
-        if (item.regra === 'auto_captura') vol = capturados;
-        else if (item.regra === 'auto_cadastro_total') vol = cadastradosMes;
-        const preco = fatPrecosAtuais[item.codigo] !== undefined ? fatPrecosAtuais[item.codigo] : item.precoDefault;
-        const cobrado = volCobrado[item.codigo] !== undefined ? volCobrado[item.codigo] : vol;
-        trs += `<tr>
-          <td style="font-family:monospace;font-size:10px;color:var(--chumbo);padding:6px">${item.codigo}</td>
-          <td style="font-size:11px;padding:6px">${item.nome}</td>
-          <td style="text-align:right;font-size:11px;padding:6px">${dashFmt(vol)}</td>
-          <td style="text-align:right;font-size:11px;padding:6px;font-weight:600;color:${VERDE}">${dashFmt(cobrado)}</td>
-          <td style="text-align:right;font-size:11px;padding:6px">${dashBRL(preco)}</td>
-          <td style="text-align:right;font-size:11px;padding:6px;font-weight:700;color:${VERDE}">${dashBRL(cobrado * preco)}</td>
-        </tr>`;
-      });
-      return `<table style="width:100%;border-collapse:collapse">
-        <thead><tr style="border-bottom:2px solid var(--borda-l)">
-          <th style="text-align:left;padding:4px 6px;font-size:10px;color:var(--chumbo)">Código</th>
-          <th style="text-align:left;padding:4px 6px;font-size:10px;color:var(--chumbo)">Item de Serviço</th>
-          <th style="text-align:right;padding:4px 6px;font-size:10px;color:var(--chumbo)">Vol. Auto</th>
-          <th style="text-align:right;padding:4px 6px;font-size:10px;color:var(--chumbo)">Vol. Cobrado</th>
-          <th style="text-align:right;padding:4px 6px;font-size:10px;color:var(--chumbo)">Preço Unit.</th>
-          <th style="text-align:right;padding:4px 6px;font-size:10px;color:var(--chumbo)">Fat. Real</th>
-        </tr></thead>
-        <tbody>${trs}</tbody>
-        <tfoot><tr style="border-top:2px solid var(--borda-l)">
-          <td colspan="5" style="text-align:right;padding:6px;font-size:11px;font-weight:600;color:var(--chumbo)">Total faturamento real</td>
-          <td style="text-align:right;padding:6px;font-size:13px;font-weight:700;color:${VERDE}">${dashBRL(fatReal)}</td>
-        </tr></tfoot>
-      </table>`;
-    })())}
+    <!-- Linha 5 — Faturamento resumo -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+      ${dashCard('Faturamento Real — ' + mesLabel,
+        `<div style="text-align:center;padding:12px 0">
+          <div style="font-size:32px;font-weight:700;color:${VERDE};line-height:1">${dashBRL(fatReal)}</div>
+          <div style="font-size:11px;color:var(--chumbo);margin-top:6px">Volume cobrado × preço unitário</div>
+        </div>`,
+        'Consulte a aba Espelho para detalhamento por item'
+      )}
+      ${dashCard('Faturamento Gerado — ' + mesLabel,
+        `<div style="text-align:center;padding:12px 0">
+          <div style="font-size:32px;font-weight:700;color:var(--chumbo);line-height:1">${dashBRL(fatGerado)}</div>
+          <div style="font-size:11px;color:var(--chumbo);margin-top:6px">Volume automático × preço unitário</div>
+        </div>`,
+        fatReal > 0 && fatGerado > 0 ? `Diferença: ${dashBRL(Math.abs(fatReal - fatGerado))} (${fatReal > fatGerado ? 'cobrado maior' : 'gerado maior'})` : null
+      )}
+    </div>
   `;
 
   // Listener do seletor de mês
