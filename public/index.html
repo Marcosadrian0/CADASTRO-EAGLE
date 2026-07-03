@@ -4493,6 +4493,17 @@ function fatVolumeCapturaTotal() {
   return s.size;
 }
 
+// Retorna processos do consolidado cujo dataCadastro pertence ao mês selecionado
+function fatVolumeCadastroMes() {
+  if (!fatCadastroConsolidado || !fatMonthKey) return 0;
+  const [yyyy, mm] = fatMonthKey.split('-');
+  const sufixo = `/${mm}/${yyyy}`; // dataCadastro é "DD/MM/AAAA"
+  return (fatCadastroConsolidado.rows || []).filter(r => {
+    const d = (r.dataCadastro || '').trim();
+    return d.endsWith(sufixo);
+  }).length;
+}
+
 function fatRenderEspelho() {
   fatPrecosAtuais = fatLoadPrecos();
   fatVolumesManuaisAtuais = fatLoadVolumesManuais(fatMonthKey);
@@ -4501,7 +4512,7 @@ function fatRenderEspelho() {
   tbody.innerHTML = FAT_ESPELHO_ITENS.map(item => {
     let volume, badge = '';
     if (item.regra === 'auto_captura') { volume = fatVolumeCapturaTotal(); badge = '<span class="fat-badge-ok">auto</span>'; }
-    else if (item.regra === 'auto_cadastro_total') { volume = (fatCadastroConsolidado?.rows?.length || 0); badge = '<span class="fat-badge-ok">auto</span>'; }
+    else if (item.regra === 'auto_cadastro_total') { volume = fatVolumeCadastroMes(); badge = '<span class="fat-badge-ok">auto</span>'; }
     else { volume = fatVolumesManuaisAtuais[item.codigo] || 0; badge = '<span class="fat-badge-warn">manual</span>'; }
     const preco = fatPrecosAtuais[item.codigo] !== undefined ? fatPrecosAtuais[item.codigo] : item.precoDefault;
     const total = volume * preco;
