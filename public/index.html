@@ -1200,37 +1200,11 @@ textarea{resize:vertical;min-height:52px}
       <span class="scard-ttl">Advogado</span>
     </div>
     <div class="scard-body">
-      <!-- Grid: Nome (flex) | UF (80px) | OAB (150px) — tudo na mesma linha -->
-      <div style="display:grid;grid-template-columns:1fr 80px 150px;gap:10px 12px;align-items:end">
-        <div class="fg">
-          <label>Nome completo</label>
-          <input type="text" id="f_advogado_nome" placeholder="Nome do advogado">
-        </div>
-        <div class="fg">
-          <label>UF OAB</label>
-          <select id="f_advogado_uf">
-              <option value="">UF</option>
-              <option>AC</option><option>AL</option><option>AM</option><option>AP</option><option>BA</option>
-              <option>CE</option><option>DF</option><option>ES</option><option>GO</option><option>MA</option>
-              <option>MG</option><option>MS</option><option>MT</option><option>PA</option><option>PB</option>
-              <option>PE</option><option>PI</option><option>PR</option><option>RJ</option><option>RN</option>
-              <option>RO</option><option>RR</option><option>RS</option><option>SC</option><option>SE</option>
-              <option>SP</option><option>TO</option>
-            </select>
-        </div>
-        <div class="fg">
-          <label>Número OAB</label>
-          <input type="text" id="f_advogado_oab" placeholder="015800">
-        </div>
-      <!-- Linha 2: Escritório do advogado -->
-      <div style="margin-top:10px">
-        <div class="fg">
-          <label>Escritório <span class="lhint">(ex: ANGELA MARIA DA SILVA - ADVOGADA)</span></label>
-          <input type="text" id="f_advogado_escritorio" placeholder="Nome do escritório ou advogado responsável">
-        </div>
-      </div>
-      </div>
-      <div id="extraAdvogados"></div>
+      <div id="advogadoList"></div>
+      <button class="btn-add" onclick="addAdvogado()" style="margin-top:10px">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Adicionar advogado
+      </button>
     </div>
   </div>
 
@@ -1372,6 +1346,58 @@ function marcarReu(id, tipo) {
 }
 
 addReu();
+
+// ── ADVOGADOS DINÂMICOS ───────────────────────────────────────────────────────
+let advCount = 0;
+
+const UF_OPTIONS = ['','AC','AL','AM','AP','BA','CE','DF','ES','GO','MA','MG','MS','MT','PA','PB','PE','PI','PR','RJ','RN','RO','RR','RS','SC','SE','SP','TO'];
+
+function addAdvogado(opts) {
+  advCount++;
+  const n = advCount;
+  const isFirst = n === 1;
+  const div = document.createElement('div');
+  div.id = 'adv_row_' + n;
+  div.style.cssText = isFirst ? '' : 'margin-top:10px;padding-top:10px;border-top:1px dashed var(--borda-l)';
+
+  // Select de UF
+  const ufSel = document.createElement('select');
+  ufSel.id = isFirst ? 'f_advogado_uf' : 'adv_uf_' + n;
+  ufSel.style.width = '100%';
+  const ufVal = (opts && opts.uf) ? opts.uf : '';
+  UF_OPTIONS.forEach(u => {
+    const o = document.createElement('option');
+    o.value = u; o.textContent = u || 'UF';
+    if (u === ufVal) o.selected = true;
+    ufSel.appendChild(o);
+  });
+
+  div.innerHTML = '<div style="display:grid;grid-template-columns:1fr 80px 150px auto;gap:10px 8px;align-items:end">'
+    + '<div class="fg"><label>' + (isFirst ? 'Nome completo' : 'Advogado ' + n) + '</label>'
+    + '<input type="text" id="' + (isFirst ? 'f_advogado_nome' : 'adv_nome_' + n) + '" placeholder="Nome do advogado" value="' + (opts && opts.nome ? opts.nome.replace(/"/g,'&quot;') : '') + '"></div>'
+    + '<div class="fg" id="adv_uf_wrap_' + n + '"><label>UF OAB</label></div>'
+    + '<div class="fg"><label>Número OAB</label><input type="text" id="' + (isFirst ? 'f_advogado_oab' : 'adv_oab_' + n) + '" placeholder="015800" value="' + (opts && opts.oab ? opts.oab : '') + '"></div>'
+    + '<div style="padding-bottom:1px"><button onclick="removeAdvogado(\'adv_row_' + n + '\')" title="Remover advogado" style="background:none;border:1px solid var(--borda);border-radius:6px;width:28px;height:32px;cursor:pointer;color:var(--chumbo);font-size:13px;display:flex;align-items:center;justify-content:center">✕</button></div>'
+    + '</div>'
+    + (isFirst ? '<div style="margin-top:10px"><div class="fg"><label>Escritório <span class="lhint">(ex: ANGELA MARIA DA SILVA - ADVOGADA)</span></label><input type="text" id="f_advogado_escritorio" placeholder="Nome do escritório ou advogado responsável" value="' + (opts && opts.escritorio ? opts.escritorio.replace(/"/g,'&quot;') : '') + '"></div></div>' : '');
+
+  document.getElementById('advogadoList').appendChild(div);
+  document.getElementById('adv_uf_wrap_' + n).appendChild(ufSel);
+}
+
+function removeAdvogado(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.remove();
+  // Garantir que o primeiro advogado restante tem label "Nome completo"
+  const first = document.querySelector('#advogadoList [id^="adv_row_"]');
+  if (first) {
+    const lbl = first.querySelector('label');
+    if (lbl) lbl.textContent = 'Nome completo';
+  }
+}
+
+addAdvogado();
 
 function marcar(campo, tipo) {
   statusCampos[campo] = tipo;
@@ -2607,31 +2633,11 @@ function preencherFormulario(c) {
     }
   }
 
-  // Advogados adicionais: exibir abaixo do campo principal
-  const extraAdvWrap = document.getElementById('extraAdvogados');
-  if (extraAdvWrap) {
-    extraAdvWrap.innerHTML = '';
-    if (c._todos_advs && c._todos_advs.length > 1) {
-      c._todos_advs.slice(1).forEach((a, i) => {
-        extraAdvWrap.innerHTML += `
-          <div style="display:grid;grid-template-columns:1fr 80px 150px;gap:10px 12px;align-items:end;margin-top:10px;padding-top:10px;border-top:1px dashed var(--borda-l)">
-            <div class="fg">
-              <label>Advogado ${i + 2}</label>
-              <input type="text" class="auto" value="${a.nome}" readonly style="width:100%">
-            </div>
-            <div class="fg">
-              <label>UF OAB</label>
-              <input type="text" class="auto" value="${a.uf}" readonly style="width:100%">
-            </div>
-            <div class="fg">
-              <label>Número OAB</label>
-              <input type="text" class="auto" value="${a.oab}" readonly style="width:100%">
-            </div>
-          </div>
-        `;
-      });
-    }
-  }
+  // Advogados: recriar lista completa
+  document.getElementById('advogadoList').innerHTML = '';
+  advCount = 0;
+  const advs = (c._todos_advs && c._todos_advs.length > 0) ? c._todos_advs : [{ nome: c.advogado_nome || '', uf: c.advogado_uf || '', oab: c.advogado_oab || '' }];
+  advs.forEach((a, i) => addAdvogado(i === 0 ? { nome: a.nome, uf: a.uf, oab: a.oab, escritorio: c.advogado_escritorio || '' } : { nome: a.nome, uf: a.uf, oab: a.oab }));
 
   // Réus
   document.getElementById('reuList').innerHTML = '';
@@ -2758,13 +2764,16 @@ function limparFormulario() {
     const el = document.getElementById('f_' + k);
     if (el) { el.value = ''; el.className = el.tagName === 'SELECT' ? '' : ''; }
   });
-  ['uf','tipo_justica','advogado_uf'].forEach(k => {
+  ['uf','tipo_justica'].forEach(k => {
     const el = document.getElementById('f_' + k);
     if (el) el.selectedIndex = 0;
   });
   document.getElementById('reuList').innerHTML = '';
   reuCount = 0;
   addReu();
+  document.getElementById('advogadoList').innerHTML = '';
+  advCount = 0;
+  addAdvogado();
   statusCampos = {};
   valoresIA = {};
   CAMPOS_VALIDAVEIS.forEach(k => statusCampos[k] = 'pending');
@@ -4089,6 +4098,18 @@ function coletarCamposFormulario() {
     autor_nome: get('f_autor_nome'), autor_cpf: get('f_autor_cpf'),
     advogado_nome: get('f_advogado_nome'), advogado_oab: get('f_advogado_oab'),
     advogado_uf: get('f_advogado_uf'), advogado_escritorio: get('f_advogado_escritorio'),
+    advogados_extras: (() => {
+      const rows = document.querySelectorAll('#advogadoList [id^="adv_row_"]');
+      const extras = [];
+      rows.forEach((row, i) => {
+        if (i === 0) return; // primeiro é o principal
+        const nome = row.querySelector('input[id^="adv_nome_"]')?.value?.trim() || '';
+        const uf = row.querySelector('select[id^="adv_uf_"]')?.value?.trim() || '';
+        const oab = row.querySelector('input[id^="adv_oab_"]')?.value?.trim() || '';
+        if (nome) extras.push({ nome, uf, oab });
+      });
+      return extras;
+    })(),
     reus
   };
 }
