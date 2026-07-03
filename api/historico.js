@@ -21,9 +21,10 @@ export default async function handler(req, res) {
     const sql = neon(DB);
 
     const processos = await sql`
-      SELECT id, npu, arquivo_nome, data_upload, status
-      FROM processos
-      ORDER BY data_upload DESC
+      SELECT p.id, p.npu, p.arquivo_nome, p.data_upload, p.status, u.nome AS usuario_nome
+      FROM processos p
+      LEFT JOIN usuarios u ON u.id = p.usuario_id
+      ORDER BY p.data_upload DESC
       LIMIT 100
     `;
 

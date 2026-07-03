@@ -3815,6 +3815,7 @@ async function carregarAcuracia() {
           <th style="padding:8px 10px;text-align:left;color:var(--chumbo);font-size:10px;text-transform:uppercase;letter-spacing:.4px;font-weight:600">#</th>
           <th style="padding:8px 10px;text-align:left;color:var(--chumbo);font-size:10px;text-transform:uppercase;letter-spacing:.4px;font-weight:600">NPU</th>
           <th style="padding:8px 10px;text-align:left;color:var(--chumbo);font-size:10px;text-transform:uppercase;letter-spacing:.4px;font-weight:600">Arquivo</th>
+          <th style="padding:8px 10px;text-align:left;color:var(--chumbo);font-size:10px;text-transform:uppercase;letter-spacing:.4px;font-weight:600">Usuário</th>
           <th style="padding:8px 10px;text-align:left;color:var(--chumbo);font-size:10px;text-transform:uppercase;letter-spacing:.4px;font-weight:600">Data</th>
           <th style="padding:8px 10px;text-align:center;color:var(--chumbo);font-size:10px;text-transform:uppercase;letter-spacing:.4px;font-weight:600">Status</th>
         </tr></thead><tbody>`;
@@ -3828,7 +3829,8 @@ async function carregarAcuracia() {
         htmlP += `<tr style="background:${bg};border-top:1px solid var(--borda-l)">
           <td style="padding:7px 10px;color:var(--chumbo)">${p.id}</td>
           <td style="padding:7px 10px;font-family:monospace;font-size:10px;color:var(--verde)">${p.npu||'-'}</td>
-          <td style="padding:7px 10px;color:var(--chumbo);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.arquivo_nome||'-'}</td>
+          <td style="padding:7px 10px;color:var(--chumbo);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.arquivo_nome||'-'}</td>
+          <td style="padding:7px 10px;color:var(--chumbo);white-space:nowrap">${p.usuario_nome||'-'}</td>
           <td style="padding:7px 10px;color:var(--chumbo);white-space:nowrap">${data}</td>
           <td style="padding:7px 10px;text-align:center">${badge}</td>
         </tr>`;
@@ -4047,7 +4049,7 @@ async function salvarProcessoBanco(nomeArquivo) {
     const resp = await fetch('/api/salvar', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ arquivo_nome: nomeArquivo, campos })
+      body: JSON.stringify({ arquivo_nome: nomeArquivo, campos, token: sessaoToken })
     });
     const data = await resp.json();
     if (data.id) processoIdBanco = data.id;
@@ -4074,7 +4076,7 @@ async function salvarEContabilizar() {
     const resp = await fetch('/api/salvar', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ arquivo_nome: nomeArq, campos })
+      body: JSON.stringify({ arquivo_nome: nomeArq, campos, token: sessaoToken })
     });
     const data = await resp.json();
     if (!data.id) throw new Error(data.error || 'Falha ao salvar');
