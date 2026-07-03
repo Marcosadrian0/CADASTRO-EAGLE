@@ -1325,19 +1325,20 @@ function salvarOpcaoCustom(campo) {
   const inp = document.getElementById(inputId);
   const sel = document.getElementById(selectId);
   if (!inp || !sel) return;
-  const valor = inp.value.trim();
+  const valor = inp.value.trim().toUpperCase();
   if (!valor) return;
 
-  // Salvar no localStorage
+  // Salvar no localStorage sem duplicatas (comparação case-insensitive)
   const chave = 'eagle_opcoes_' + campo;
   const lista = JSON.parse(localStorage.getItem(chave) || '[]');
-  if (!lista.includes(valor)) {
+  const listaUpper = lista.map(v => v.toUpperCase());
+  if (!listaUpper.includes(valor)) {
     lista.push(valor);
     localStorage.setItem(chave, JSON.stringify(lista));
   }
 
-  // Adicionar ao select como opção fixa (se ainda não existir)
-  const jaExiste = [...sel.options].some(o => o.value === valor && !o.getAttribute('data-custom'));
+  // Adicionar ao select (se ainda não existir nenhuma opção com mesmo texto)
+  const jaExiste = [...sel.options].some(o => o.value.toUpperCase() === valor);
   if (!jaExiste) {
     const novaOpt = document.createElement('option');
     novaOpt.value = valor;
@@ -1349,19 +1350,29 @@ function salvarOpcaoCustom(campo) {
 
   // Selecionar o valor recém-salvo
   sel.value = valor;
-  // Esconder input
   selectOutro(sel, inputId);
 }
 
 function carregarOpcoesCustom() {
   ['objeto_principal', 'causa_raiz'].forEach(campo => {
     const chave = 'eagle_opcoes_' + campo;
-    const lista = JSON.parse(localStorage.getItem(chave) || '[]');
+    let lista = JSON.parse(localStorage.getItem(chave) || '[]');
+
+    // Limpar duplicatas do localStorage (case-insensitive)
+    const vistos = new Set();
+    lista = lista.filter(v => {
+      const k = v.toUpperCase();
+      if (vistos.has(k)) return false;
+      vistos.add(k);
+      return true;
+    });
+    localStorage.setItem(chave, JSON.stringify(lista));
+
     const sel = document.getElementById('f_' + campo);
     if (!sel || !lista.length) return;
     const outroOpt = sel.querySelector('option[value="__outro__"]');
     lista.forEach(valor => {
-      const jaExiste = [...sel.options].some(o => o.value === valor);
+      const jaExiste = [...sel.options].some(o => o.value.toUpperCase() === valor.toUpperCase());
       if (!jaExiste) {
         const opt = document.createElement('option');
         opt.value = valor;
