@@ -5979,21 +5979,21 @@ async function dashRender(mkOverride) {
               acuraciaEvolucao.map(w => w.semana)
             )
           : '<p style="font-size:11px;color:var(--chumbo);text-align:center;padding:20px 0">Valide processos para ver a evolução</p>',
-        acuraciaEvolucao.length ? \`Última semana: \${acuraciaEvolucao[acuraciaEvolucao.length-1]?.pct ?? '--'}% de acerto\` : 'Sem dados ainda'
+        acuraciaEvolucao.length ? ('Última semana: ' + (acuraciaEvolucao[acuraciaEvolucao.length-1]?.pct ?? '--') + '% de acerto') : 'Sem dados ainda'
       )}
       ${dashCard('Campos com menor acurácia — 30 dias',
         acuraciaFields.length
-          ? \`<div style="display:flex;flex-direction:column;gap:5px">\${acuraciaFields.map(f => {
-              const label = CAMPO_LABELS[f.campo] || f.campo;
-              const cor = f.pct >= 80 ? '#16a34a' : f.pct >= 60 ? '#d97706' : '#dc2626';
-              return \`<div style="display:flex;align-items:center;gap:8px">
-                <span style="font-size:10px;color:var(--chumbo);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">\${label}</span>
-                <div style="width:80px;height:6px;background:var(--borda-l);border-radius:3px;flex-shrink:0">
-                  <div style="height:100%;width:\${f.pct}%;background:\${cor};border-radius:3px"></div>
-                </div>
-                <span style="font-size:10px;font-weight:700;color:\${cor};width:30px;text-align:right">\${f.pct}%</span>
-              </div>\`;
-            }).join('')}</div>\`
+          ? ('<div style="display:flex;flex-direction:column;gap:5px">' + acuraciaFields.map(function(f) {
+              var label = CAMPO_LABELS[f.campo] || f.campo;
+              var cor = f.pct >= 80 ? '#16a34a' : f.pct >= 60 ? '#d97706' : '#dc2626';
+              return '<div style="display:flex;align-items:center;gap:8px">'
+                + '<span style="font-size:10px;color:var(--chumbo);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + label + '</span>'
+                + '<div style="width:80px;height:6px;background:var(--borda-l);border-radius:3px;flex-shrink:0">'
+                + '<div style="height:100%;width:' + f.pct + '%;background:' + cor + ';border-radius:3px"></div>'
+                + '</div>'
+                + '<span style="font-size:10px;font-weight:700;color:' + cor + ';width:30px;text-align:right">' + f.pct + '%</span>'
+                + '</div>';
+            }).join('') + '</div>')
           : '<p style="font-size:11px;color:var(--chumbo);text-align:center;padding:20px 0">Sem validações nos últimos 30 dias</p>',
         'Ordenado do pior para o melhor'
       )}
