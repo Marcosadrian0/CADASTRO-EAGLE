@@ -2721,17 +2721,11 @@ function preencherFormulario(c) {
   // objeto_principal é agora um SELECT — usar set() para selecionar opção
   set('f_objeto_principal', c.objeto_principal || '');
   elObjeto.disabled = false;
-  if (c._verbin) {
-    elObjeto.disabled = true;
-    elObjeto.classList.add('locked');
-  }
+  elObjeto.classList.remove('locked');
   // causa_raiz é agora um SELECT — usar set() para selecionar opção
   set('f_causa_raiz', c.causa_raiz || '');
   elCausa.disabled = false;
-  if (c._verbin) {
-    elCausa.disabled = true;
-    elCausa.classList.add('locked');
-  }
+  elCausa.classList.remove('locked');
   // Pedido: campo de opções no sistema — sempre deixar em branco para preenchimento manual
   document.getElementById('f_pedido').value = '';
   // Desconto: select Sim/Não
