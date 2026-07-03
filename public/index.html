@@ -1677,6 +1677,24 @@ async function analisarPDF() {
   }
 }
 
+const _MESES = {
+  janeiro:1,fevereiro:2,março:3,marco:3,abril:4,maio:5,junho:6,
+  julho:7,agosto:8,setembro:9,outubro:10,novembro:11,dezembro:12
+};
+function normalizarData(str) {
+  if (!str) return str;
+  // Já está no formato DD/MM/AAAA
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(str)) return str;
+  // Formato "D de mês de AAAA" ou "DD de mês de AAAA"
+  const m = str.match(/(\d{1,2})\s+de\s+([a-záéíóú]+)\s+de\s+(\d{4})/i);
+  if (m) {
+    const dia = m[1].padStart(2, '0');
+    const mes = _MESES[m[2].toLowerCase()];
+    if (mes) return `${dia}/${String(mes).padStart(2,'0')}/${m[3]}`;
+  }
+  return str;
+}
+
 function extrairCampos(txt, seg) {
   // seg é opcional — gerado internamente se não fornecido (ex: chamada de fallback)
   if (!seg) seg = segmentarPeticao(txt);
@@ -1793,7 +1811,7 @@ function extrairCampos(txt, seg) {
   if (!mDt) mDt = blocoAssinatura.match(/[A-Za-záéíóúâêôãõç]{3,}(?:\/[A-Z]{2})?,\s*(\d{1,2}\s+de\s+[a-záéíóú]+\s+de\s+\d{4})/i);
   if (!mDt) mDt = blocoAssinatura.match(/\b(\d{2}\/\d{2}\/20(2[0-9]|3[0-9]))\b/);
 
-  if (mDt) campos.data_ajuizamento = mDt[1].trim();
+  if (mDt) campos.data_ajuizamento = normalizarData(mDt[1].trim());
 
   // ── DATA DE AUDIÊNCIA ─────────────────────────────────────────────────────
   // Buscar "audiência" (ou variações) seguida ou precedida de data DD/MM/AAAA
