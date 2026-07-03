@@ -444,6 +444,12 @@ textarea{resize:vertical;min-height:52px}
         <button onclick="mudarAba('usuarios');fecharUserMenu()" id="menuBtnUsuarios" style="width:100%;padding:10px 14px;border:none;background:none;text-align:left;font-size:12px;color:#1a2421;cursor:pointer;font-family:inherit;display:none" onmouseover="this.style.background='var(--off)'" onmouseout="this.style.background='none'">
           Gerenciar usuários
         </button>
+        <button onclick="baixarCodigoFonte();fecharUserMenu()" id="menuBtnCodigo" style="width:100%;padding:10px 14px;border:none;background:none;text-align:left;font-size:12px;color:#1a2421;cursor:pointer;font-family:inherit;display:none" onmouseover="this.style.background='var(--off)'" onmouseout="this.style.background='none'">
+          Baixar código-fonte (.html)
+        </button>
+        <button onclick="baixarBackupJSON();fecharUserMenu()" id="menuBtnBackup" style="width:100%;padding:10px 14px;border:none;background:none;text-align:left;font-size:12px;color:#1a2421;cursor:pointer;font-family:inherit;display:none" onmouseover="this.style.background='var(--off)'" onmouseout="this.style.background='none'">
+          Backup de dados (.json)
+        </button>
         <button onclick="fazerLogout()" style="width:100%;padding:10px 14px;border:none;background:none;text-align:left;font-size:12px;color:var(--err);cursor:pointer;font-family:inherit;border-top:1px solid var(--borda-l)" onmouseover="this.style.background='var(--err-bg)'" onmouseout="this.style.background='none'">
           Sair da conta
         </button>
@@ -3754,7 +3760,11 @@ function aplicarSessao(user) {
   document.getElementById('tab-faturamento').style.display = abas.includes('faturamento') ? '' : 'none';
   document.getElementById('tab-dashboard').style.display = abas.includes('dashboard') ? '' : 'none';
   // tab-usuarios sempre oculto — acesso via dropdown do usuário
-  if (abas.includes('usuarios')) document.getElementById('menuBtnUsuarios').style.display = 'block';
+  if (abas.includes('usuarios')) {
+    document.getElementById('menuBtnUsuarios').style.display = 'block';
+    document.getElementById('menuBtnCodigo').style.display = 'block';
+    document.getElementById('menuBtnBackup').style.display = 'block';
+  }
 }
 
 function toggleUserMenu() {
