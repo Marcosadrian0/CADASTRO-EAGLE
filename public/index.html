@@ -453,6 +453,7 @@ textarea{resize:vertical;min-height:52px}
   <button class="tab-btn" id="tab-acuracia" onclick="mudarAba('acuracia')" style="display:none">Acurácia por Campo</button>
   <button class="tab-btn" id="tab-usuarios" onclick="mudarAba('usuarios')" style="display:none">Usuários</button>
   <button class="tab-btn" id="tab-faturamento" onclick="mudarAba('faturamento')" style="display:none">Faturamento</button>
+  <button class="tab-btn" id="tab-dashboard" onclick="mudarAba('dashboard')" style="display:none">Dashboard</button>
 </div>
 
 <!-- ABA ACURÁCIA -->
@@ -538,6 +539,7 @@ textarea{resize:vertical;min-height:52px}
             <label style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:300;text-transform:none;letter-spacing:0;cursor:pointer"><input type="checkbox" id="abaAnalise" value="analise" checked> Análise de Petição</label>
             <label style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:300;text-transform:none;letter-spacing:0;cursor:pointer"><input type="checkbox" id="abaAcuracia" value="acuracia"> Acurácia por Campo</label>
             <label style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:300;text-transform:none;letter-spacing:0;cursor:pointer"><input type="checkbox" id="abaFaturamento" value="faturamento"> Faturamento</label>
+            <label style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:300;text-transform:none;letter-spacing:0;cursor:pointer"><input type="checkbox" id="abaDashboard" value="dashboard"> Dashboard</label>
             <label style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:300;text-transform:none;letter-spacing:0;cursor:pointer"><input type="checkbox" id="abaUsuarios" value="usuarios"> Usuários</label>
           </div>
         </div>
@@ -605,13 +607,19 @@ textarea{resize:vertical;min-height:52px}
       <div class="fat-card-sub">Volumes calculados automaticamente. Edite os valores unitários conforme necessário.</div>
       <table class="fat-table">
         <thead>
-          <tr><th>Código</th><th>Item de Serviço</th><th>Volume</th><th>Valor Unit. (R$)</th><th>Total (R$)</th></tr>
+          <tr><th>Código</th><th>Item de Serviço</th><th>Volume Auto</th><th>Volume Cobrado</th><th>Valor Unit. (R$)</th><th>Faturamento Real</th><th>Total Gerado (R$)</th></tr>
         </thead>
         <tbody id="fatEspelhoBody"></tbody>
         <tfoot>
           <tr>
-            <td colspan="4" style="text-align:right;font-weight:600;color:var(--chumbo)">Total</td>
-            <td id="fatEspelhoTotal" style="font-weight:700;color:var(--verde)"></td>
+            <td colspan="4" style="text-align:right;font-weight:600;color:var(--chumbo)">Faturamento Real (cobrado)</td>
+            <td id="fatEspelhoReal" style="font-weight:700;color:var(--verde)"></td>
+            <td></td>
+          </tr>
+          <tr>
+            <td colspan="4" style="text-align:right;font-weight:600;color:var(--chumbo)">Total Gerado (volume auto)</td>
+            <td></td>
+            <td id="fatEspelhoTotal" style="font-weight:700;color:var(--chumbo)"></td>
           </tr>
         </tfoot>
       </table>
@@ -782,6 +790,15 @@ textarea{resize:vertical;min-height:52px}
     </div>
     <div id="fatManualMsg" style="font-size:11px;color:var(--err);margin-top:8px;min-height:16px"></div>
   </div>
+</div>
+
+<!-- ABA DASHBOARD -->
+<div class="tab-panel" id="panel-dashboard">
+<div class="wrap" style="max-width:1100px">
+  <div id="dashContent">
+    <p style="font-size:12px;color:var(--chumbo);text-align:center;padding:40px 0">Carregando dashboard...</p>
+  </div>
+</div>
 </div>
 
 <!-- ABA ANÁLISE -->
@@ -3612,6 +3629,7 @@ function aplicarSessao(user) {
   const abas = user.abas || [];
   document.getElementById('tab-acuracia').style.display = abas.includes('acuracia') ? '' : 'none';
   document.getElementById('tab-faturamento').style.display = abas.includes('faturamento') ? '' : 'none';
+  document.getElementById('tab-dashboard').style.display = abas.includes('dashboard') ? '' : 'none';
   // tab-usuarios sempre oculto — acesso via dropdown do usuário
   if (abas.includes('usuarios')) document.getElementById('menuBtnUsuarios').style.display = 'block';
 }
@@ -3680,6 +3698,7 @@ function mudarAba(aba) {
   if (aba === 'acuracia') carregarAcuracia();
   if (aba === 'usuarios') carregarUsuarios();
   if (aba === 'faturamento') fatInit();
+  if (aba === 'dashboard') dashRender();
 }
 
 // ── ABA ACURÁCIA ──────────────────────────────────────────────────────────────
@@ -4504,36 +4523,57 @@ function fatVolumeCadastroMes() {
   }).length;
 }
 
+function fatLoadVolumeCobrado(mk) {
+  try { return JSON.parse(fatStorage.get('vol-cobrado:' + mk).value); } catch { return {}; }
+}
+function fatSaveVolumeCobrado(mk, v) { fatStorage.set('vol-cobrado:' + mk, JSON.stringify(v)); }
+
 function fatRenderEspelho() {
   fatPrecosAtuais = fatLoadPrecos();
   fatVolumesManuaisAtuais = fatLoadVolumesManuais(fatMonthKey);
+  const volCobrado = fatLoadVolumeCobrado(fatMonthKey);
   const tbody = document.getElementById('fatEspelhoBody');
-  let totalGeral = 0;
+  let totalGerado = 0, totalReal = 0;
   tbody.innerHTML = FAT_ESPELHO_ITENS.map(item => {
     let volume, badge = '';
     if (item.regra === 'auto_captura') { volume = fatVolumeCapturaTotal(); badge = '<span class="fat-badge-ok">auto</span>'; }
     else if (item.regra === 'auto_cadastro_total') { volume = fatVolumeCadastroMes(); badge = '<span class="fat-badge-ok">auto</span>'; }
     else { volume = fatVolumesManuaisAtuais[item.codigo] || 0; badge = '<span class="fat-badge-warn">manual</span>'; }
     const preco = fatPrecosAtuais[item.codigo] !== undefined ? fatPrecosAtuais[item.codigo] : item.precoDefault;
-    const total = volume * preco;
-    totalGeral += total;
-    const volCell = item.regra === 'manual'
+    const cobrado = volCobrado[item.codigo] !== undefined ? volCobrado[item.codigo] : volume;
+    const totalItem = volume * preco;
+    const realItem = cobrado * preco;
+    totalGerado += totalItem;
+    totalReal += realItem;
+    const volAutoCell = item.regra === 'manual'
       ? `<input type="number" min="0" data-fat-vol="${item.codigo}" value="${volume}">`
       : `<strong>${volume.toLocaleString('pt-BR')}</strong>`;
+    const diffClass = cobrado < volume ? 'color:var(--err)' : cobrado > volume ? 'color:var(--vok)' : '';
     return `<tr>
       <td style="font-family:monospace;font-size:11px">${item.codigo}</td>
       <td>${item.nome} ${badge}</td>
-      <td>${volCell}</td>
+      <td>${volAutoCell}</td>
+      <td><input type="number" min="0" data-fat-cobrado="${item.codigo}" value="${cobrado}" style="${diffClass}"></td>
       <td><input type="number" min="0" step="0.01" data-fat-preco="${item.codigo}" value="${preco}"></td>
-      <td style="font-weight:600">${total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+      <td style="font-weight:600;${diffClass}">R$ ${realItem.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+      <td style="font-weight:600;color:var(--chumbo)">R$ ${totalItem.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
     </tr>`;
   }).join('');
-  document.getElementById('fatEspelhoTotal').textContent = 'R$ ' + totalGeral.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+  document.getElementById('fatEspelhoTotal').textContent = 'R$ ' + totalGerado.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+  document.getElementById('fatEspelhoReal').textContent = 'R$ ' + totalReal.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
 
   tbody.querySelectorAll('[data-fat-vol]').forEach(inp => {
     inp.addEventListener('change', () => {
       fatVolumesManuaisAtuais[inp.dataset.fatVol] = parseFloat(inp.value) || 0;
       fatSaveVolumesManuais(fatMonthKey, fatVolumesManuaisAtuais);
+      fatRenderEspelho();
+    });
+  });
+  tbody.querySelectorAll('[data-fat-cobrado]').forEach(inp => {
+    inp.addEventListener('change', () => {
+      const vc = fatLoadVolumeCobrado(fatMonthKey);
+      vc[inp.dataset.fatCobrado] = parseFloat(inp.value) || 0;
+      fatSaveVolumeCobrado(fatMonthKey, vc);
       fatRenderEspelho();
     });
   });
@@ -5454,6 +5494,213 @@ async function processarLote(files) {
   document.getElementById('loteFootVara').innerHTML = `<span style="${estilo(contadores.vara_cartorio)}">${pct(contadores.vara_cartorio)}</span>`;
   document.getElementById('loteFootAdv').innerHTML = `<span style="${estilo(contadores.advogado_nome)}">${pct(contadores.advogado_nome)}</span>`;
   rodape.style.display = '';
+}
+
+// ── ABA DASHBOARD ────────────────────────────────────────────────────────────
+
+function dashFmt(n) { return (n || 0).toLocaleString('pt-BR'); }
+function dashBRL(n) { return 'R$ ' + (n || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 }); }
+
+function dashBar(pct, color) {
+  return `<div style="background:var(--borda-l);border-radius:4px;height:8px;overflow:hidden;flex:1">
+    <div style="width:${Math.min(pct,100)}%;height:100%;background:${color};border-radius:4px;transition:width .4s"></div>
+  </div>`;
+}
+
+function dashSvgBar(data, color) {
+  // data: [{label, value}] — SVG bar chart inline, no lib required
+  if (!data.length) return '<p style="font-size:11px;color:var(--chumbo);text-align:center;padding:16px 0">Sem dados</p>';
+  const max = Math.max(...data.map(d => d.value), 1);
+  const W = 340, H = 140, pad = 36, barW = Math.min(32, Math.floor((W - pad * 2) / data.length - 6));
+  const gap = (W - pad * 2 - barW * data.length) / Math.max(data.length - 1, 1);
+  let bars = '', labels = '', vals = '';
+  data.forEach((d, i) => {
+    const x = pad + i * (barW + gap);
+    const bh = Math.max(2, Math.round((d.value / max) * (H - 36)));
+    const y = H - 20 - bh;
+    bars += `<rect x="${x}" y="${y}" width="${barW}" height="${bh}" rx="3" fill="${color}" opacity=".85"/>`;
+    labels += `<text x="${x + barW / 2}" y="${H - 4}" text-anchor="middle" font-size="9" fill="var(--chumbo)">${d.label}</text>`;
+    vals += `<text x="${x + barW / 2}" y="${y - 3}" text-anchor="middle" font-size="9" fill="${color}" font-weight="600">${dashFmt(d.value)}</text>`;
+  });
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px">${bars}${labels}${vals}</svg>`;
+}
+
+function dashDonut(slices, size) {
+  // slices: [{label, value, color}]
+  const total = slices.reduce((s, d) => s + d.value, 0);
+  if (!total) return '<p style="font-size:11px;color:var(--chumbo);text-align:center;padding:16px 0">Sem dados</p>';
+  const R = size / 2, r = R * 0.58, cx = R, cy = R;
+  let paths = '', angle = -Math.PI / 2;
+  slices.forEach(s => {
+    const a = (s.value / total) * Math.PI * 2;
+    const x1 = cx + R * Math.cos(angle), y1 = cy + R * Math.sin(angle);
+    const x2 = cx + R * Math.cos(angle + a), y2 = cy + R * Math.sin(angle + a);
+    const x3 = cx + r * Math.cos(angle + a), y3 = cy + r * Math.sin(angle + a);
+    const x4 = cx + r * Math.cos(angle), y4 = cy + r * Math.sin(angle);
+    const lg = a > Math.PI ? 1 : 0;
+    paths += `<path d="M${x1},${y1} A${R},${R} 0 ${lg} 1 ${x2},${y2} L${x3},${y3} A${r},${r} 0 ${lg} 0 ${x4},${y4} Z" fill="${s.color}" opacity=".9"/>`;
+    angle += a;
+  });
+  const legend = slices.map(s => `<div style="display:flex;align-items:center;gap:5px;font-size:10px;color:var(--chumbo)">
+    <div style="width:8px;height:8px;border-radius:2px;background:${s.color};flex-shrink:0"></div>
+    <span>${s.label}</span><span style="font-weight:600;margin-left:auto;padding-left:8px">${Math.round(s.value / total * 100)}%</span>
+  </div>`).join('');
+  return `<div style="display:flex;align-items:center;gap:16px">
+    <svg viewBox="0 0 ${size} ${size}" style="width:${size}px;height:${size}px;flex-shrink:0">${paths}</svg>
+    <div style="flex:1;display:flex;flex-direction:column;gap:5px">${legend}</div>
+  </div>`;
+}
+
+function dashCard(title, content, subtitle) {
+  return `<div class="fat-card" style="padding:16px 18px">
+    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--chumbo);margin-bottom:${subtitle?'2px':'10px'}">${title}</div>
+    ${subtitle ? `<div style="font-size:10px;color:var(--chumbo);margin-bottom:10px">${subtitle}</div>` : ''}
+    ${content}
+  </div>`;
+}
+
+function dashKpi(label, value, sub, color) {
+  return `<div class="fat-card" style="padding:16px 18px;text-align:center">
+    <div style="font-size:22px;font-weight:700;color:${color || 'var(--verde)'};line-height:1">${value}</div>
+    <div style="font-size:11px;font-weight:600;color:var(--chumbo);margin-top:4px">${label}</div>
+    ${sub ? `<div style="font-size:10px;color:var(--chumbo);margin-top:2px">${sub}</div>` : ''}
+  </div>`;
+}
+
+async function dashRender() {
+  const el = document.getElementById('dashContent');
+  if (!el) return;
+
+  // Garantir dados carregados
+  if (!fatInitialized) { el.innerHTML = '<p style="font-size:12px;color:var(--chumbo);text-align:center;padding:40px 0">Vá até Faturamento e carregue os dados do mês primeiro.</p>'; return; }
+
+  const { mm, yyyy } = fatMonthLabel(fatMonthKey);
+  const mesLabel = `${mm}/${yyyy}`;
+  const sufixo = `/${mm}/${yyyy}`;
+
+  const consolidado = fatCadastroConsolidado || { rows: [], manuaisRows: [], outrosRows: [] };
+  const todasRows = [...(consolidado.rows || []), ...(consolidado.manuaisRows || [])];
+
+  // Filtrar mês atual
+  const rowsMes = todasRows.filter(r => (r.dataCadastro || '').trim().endsWith(sufixo));
+  const capturados = fatVolumeCapturaTotal();
+  const cadastradosMes = rowsMes.length;
+  const semCadastro = Math.max(0, capturados - cadastradosMes);
+
+  // Faturamento
+  fatPrecosAtuais = fatLoadPrecos();
+  const volCobrado = fatLoadVolumeCobrado(fatMonthKey);
+  let fatReal = 0, fatGerado = 0;
+  FAT_ESPELHO_ITENS.forEach(item => {
+    let vol = 0;
+    if (item.regra === 'auto_captura') vol = capturados;
+    else if (item.regra === 'auto_cadastro_total') vol = cadastradosMes;
+    const preco = fatPrecosAtuais[item.codigo] !== undefined ? fatPrecosAtuais[item.codigo] : item.precoDefault;
+    const cobrado = volCobrado[item.codigo] !== undefined ? volCobrado[item.codigo] : vol;
+    fatReal += cobrado * preco;
+    fatGerado += vol * preco;
+  });
+
+  // Cadastrantes
+  const porCadastrante = {};
+  rowsMes.forEach(r => { const c = r.cadastrante || 'N/D'; porCadastrante[c] = (porCadastrante[c] || 0) + 1; });
+  const rankCad = Object.entries(porCadastrante).sort((a, b) => b[1] - a[1]).slice(0, 6);
+
+  // Evolução diária (últimos 30 dias do mês)
+  const porDia = {};
+  rowsMes.forEach(r => { const d = (r.dataCadastro || '').substring(0, 5); porDia[d] = (porDia[d] || 0) + 1; });
+  const diasOrdenados = Object.keys(porDia).sort();
+  const barDias = diasOrdenados.slice(-12).map(d => ({ label: d.substring(0, 5), value: porDia[d] }));
+
+  // Captura vs Cadastro vs Sem cadastro
+  const donutSlices = [
+    { label: 'Cadastrados SBK', value: cadastradosMes, color: 'var(--verde)' },
+    { label: 'Sem cadastro', value: semCadastro, color: '#f0aa00' },
+    { label: 'Outros', value: (consolidado.outrosRows || []).length, color: '#8e8e8e' }
+  ].filter(s => s.value > 0);
+
+  // Acumulado histórico por mês (últimos 6 meses do consolidado)
+  const porMesHist = {};
+  todasRows.forEach(r => {
+    const d = (r.dataCadastro || '').trim();
+    if (d.length === 10) { const mk = d.substring(3, 10); porMesHist[mk] = (porMesHist[mk] || 0) + 1; }
+  });
+  const mesesHist = Object.keys(porMesHist).sort().slice(-6).map(k => ({ label: k, value: porMesHist[k] }));
+
+  const VERDE = 'var(--verde)';
+  const AZUL = '#2e7fc2';
+
+  el.innerHTML = `
+    <div style="margin-bottom:18px">
+      <div style="font-size:14px;font-weight:700;color:var(--verde)">Dashboard — ${mesLabel}</div>
+      <div style="font-size:11px;color:var(--chumbo);margin-top:2px">Visão consolidada do mês selecionado no Faturamento</div>
+    </div>
+
+    <!-- KPIs -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px">
+      ${dashKpi('Processos Capturados', dashFmt(capturados), 'Captura + DJE', AZUL)}
+      ${dashKpi('Cadastrados no Mês', dashFmt(cadastradosMes), 'Base iiLex SBK', VERDE)}
+      ${dashKpi('Sem Cadastro', dashFmt(semCadastro), 'Capturados sem cadastro', semCadastro > 0 ? '#f0aa00' : VERDE)}
+      ${dashKpi('Faturamento Real', dashBRL(fatReal), 'Volume cobrado × preço', VERDE)}
+      ${dashKpi('Faturamento Gerado', dashBRL(fatGerado), 'Volume automático × preço', 'var(--chumbo)')}
+    </div>
+
+    <!-- Gráficos linha 1 -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+      ${dashCard('Cadastros por dia — ' + mesLabel, dashSvgBar(barDias, VERDE), barDias.length ? null : 'Sem dados diários')}
+      ${dashCard('Distribuição de processos', dashDonut(donutSlices, 100), 'Cadastrados SBK vs Sem cadastro vs Outros')}
+    </div>
+
+    <!-- Gráficos linha 2 -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+      ${dashCard('Evolução mensal — histórico', dashSvgBar(mesesHist, AZUL), 'Cadastros SBK acumulados por mês')}
+      ${dashCard('Ranking de cadastrantes — ' + mesLabel, rankCad.length
+        ? rankCad.map(([nome, qtd]) => {
+            const pct = Math.round(qtd / Math.max(cadastradosMes, 1) * 100);
+            return `<div style="margin-bottom:8px">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
+                <span style="font-size:11px;color:var(--chumbo);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${nome}</span>
+                <span style="font-size:11px;font-weight:600;color:${VERDE}">${dashFmt(qtd)}</span>
+                <span style="font-size:10px;color:var(--chumbo);width:30px;text-align:right">${pct}%</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:6px">${dashBar(pct, VERDE)}</div>
+            </div>`;
+          }).join('')
+        : '<p style="font-size:11px;color:var(--chumbo);text-align:center;padding:16px 0">Sem dados</p>'
+      )}
+    </div>
+
+    <!-- Linha 3: faturamento por item -->
+    ${dashCard('Faturamento por item de serviço — ' + mesLabel, (() => {
+      let rows = '';
+      FAT_ESPELHO_ITENS.forEach(item => {
+        let vol = 0;
+        if (item.regra === 'auto_captura') vol = capturados;
+        else if (item.regra === 'auto_cadastro_total') vol = cadastradosMes;
+        const preco = fatPrecosAtuais[item.codigo] !== undefined ? fatPrecosAtuais[item.codigo] : item.precoDefault;
+        const cobrado = volCobrado[item.codigo] !== undefined ? volCobrado[item.codigo] : vol;
+        rows += `<tr>
+          <td style="font-family:monospace;font-size:10px;color:var(--chumbo)">${item.codigo}</td>
+          <td style="font-size:11px">${item.nome}</td>
+          <td style="text-align:right;font-size:11px">${dashFmt(vol)}</td>
+          <td style="text-align:right;font-size:11px;font-weight:600;color:${VERDE}">${dashFmt(cobrado)}</td>
+          <td style="text-align:right;font-size:11px">${dashBRL(preco)}</td>
+          <td style="text-align:right;font-size:11px;font-weight:700;color:${VERDE}">${dashBRL(cobrado * preco)}</td>
+        </tr>`;
+      });
+      return `<table style="width:100%;border-collapse:collapse;font-size:11px">
+        <thead><tr style="border-bottom:1px solid var(--borda-l)">
+          <th style="text-align:left;padding:4px 6px;font-size:10px;color:var(--chumbo)">Código</th>
+          <th style="text-align:left;padding:4px 6px;font-size:10px;color:var(--chumbo)">Item</th>
+          <th style="text-align:right;padding:4px 6px;font-size:10px;color:var(--chumbo)">Vol. Auto</th>
+          <th style="text-align:right;padding:4px 6px;font-size:10px;color:var(--chumbo)">Vol. Cobrado</th>
+          <th style="text-align:right;padding:4px 6px;font-size:10px;color:var(--chumbo)">Preço Unit.</th>
+          <th style="text-align:right;padding:4px 6px;font-size:10px;color:var(--chumbo)">Fat. Real</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+    })())}
+  `;
 }
 </script>
 </body>
