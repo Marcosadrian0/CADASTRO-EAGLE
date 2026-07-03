@@ -794,7 +794,7 @@ textarea{resize:vertical;min-height:52px}
 
 <!-- ABA DASHBOARD -->
 <div class="tab-panel" id="panel-dashboard">
-<div class="wrap" style="max-width:1100px">
+<div style="padding:24px 32px;max-width:1200px;margin:0 auto;box-sizing:border-box">
   <div id="dashContent">
     <p style="font-size:12px;color:var(--chumbo);text-align:center;padding:40px 0">Carregando dashboard...</p>
   </div>
@@ -5633,13 +5633,15 @@ async function dashRender() {
   const AZUL = '#2e7fc2';
 
   el.innerHTML = `
-    <div style="margin-bottom:18px">
-      <div style="font-size:14px;font-weight:700;color:var(--verde)">Dashboard — ${mesLabel}</div>
-      <div style="font-size:11px;color:var(--chumbo);margin-top:2px">Visão consolidada do mês selecionado no Faturamento</div>
+    <div style="margin-bottom:20px;display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:8px">
+      <div>
+        <div style="font-size:16px;font-weight:700;color:var(--verde)">Dashboard — ${mesLabel}</div>
+        <div style="font-size:11px;color:var(--chumbo);margin-top:2px">Visão consolidada do mês selecionado no Faturamento</div>
+      </div>
     </div>
 
-    <!-- KPIs -->
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px">
+    <!-- KPIs — 5 cards lado a lado -->
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px">
       ${dashKpi('Processos Capturados', dashFmt(capturados), 'Captura + DJE', AZUL)}
       ${dashKpi('Cadastrados no Mês', dashFmt(cadastradosMes), 'Base iiLex SBK', VERDE)}
       ${dashKpi('Sem Cadastro', dashFmt(semCadastro), 'Capturados sem cadastro', semCadastro > 0 ? '#f0aa00' : VERDE)}
@@ -5647,15 +5649,10 @@ async function dashRender() {
       ${dashKpi('Faturamento Gerado', dashBRL(fatGerado), 'Volume automático × preço', 'var(--chumbo)')}
     </div>
 
-    <!-- Gráficos linha 1 -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+    <!-- Gráficos linha 1 — 3 colunas: dias (maior) + donut + ranking -->
+    <div style="display:grid;grid-template-columns:1.6fr 1fr 1fr;gap:14px;margin-bottom:14px">
       ${dashCard('Cadastros por dia — ' + mesLabel, dashSvgBar(barDias, VERDE), barDias.length ? null : 'Sem dados diários')}
-      ${dashCard('Distribuição de processos', dashDonut(donutSlices, 100), 'Cadastrados SBK vs Sem cadastro vs Outros')}
-    </div>
-
-    <!-- Gráficos linha 2 -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
-      ${dashCard('Evolução mensal — histórico', dashSvgBar(mesesHist, AZUL), 'Cadastros SBK acumulados por mês')}
+      ${dashCard('Distribuição de processos', dashDonut(donutSlices, 110), 'Cadastrados SBK vs Sem cadastro vs Outros')}
       ${dashCard('Ranking de cadastrantes — ' + mesLabel, rankCad.length
         ? rankCad.map(([nome, qtd]) => {
             const pct = Math.round(qtd / Math.max(cadastradosMes, 1) * 100);
@@ -5672,7 +5669,10 @@ async function dashRender() {
       )}
     </div>
 
-    <!-- Linha 3: faturamento por item -->
+    <!-- Linha 2 — evolução mensal + faturamento por item -->
+    <div style="display:grid;grid-template-columns:1fr 1.4fr;gap:14px;margin-bottom:14px">
+      ${dashCard('Evolução mensal — histórico', dashSvgBar(mesesHist, AZUL), 'Cadastros SBK acumulados por mês')}
+    <!-- Faturamento por item -->
     ${dashCard('Faturamento por item de serviço — ' + mesLabel, (() => {
       let rows = '';
       FAT_ESPELHO_ITENS.forEach(item => {
@@ -5702,6 +5702,7 @@ async function dashRender() {
         <tbody>${rows}</tbody>
       </table>`;
     })())}
+    </div>
   `;
 }
 </script>
