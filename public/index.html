@@ -1130,7 +1130,10 @@ textarea{resize:vertical;min-height:52px}
               <option>SEGURO PRESTAMISTA</option>
               <option value="__outro__">Outro (digitar)...</option>
             </select>
-          <input type="text" id="f_objeto_principal_outro" placeholder="Digite o objeto principal" style="display:none;margin-top:5px" oninput="sincronizarOutro(this,'f_objeto_principal')">
+          <div id="f_objeto_principal_outro_wrap" style="display:none;margin-top:5px;display:none;gap:5px">
+            <input type="text" id="f_objeto_principal_outro" placeholder="Digite o objeto principal" style="flex:1" oninput="sincronizarOutro(this,'f_objeto_principal')">
+            <button type="button" onclick="salvarOpcaoCustom('objeto_principal')" style="padding:6px 10px;background:var(--verde);color:#fff;border:none;border-radius:var(--r);font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;font-family:inherit">+ Salvar na lista</button>
+          </div>
         </div>
         <div class="fg">
           <label>Causa raiz</label>
@@ -1149,7 +1152,10 @@ textarea{resize:vertical;min-height:52px}
               <option>Seguro prestamista</option>
               <option value="__outro__">Outro (digitar)...</option>
             </select>
-          <input type="text" id="f_causa_raiz_outro" placeholder="Digite a causa raiz" style="display:none;margin-top:5px" oninput="sincronizarOutro(this,'f_causa_raiz')">
+          <div id="f_causa_raiz_outro_wrap" style="display:none;margin-top:5px;display:none;gap:5px">
+            <input type="text" id="f_causa_raiz_outro" placeholder="Digite a causa raiz" style="flex:1" oninput="sincronizarOutro(this,'f_causa_raiz')">
+            <button type="button" onclick="salvarOpcaoCustom('causa_raiz')" style="padding:6px 10px;background:var(--verde);color:#fff;border:none;border-radius:var(--r);font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;font-family:inherit">+ Salvar na lista</button>
+          </div>
         </div>
       </div>
 
@@ -1302,15 +1308,69 @@ function insumoOnDrop(event) {
 // ── SELECTS COM OPÇÃO "OUTRO" ─────────────────────────────────────────────────
 function selectOutro(sel, inputId) {
   const inp = document.getElementById(inputId);
-  if (!inp) return;
-  if (sel.value === '__outro__') {
-    inp.style.display = 'block';
-    inp.focus();
-    // Mantém o select visualmente selecionado em "Outro"
-  } else {
-    inp.style.display = 'none';
-    inp.value = '';
+  const wrap = document.getElementById(inputId + '_wrap');
+  const mostrar = sel.value === '__outro__';
+  if (wrap) {
+    wrap.style.display = mostrar ? 'flex' : 'none';
+  } else if (inp) {
+    inp.style.display = mostrar ? 'block' : 'none';
   }
+  if (mostrar && inp) inp.focus();
+  if (!mostrar && inp) inp.value = '';
+}
+
+function salvarOpcaoCustom(campo) {
+  const inputId = 'f_' + campo + '_outro';
+  const selectId = 'f_' + campo;
+  const inp = document.getElementById(inputId);
+  const sel = document.getElementById(selectId);
+  if (!inp || !sel) return;
+  const valor = inp.value.trim();
+  if (!valor) return;
+
+  // Salvar no localStorage
+  const chave = 'eagle_opcoes_' + campo;
+  const lista = JSON.parse(localStorage.getItem(chave) || '[]');
+  if (!lista.includes(valor)) {
+    lista.push(valor);
+    localStorage.setItem(chave, JSON.stringify(lista));
+  }
+
+  // Adicionar ao select como opção fixa (se ainda não existir)
+  const jaExiste = [...sel.options].some(o => o.value === valor && !o.getAttribute('data-custom'));
+  if (!jaExiste) {
+    const novaOpt = document.createElement('option');
+    novaOpt.value = valor;
+    novaOpt.textContent = valor;
+    novaOpt.setAttribute('data-saved', '1');
+    const outroOpt = sel.querySelector('option[value="__outro__"]');
+    sel.insertBefore(novaOpt, outroOpt);
+  }
+
+  // Selecionar o valor recém-salvo
+  sel.value = valor;
+  // Esconder input
+  selectOutro(sel, inputId);
+}
+
+function carregarOpcoesCustom() {
+  ['objeto_principal', 'causa_raiz'].forEach(campo => {
+    const chave = 'eagle_opcoes_' + campo;
+    const lista = JSON.parse(localStorage.getItem(chave) || '[]');
+    const sel = document.getElementById('f_' + campo);
+    if (!sel || !lista.length) return;
+    const outroOpt = sel.querySelector('option[value="__outro__"]');
+    lista.forEach(valor => {
+      const jaExiste = [...sel.options].some(o => o.value === valor);
+      if (!jaExiste) {
+        const opt = document.createElement('option');
+        opt.value = valor;
+        opt.textContent = valor;
+        opt.setAttribute('data-saved', '1');
+        sel.insertBefore(opt, outroOpt);
+      }
+    });
+  });
 }
 
 // Quando o usuário digita no input livre, injeta o valor como opção temporária no select
@@ -3720,6 +3780,7 @@ function limparTodosPadroes() {
 // Inicializar ao carregar
 document.addEventListener('DOMContentLoaded', () => {
   renderizarPadroesAprendidos();
+  carregarOpcoesCustom();
 });
 
 // ── LOGIN / SESSÃO / ABAS ─────────────────────────────────────────────────────
