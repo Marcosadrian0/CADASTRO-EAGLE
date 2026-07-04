@@ -35,6 +35,10 @@ async function initDB(sql) {
       data_validacao TIMESTAMPTZ DEFAULT NOW()
     )
   `;
+  await sql`
+    CREATE UNIQUE INDEX IF NOT EXISTS validacoes_processo_campo_idx
+    ON validacoes (processo_id, campo)
+  `;
 }
 
 export default async function handler(req, res) {
