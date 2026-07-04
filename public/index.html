@@ -174,6 +174,7 @@ input[type=text],select,textarea{
 }
 input:focus,select:focus,textarea:focus{border-color:var(--ciano);box-shadow:0 0 0 3px rgba(7,80,86,.07)}
 input.auto,select.auto,textarea.auto{border-color:var(--auto-b);background:var(--auto-bg)}
+input.auto,select.auto{border-left:3px solid var(--ciano) !important;}
 .conf-badge { transition: opacity .2s; }
 input.locked,select.locked,textarea.locked{border-color:var(--ciano);background:var(--auto-bg);font-weight:600;color:var(--ciano);cursor:default}
 input.field-ok,select.field-ok{border-color:var(--vok)!important;background:var(--vok-bg)}
@@ -1106,6 +1107,10 @@ textarea{resize:vertical;min-height:52px}
     </div>
   </div>
 
+  <div style="font-size:10px;color:var(--chumbo);margin-top:4px;padding-left:2px">
+    <span style="display:inline-block;width:10px;height:10px;border-left:3px solid var(--ciano);margin-right:4px;vertical-align:middle"></span>Bordas azuis = preenchido automaticamente pela IA
+  </div>
+
   <!-- ② CLASSIFICAÇÃO -->
   <div class="scard">
     <div class="scard-head">
@@ -1251,7 +1256,7 @@ textarea{resize:vertical;min-height:52px}
       Salvar processo
     </button>
   </div>
-  <div id="salvarStatusBar" style="display:none;padding:12px 16px;background:var(--vok-bg);border:1px solid var(--vok-b);border-radius:var(--r);margin-top:10px;font-size:12px;color:var(--vok);display:flex;align-items:center;gap:10px">
+  <div id="salvarStatusBar" style="display:none;padding:12px 16px;background:var(--vok-bg);border:1px solid var(--vok-b);border-radius:var(--r);margin-top:10px;font-size:12px;color:var(--vok)">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
     <span id="salvarStatusMsg"></span>
   </div>
@@ -1401,7 +1406,7 @@ function sincronizarOutro(inp, selectId) {
   opt.selected = true;
 }
 
-const CAMPOS_VALIDAVEIS = ['npu','uf','comarca','data_ajuizamento','data_citacao','valor_causa','vara_cartorio','numero_origem','tipo_justica','rito','fase_processual','tipo_documento','objeto_principal','causa_raiz','pedido','desconto_conta','autor_nome','autor_cpf','advogado_nome','advogado_oab','advogado_uf'];
+const CAMPOS_VALIDAVEIS = ['npu','uf','comarca','data_ajuizamento','data_citacao','valor_causa','vara_cartorio','numero_origem','tipo_justica','rito','fase_processual','tipo_documento','objeto_principal','causa_raiz','desconto_conta','autor_nome','autor_cpf','advogado_nome','advogado_oab','advogado_uf'];
 let statusCampos = {};
 let valoresIA = {}; // snapshot dos valores preenchidos pela IA
 CAMPOS_VALIDAVEIS.forEach(k => statusCampos[k] = 'pending');
@@ -1664,9 +1669,6 @@ async function analisarPDF() {
     mostrarAlerta('ok', 'Campos preenchidos automaticamente. Revise e ajuste se necessário.');
     const npuVal = document.getElementById('f_npu').value;
     if (npuVal) tentarConsultaPublica(npuVal);
-    // Salvar no banco em background
-    const nomeArq = document.getElementById('fileName')?.textContent || '';
-    salvarProcessoBanco(nomeArq);
 
   } catch(err) {
     document.getElementById('btnAnalisar').disabled = false;
@@ -1812,6 +1814,19 @@ function extrairCampos(txt, seg) {
   if (!mDt) mDt = blocoAssinatura.match(/\b(\d{2}\/\d{2}\/20(2[0-9]|3[0-9]))\b/);
 
   if (mDt) campos.data_ajuizamento = normalizarData(mDt[1].trim());
+
+  // ── DATA DE CITAÇÃO ───────────────────────────────────────────────────────
+  const citPatterns = [
+    /cita[çc][aã]o[^.]{0,80}?(\d{2}\/\d{2}\/20\d{2})/i,
+    /(\d{2}\/\d{2}\/20\d{2})[^.]{0,60}?cita[çc][aã]o/i,
+    /citad[ao][^.]{0,80}?(\d{2}\/\d{2}\/20\d{2})/i,
+    /data\s+da\s+cita[çc][aã]o[:\s]+(\d{2}\/\d{2}\/20\d{2})/i,
+  ];
+  const txtCit = txt.replace(/\n/g, ' ');
+  for (const rx of citPatterns) {
+    const mc = txtCit.match(rx);
+    if (mc) { campos.data_citacao = mc[1].trim(); break; }
+  }
 
   // ── DATA DE AUDIÊNCIA ─────────────────────────────────────────────────────
   // Buscar "audiência" (ou variações) seguida ou precedida de data DD/MM/AAAA
@@ -2706,7 +2721,7 @@ function preencherFormulario(c) {
     if (elComarca) { elComarca.value = cidadeComarca; elComarca.classList.add('auto'); }
   }
   set('f_data_ajuizamento', c.data_ajuizamento);
-  set('f_data_citacao', c.data_citacao || c.data_ajuizamento);
+  set('f_data_citacao', c.data_citacao || '');
   set('f_data_audiencia', c.data_audiencia || '');
   set('f_valor_causa', c.valor_causa);
   set('f_vara_cartorio', c.vara_cartorio);
@@ -2822,11 +2837,14 @@ function _aplicarConfiancaUI(fields) {
   const map = {};
   fields.forEach(f => map[f.campo] = f.pct);
   const CAMPO_IDS = {
-    npu: 'f_npu', autor_nome: 'f_autor_nome', reu_nome: 'f_reu_nome',
+    npu: 'f_npu', autor_nome: 'f_autor_nome',
     advogado_nome: 'f_advogado_nome', advogado_oab: 'f_advogado_oab',
-    tribunal: 'f_tribunal', vara: 'f_vara', comarca: 'f_comarca',
-    assunto: 'f_assunto', classe: 'f_classe', valor_causa: 'f_valor_causa',
-    data_distribuicao: 'f_data_distribuicao'
+    comarca: 'f_comarca', valor_causa: 'f_valor_causa',
+    vara_cartorio: 'f_vara_cartorio', uf: 'f_uf',
+    data_ajuizamento: 'f_data_ajuizamento', data_citacao: 'f_data_citacao',
+    objeto_principal: 'f_objeto_principal', causa_raiz: 'f_causa_raiz',
+    tipo_justica: 'f_tipo_justica', rito: 'f_rito',
+    fase_processual: 'f_fase_processual', numero_origem: 'f_numero_origem'
   };
   Object.entries(CAMPO_IDS).forEach(([campo, elId]) => {
     const el = document.getElementById(elId);
@@ -2872,7 +2890,7 @@ function definirEscritorio(c) {
 function renderAlertas(lista) {
   const area = document.getElementById('alertasArea');
   area.innerHTML = lista.map(a => `
-    <div class="at ${a.tipo === 'ok' ? 'warn' : 'warn'}" style="${a.tipo === 'ok' ? 'background:var(--vok-bg);color:var(--vok);border:1px solid var(--vok-b)' : ''}">
+    <div class="at ${a.tipo === 'ok' ? 'ok' : 'warn'}" style="${a.tipo === 'ok' ? 'background:var(--vok-bg);color:var(--vok);border:1px solid var(--vok-b)' : ''}">
       <span class="at-ico">${a.tipo === 'warn' ? '⚠' : '✓'}</span>
       <span>${a.msg}</span>
     </div>
@@ -2889,6 +2907,7 @@ function mostrarAlerta(tipo, msg) {
 }
 
 function limparFormulario() {
+  if (!confirm('Tem certeza que deseja limpar todos os campos? Esta ação não pode ser desfeita.')) return;
   ['npu','comarca','data_ajuizamento','data_citacao','data_audiencia','valor_causa','vara_cartorio','numero_origem','rito','fase_processual','tipo_documento','objeto_principal','causa_raiz','pedido','desconto_conta','autor_nome','autor_cpf','advogado_nome','advogado_oab'].forEach(k => {
     const el = document.getElementById('f_' + k);
     if (el) { el.value = ''; el.className = el.tagName === 'SELECT' ? '' : ''; }
@@ -3206,8 +3225,12 @@ async function tentarConsultaPublica(npu) {
 
   // Mapear para URL do portal público
   const tribunalNome = {
-    '14': 'TJAL','27': 'TJTO','20': 'TJSP','19': 'TJRJ','17': 'TJMG',
-    '23': 'TJRS','21': 'TJPR','22': 'TJSC','16': 'TJBA'
+    '01': 'TJAC','02': 'TJAL','03': 'TJAM','04': 'TJAP','05': 'TJBA',
+    '06': 'TJCE','07': 'TJDF','08': 'TJES','09': 'TJGO','10': 'TJMA',
+    '11': 'TJMT','12': 'TJMS','13': 'TJMG','14': 'TJPA','15': 'TJPB',
+    '16': 'TJPR','17': 'TJPE','18': 'TJPI','19': 'TJRJ','20': 'TJRN',
+    '21': 'TJRS','22': 'TJRO','23': 'TJRR','24': 'TJSC','25': 'TJSE',
+    '26': 'TJSP','27': 'TJTO'
   };
 
   // Tentar API do DataJud (CNJ — dados abertos de processos judiciais)
@@ -3219,31 +3242,21 @@ async function tentarConsultaPublica(npu) {
   }
 
   const tribunalApi = tribunal.toLowerCase();
-  const url = `https://api-publica.datajud.cnj.jus.br/api_publica_${tribunalApi}/_search`;
-  const body = JSON.stringify({
-    query: { match: { numeroProcesso: npu.replace(/[^\d]/g,'') } },
-    size: 1
-  });
 
   try {
-    const resp = await fetch(url, {
+    const resp = await fetch('/api/datajud', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'ApiKey cDZHYzlZa0JadVREZDJCendFbGFDZzo2MDExMTcxMWIzYmFiOTBhMTVkNTg='
-      },
-      body
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ npu, tribunal: tribunalApi })
     });
-
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const data = await resp.json();
+    if (data.error) throw new Error(data.error);
     const hits = data?.hits?.hits;
-
     if (!hits || hits.length === 0) {
       mostrarResultadoConsulta('err', 'Processo não encontrado no DataJud. Pode estar em sigilo ou ainda não indexado.', null);
       return;
     }
-
     const proc = hits[0]._source;
     dadosConsulta = {
       classe: proc.classe?.nome || '',
@@ -3254,12 +3267,9 @@ async function tentarConsultaPublica(npu) {
       nivel: proc.nivelSigilo || 0,
       situacao: proc.movimentos?.[0]?.nome || '',
     };
-
     mostrarResultadoConsulta('ok', 'Processo encontrado no DataJud CNJ.', dadosConsulta);
-
   } catch(err) {
     mostrarResultadoConsulta('err', 'Não foi possível acessar o DataJud. Verifique manualmente no portal do tribunal.', null);
-    // Gerar link direto para o portal do tribunal
     const linkPortal = gerarLinkPortal(npu, tribunal);
     if (linkPortal) {
       document.getElementById('consultaResultado').innerHTML +=
@@ -3613,9 +3623,41 @@ const ROTULOS_CAMPO_APREND = {
   causa_raiz: 'Causa raiz',
 };
 
-// Banco de padrões aprendidos — persistido no localStorage
-let padroesAprendidos = JSON.parse(localStorage.getItem('eagle_padroes_v2') || '{}');
+// Banco de padrões aprendidos — persistido no banco via /api/padroes
+let padroesAprendidos = {};
 // Estrutura: { campo: [ { tipo, padrao, descricao, exemplos, contadorUso } ] }
+
+async function carregarPadroesAprendidos() {
+  if (!sessaoToken) return;
+  try {
+    const r = await fetch('/api/padroes?token=' + encodeURIComponent(sessaoToken));
+    if (!r.ok) return;
+    const lista = await r.json();
+    padroesAprendidos = {};
+    lista.forEach(p => {
+      if (!padroesAprendidos[p.campo]) padroesAprendidos[p.campo] = [];
+      padroesAprendidos[p.campo].push({ id: p.id, padrao: p.padrao, tipo: p.tipo, descricao: p.descricao });
+    });
+    renderizarPadroesAprendidos();
+  } catch(e) { /* silencioso */ }
+}
+
+async function _sincronizarPadroesComBanco() {
+  if (!sessaoToken) return;
+  // Envia todos os padrões atuais para o banco (upsert por campo+padrao)
+  const todos = Object.entries(padroesAprendidos).flatMap(([campo, ps]) =>
+    ps.map(p => ({ campo, padrao: p.padrao, tipo: p.tipo || 'regex', descricao: p.descricao || '' }))
+  );
+  for (const p of todos) {
+    try {
+      await fetch('/api/padroes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: sessaoToken, ...p })
+      });
+    } catch(e) { /* silencioso */ }
+  }
+}
 
 // ── Aplicar padrões aprendidos antes dos padrões padrão ──────────────────
 function aplicarPadroesAprendidos(txt, camposJaExtraidos) {
@@ -3716,7 +3758,7 @@ Responda SOMENTE em JSON puro:
       if (padroesAprendidos[campo].length > 5) padroesAprendidos[campo] = padroesAprendidos[campo].slice(0, 5);
     }
 
-    localStorage.setItem('eagle_padroes_v2', JSON.stringify(padroesAprendidos));
+    _sincronizarPadroesComBanco();
 
     atualizarStatusAprendizado(`✓ Padrão gerado: "${resultado.descricao}"`, 'ok');
     renderizarPadroesAprendidos();
@@ -3734,7 +3776,7 @@ Responda SOMENTE em JSON puro:
       dataCriacao: new Date().toLocaleDateString('pt-BR'),
       contadorUso: 0,
     });
-    localStorage.setItem('eagle_padroes_v2', JSON.stringify(padroesAprendidos));
+    _sincronizarPadroesComBanco();
     atualizarStatusAprendizado('Padrão básico salvo (IA indisponível)', 'warn');
     renderizarPadroesAprendidos();
   }
@@ -3787,7 +3829,7 @@ function removerPadrao(campo, idx) {
   if (!padroesAprendidos[campo]) return;
   padroesAprendidos[campo].splice(idx, 1);
   if (padroesAprendidos[campo].length === 0) delete padroesAprendidos[campo];
-  localStorage.setItem('eagle_padroes_v2', JSON.stringify(padroesAprendidos));
+  _sincronizarPadroesComBanco();
   renderizarPadroesAprendidos();
 }
 
@@ -3797,6 +3839,11 @@ function limparTodosPadroes() {
   localStorage.removeItem('eagle_padroes_v2');
   renderizarPadroesAprendidos();
   atualizarStatusAprendizado('Padrões apagados.', 'warn');
+  // Limpar também no banco
+  if (sessaoToken) {
+    fetch('/api/padroes?token=' + encodeURIComponent(sessaoToken) + '&limparTodos=1', { method: 'DELETE' })
+      .catch(() => {});
+  }
 }
 
 // Inicializar ao carregar
@@ -3848,6 +3895,7 @@ function aplicarSessao(user) {
     document.getElementById('menuBtnCodigo').style.display = 'block';
     document.getElementById('menuBtnBackup').style.display = 'block';
   }
+  carregarPadroesAprendidos();
 }
 
 function toggleUserMenu() {
@@ -4060,7 +4108,7 @@ async function enviarInsumo() {
         const r = await fetch('/api/extrair', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ tipo: 'extrair_pdf', base64, instrucao: instrucaoBase })
+          body: JSON.stringify({ tipo: 'extrair_pdf', base64, instrucoes: instrucaoBase })
         });
         const data = await r.json();
         if (data.resultado) {
@@ -4074,7 +4122,7 @@ async function enviarInsumo() {
       const r = await fetch('/api/extrair', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tipo: 'extrair_texto', texto: contexto, instrucao: instrucaoBase })
+        body: JSON.stringify({ tipo: 'extrair_texto', texto: contexto, instrucoes: instrucaoBase })
       });
       const data = await r.json();
       if (data.resultado) {
@@ -4440,7 +4488,12 @@ async function abrirHistorico() {
     // Lista de processos
     html += `<h3 style="font-size:13px;font-weight:600;margin-bottom:10px;color:var(--verde)">Últimos processos (${processos.length})</h3>`;
     if (processos && processos.length > 0) {
-      html += `<table style="width:100%;border-collapse:collapse;font-size:11px">
+      html += `<div style="margin-bottom:10px">
+  <input type="text" id="histBuscaNPU" placeholder="Buscar por NPU..."
+    style="width:100%;padding:7px 10px;border:1px solid var(--borda);border-radius:var(--r);font-size:12px;font-family:inherit"
+    oninput="filtrarHistoricoNPU(this.value)">
+</div>`;
+      html += `<table id="histProcessosTable" style="width:100%;border-collapse:collapse;font-size:11px">
         <thead><tr style="background:var(--off)">
           <th style="padding:6px 8px;text-align:left;color:var(--chumbo)">#</th>
           <th style="padding:6px 8px;text-align:left;color:var(--chumbo)">NPU</th>
@@ -4469,6 +4522,14 @@ async function abrirHistorico() {
   } catch (e) {
     conteudo.innerHTML = `<p style="color:var(--err);font-size:12px">Erro ao carregar: ${e.message}</p>`;
   }
+}
+
+function filtrarHistoricoNPU(termo) {
+  const rows = document.querySelectorAll('#histProcessosTable tbody tr');
+  rows.forEach(tr => {
+    const npu = tr.querySelector('td:nth-child(2)')?.textContent || '';
+    tr.style.display = npu.toLowerCase().includes(termo.toLowerCase()) ? '' : 'none';
+  });
 }
 
 // ── ABA FATURAMENTO ───────────────────────────────────────────────────────────
