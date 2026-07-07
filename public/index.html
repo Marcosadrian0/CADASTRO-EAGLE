@@ -10,7 +10,7 @@
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --verde:#023631; --ciano:#075056; --ciano-med:#2A7C79; --verde-prof:#012824;
+  --verde:#023631; --ciano:#00e5ff; --ciano-med:#2A7C79; --verde-prof:#012824;
   --chumbo:#4A545E; --off:#ECEFF3; --branco:#fff;
   --borda:#D8DDE3; --borda-l:#EEF1F5;
   --vok:#1A7F4B; --vok-bg:#EAF5EE; --vok-b:#b8dfc7;
@@ -20,8 +20,31 @@
   --r:8px; --rlg:12px;
   --shadow:0 1px 4px rgba(2,54,49,.07);
   --shadow-md:0 2px 12px rgba(2,54,49,.10);
+  --bg:#F0F3F7; --surface:#fff; --text:#1a2421; --border-color:#D8DDE3;
 }
-body{font-family:'Plus Jakarta Sans',Calibri,sans-serif;font-weight:300;background:#F0F3F7;color:#1a2421;font-size:13px;line-height:1.6;min-height:100vh}
+html.dark{
+  --bg:#0f1117; --surface:#1a1d27; --border-color:#2d3147; --text:#e2e8f0;
+  --branco:#1a1d27; --off:#1e2130; --borda:#2d3147; --borda-l:#2d3147;
+  --chumbo:#94a3b8; --verde:#00e5ff;
+}
+@media(prefers-color-scheme:dark){
+  html:not(.light){
+    --bg:#0f1117; --surface:#1a1d27; --border-color:#2d3147; --text:#e2e8f0;
+    --branco:#1a1d27; --off:#1e2130; --borda:#2d3147; --borda-l:#2d3147;
+    --chumbo:#94a3b8; --verde:#00e5ff;
+  }
+}
+body{font-family:'Plus Jakarta Sans',Calibri,sans-serif;font-weight:300;background:var(--bg);color:var(--text);font-size:13px;line-height:1.6;min-height:100vh}
+html.dark body,.dark .scard,.dark .login-box,.dark .acc-card,.dark .fat-card,.dark .fat-modal-box,.dark .usr-table,.dark .usr-form{background:var(--surface);color:var(--text)}
+html.dark input[type=text],html.dark select,html.dark textarea{background:var(--surface);color:var(--text);border-color:var(--border-color)}
+html.dark .topbar{background:#0a0d12}
+html.dark .sidebar{background:var(--surface);border-color:var(--border-color)}
+html.dark .tab-bar{background:var(--surface);border-color:var(--border-color)}
+html.dark .scard{background:var(--surface);border-color:var(--border-color)}
+html.dark .scard-head{background:var(--off);border-color:var(--border-color)}
+html.dark .drop-zone{background:var(--off);border-color:var(--border-color)}
+#btnDarkMode{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;padding:6px 10px;border-radius:6px;cursor:pointer;font-size:14px;line-height:1;display:flex;align-items:center;gap:5px}
+#btnDarkMode:hover{background:rgba(255,255,255,.2)}
 
 /* TOPBAR */
 .topbar{background:var(--verde);height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 28px;position:sticky;top:0;z-index:200;box-shadow:0 2px 12px rgba(0,0,0,.25)}
@@ -379,6 +402,41 @@ textarea{resize:vertical;min-height:52px}
     border:1.5px solid var(--borda);border-radius:var(--r);padding:6px 8px;
     font-family:inherit;font-size:11px;font-weight:300;color:#1a2421;background:var(--branco)
   }
+/* Confidence badges */
+.badge-conf{display:inline-block;width:8px;height:8px;border-radius:50%;margin-left:4px;vertical-align:middle;flex-shrink:0}
+.conf-high{background:#22c55e}.conf-med{background:#f59e0b}.conf-low{background:#ef4444}
+/* Diff original */
+.diff-original{display:block;font-size:10px;color:var(--chumbo);margin-top:2px;font-style:italic}
+/* Chips sugestao */
+.chips-container{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.chip-sug{background:var(--auto-bg);border:1px solid var(--auto-b);border-radius:12px;padding:2px 10px;font-size:10px;color:var(--verde);cursor:pointer;font-family:inherit;transition:background .12s}
+.chip-sug:hover{background:var(--auto-b);color:#fff}
+/* NPU history banner */
+.npu-hist-banner{display:none;background:#FFFBEB;border:1px solid #F4D080;border-radius:var(--r);padding:8px 10px;font-size:11px;color:#92400E;margin-top:6px;gap:8px;align-items:center}
+.npu-hist-banner.show{display:flex}
+.npu-hist-banner button{padding:4px 10px;border-radius:5px;border:1px solid currentColor;background:transparent;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;color:inherit}
+/* Operator accuracy chart */
+.op-bar-row{display:flex;align-items:center;gap:8px;font-size:11px;margin-bottom:8px}
+.op-nome{width:130px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text)}
+.op-bar-track{flex:1;background:var(--off);border-radius:6px;height:10px;overflow:hidden}
+.op-bar-fill{height:100%;border-radius:6px;background:var(--ciano);transition:width .5s ease}
+.op-pct{width:38px;text-align:right;font-weight:700;font-size:12px;color:var(--verde)}
+/* Progress bar granular */
+.progress-bar-wrap{display:none;margin-top:8px}
+.progress-bar-track{width:100%;height:6px;background:var(--off);border-radius:4px;overflow:hidden;margin-bottom:4px}
+.progress-bar-fill{height:100%;background:var(--ciano);border-radius:4px;transition:width .3s ease;width:0%}
+.progress-bar-lbl{font-size:10px;color:var(--chumbo);text-align:center}
+/* Shortcut legend */
+.shortcut-legend{font-size:10px;color:var(--chumbo);margin-top:8px;text-align:center}
+/* Espelho filter */
+#espelhoFiltro{width:100%;padding:6px 10px;border:1.5px solid var(--borda);border-radius:var(--r);font-size:12px;font-family:inherit;margin-bottom:8px;outline:none}
+#espelhoFiltro:focus{border-color:var(--ciano)}
+/* ROI card */
+.roi-card{background:linear-gradient(135deg,var(--auto-bg),#d4ece9);border:1px solid var(--auto-b);border-radius:var(--rlg);padding:18px 20px}
+.roi-card-ttl{font-size:11px;font-weight:600;color:var(--verde);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px}
+.roi-stat{display:flex;justify-content:space-between;align-items:baseline;padding:6px 0;border-bottom:1px solid rgba(0,0,0,.06);font-size:12px}
+.roi-stat:last-child{border:none}
+.roi-stat .roi-n{font-size:20px;font-weight:700;color:var(--verde)}
   @media print {
     body > *:not(#panel-dashboard) { display:none !important; }
     #panel-dashboard { display:block !important; }
@@ -430,6 +488,9 @@ textarea{resize:vertical;min-height:52px}
     <button class="tbtn tbtn-ciano" onclick="exportarCampos()">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
       Exportar campos
+    </button>
+    <button id="btnDarkMode" onclick="toggleDarkMode()" title="Alternar tema claro/escuro">
+      <span id="darkModeIco">&#9790;</span>
     </button>
     <div id="userMenuWrap" style="position:relative;display:none">
       <button class="tbtn tbtn-ghost" id="btnUserMenu" onclick="toggleUserMenu()" style="gap:7px">
@@ -636,6 +697,7 @@ textarea{resize:vertical;min-height:52px}
     <div class="fat-card" style="margin-bottom:18px">
       <div class="fat-card-ttl">Espelho de Faturamento</div>
       <div class="fat-card-sub">Volumes calculados automaticamente. Edite os valores unitários conforme necessário.</div>
+      <input type="text" id="espelhoFiltro" placeholder="Filtrar por NPU ou advogado..." oninput="filtrarEspelho(this.value)">
       <table class="fat-table">
         <thead>
           <tr><th>Código</th><th>Item de Serviço</th><th>Volume Auto</th><th>Volume Cobrado</th><th>Valor Unit. (R$)</th><th>Faturamento Real</th><th>Total Gerado (R$)</th></tr>
@@ -848,6 +910,7 @@ textarea{resize:vertical;min-height:52px}
       <div class="dz-hint">Somente .pdf</div>
       <input type="file" id="fileInput" accept="application/pdf,.pdf">
     </div>
+    <div id="pdf-thumb" style="display:none;text-align:center;margin-top:6px"><canvas id="pdfThumbCanvas" style="max-width:120px;border-radius:4px;box-shadow:var(--shadow-md)"></canvas></div>
     <div class="file-pill" id="fileCard">
       <div class="fpdf">PDF</div>
       <div class="finfo">
@@ -865,10 +928,14 @@ textarea{resize:vertical;min-height:52px}
       Análise em Lote
     </button>
     <div class="progress" id="progressWrap">
-      <div class="ps" id="ps1"><div class="psdot">✓</div><span>Lendo páginas do PDF</span></div>
-      <div class="ps" id="ps2"><div class="psdot">✓</div><span>Extraindo texto</span></div>
-      <div class="ps" id="ps3"><div class="psdot">✓</div><span>Identificando campos</span></div>
-      <div class="ps" id="ps4"><div class="psdot">✓</div><span>Preenchendo formulário</span></div>
+      <div class="ps" id="ps1"><div class="psdot">&#x2713;</div><span>Lendo páginas do PDF</span></div>
+      <div class="ps" id="ps2"><div class="psdot">&#x2713;</div><span>Extraindo texto</span></div>
+      <div class="ps" id="ps3"><div class="psdot">&#x2713;</div><span>Identificando campos</span></div>
+      <div class="ps" id="ps4"><div class="psdot">&#x2713;</div><span>Preenchendo formulário</span></div>
+      <div class="progress-bar-wrap" id="progressBarWrap">
+        <div class="progress-bar-track"><div class="progress-bar-fill" id="progressBarFill"></div></div>
+        <div class="progress-bar-lbl" id="progressBarLbl"></div>
+      </div>
     </div>
     <div id="previewWrap" style="display:none"><div class="txt-prev" id="textPreview"></div></div>
     <div class="alert-sb" id="alertMsg"></div>
@@ -989,7 +1056,12 @@ textarea{resize:vertical;min-height:52px}
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 12px;margin-bottom:10px">
         <div class="fg">
           <label>Número do processo (NPU CNJ)</label>
-          <input type="text" id="f_npu" placeholder="0000000-00.0000.0.00.0000">
+          <input type="text" id="f_npu" placeholder="0000000-00.0000.0.00.0000" oninput="agendarBuscaNPU(this.value)" onblur="agendarBuscaNPU(this.value,true)">
+          <div class="npu-hist-banner" id="npuHistBanner">
+            <span id="npuHistMsg"></span>
+            <button onclick="npuHistSim()">Sim</button>
+            <button onclick="document.getElementById('npuHistBanner').classList.remove('show')">Nao</button>
+          </div>
         </div>
         <div class="fg">
           <label>Número de origem</label>
@@ -1260,6 +1332,7 @@ textarea{resize:vertical;min-height:52px}
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
     <span id="salvarStatusMsg"></span>
   </div>
+  <div class="shortcut-legend">Atalhos: Ctrl+S Salvar | Ctrl+Enter Analisar/Salvar | Esc Limpar</div>
 
 </main>
 </div><!-- /wrap -->
@@ -6281,6 +6354,410 @@ async function dashRender(mkOverride) {
   // Listener do seletor de mês
   document.getElementById('dashMesSelect')?.addEventListener('change', e => dashRender(e.target.value));
 }
+
+// ── FEATURE 1: DARK MODE ─────────────────────────────────────────────────────
+function toggleDarkMode() {
+  const html = document.documentElement;
+  const isDark = html.classList.contains('dark');
+  if (isDark) {
+    html.classList.remove('dark');
+    html.classList.add('light');
+    localStorage.setItem('eagle-tema', 'light');
+    document.getElementById('darkModeIco').textContent = '☽';
+  } else {
+    html.classList.add('dark');
+    html.classList.remove('light');
+    localStorage.setItem('eagle-tema', 'dark');
+    document.getElementById('darkModeIco').textContent = '☀';
+  }
+}
+
+(function initDarkMode() {
+  const saved = localStorage.getItem('eagle-tema');
+  const html = document.documentElement;
+  const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  if (saved === 'dark' || (!saved && prefersDark)) {
+    html.classList.add('dark');
+    const ico = document.getElementById('darkModeIco');
+    if (ico) ico.textContent = '☀';
+  } else if (saved === 'light') {
+    html.classList.add('light');
+  }
+})();
+
+// ── FEATURE 2: PDF THUMBNAIL ──────────────────────────────────────────────────
+async function renderPdfThumb(arrayBuffer) {
+  try {
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    const page = await pdf.getPage(1);
+    const viewport = page.getViewport({ scale: 0.3 });
+    const canvas = document.getElementById('pdfThumbCanvas');
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    const ctx = canvas.getContext('2d');
+    await page.render({ canvasContext: ctx, viewport }).promise;
+    document.getElementById('pdf-thumb').style.display = 'block';
+  } catch (e) {
+    console.warn('Thumb PDF falhou:', e);
+  }
+}
+
+// Patch carregarArquivo to show thumb before parse
+(function patchCarregarArquivo() {
+  const origFn = window.carregarArquivo;
+  window.carregarArquivo = function(file) {
+    document.getElementById('pdf-thumb').style.display = 'none';
+    const thumbReader = new FileReader();
+    thumbReader.onload = ev => renderPdfThumb(ev.target.result);
+    thumbReader.readAsArrayBuffer(file);
+    origFn.call(this, file);
+  };
+})();
+
+// ── FEATURE 3: GRANULAR EXTRACTION PROGRESS ──────────────────────────────────
+function setExtractionStep(stepNum, label) {
+  const wrap = document.getElementById('progressBarWrap');
+  const fill = document.getElementById('progressBarFill');
+  const lbl = document.getElementById('progressBarLbl');
+  if (!wrap) return;
+  wrap.style.display = 'block';
+  const pct = Math.round((stepNum / 4) * 100);
+  fill.style.width = pct + '%';
+  lbl.textContent = label + ' (' + stepNum + '/4)';
+}
+
+const _origSetStep = window.setStep;
+window.setStep = function(n) {
+  _origSetStep(n);
+  const labels = ['','Extraindo texto do PDF...','Enviando para IA...','Aplicando padroes aprendidos...','Preenchendo formulario...'];
+  if (n >= 1 && n <= 4) setExtractionStep(n, labels[n]);
+};
+
+// ── FEATURE 4: KEYBOARD SHORTCUTS ────────────────────────────────────────────
+document.addEventListener('keydown', function(e) {
+  if (e.target.id === 'loginSenha' || e.target.id === 'loginUsuario') return;
+  if (e.key === 'Escape' && !e.ctrlKey && !e.altKey) {
+    if (confirm('Limpar formulario? Os dados preenchidos serao perdidos.')) {
+      limparFormulario();
+    }
+    return;
+  }
+  if (e.ctrlKey && e.key === 's') {
+    e.preventDefault();
+    const btnSalvar = document.getElementById('btnSalvarProcesso');
+    if (btnSalvar && btnSalvar.style.display !== 'none') salvarEContabilizar();
+    return;
+  }
+  if (e.ctrlKey && e.key === 'Enter') {
+    e.preventDefault();
+    const btnSalvar = document.getElementById('btnSalvarProcesso');
+    if (btnSalvar && btnSalvar.style.display !== 'none') salvarEContabilizar();
+    else analisarPDF();
+    return;
+  }
+});
+
+// ── FEATURE 5: INLINE DIFF ────────────────────────────────────────────────────
+window._camposIA = {};
+
+function registrarCamposIA() {
+  const ids = ['f_npu','f_uf','f_comarca','f_data_ajuizamento','f_data_citacao',
+    'f_data_audiencia','f_valor_causa','f_vara_cartorio','f_numero_origem',
+    'f_tipo_justica','f_rito','f_fase_processual','f_tipo_documento',
+    'f_objeto_principal','f_causa_raiz','f_desconto_conta','f_autor_nome',
+    'f_autor_cpf','f_advogado_nome','f_advogado_oab','f_advogado_uf'];
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el || !el.classList.contains('auto')) return;
+    window._camposIA[id] = el.value;
+    if (el._diffListenerAdded) return;
+    el._diffListenerAdded = true;
+    el.addEventListener('input', function() {
+      const diffId = id + '_diff';
+      let span = document.getElementById(diffId);
+      if (!span) {
+        span = document.createElement('span');
+        span.id = diffId;
+        span.className = 'diff-original';
+        el.parentElement.appendChild(span);
+      }
+      const original = window._camposIA[id] || '';
+      if (el.value !== original && original) {
+        span.textContent = 'IA: ' + original;
+        span.style.display = 'block';
+      } else {
+        span.style.display = 'none';
+      }
+    });
+  });
+}
+
+// ── FEATURE 6: CONFIDENCE SCORES ─────────────────────────────────────────────
+window._confiancaCampos = {};
+
+function mostrarBadgesConfianca() {
+  const IDS = {
+    npu:'f_npu', uf:'f_uf', comarca:'f_comarca', data_ajuizamento:'f_data_ajuizamento',
+    data_citacao:'f_data_citacao', valor_causa:'f_valor_causa', vara_cartorio:'f_vara_cartorio',
+    numero_origem:'f_numero_origem', tipo_justica:'f_tipo_justica', rito:'f_rito',
+    fase_processual:'f_fase_processual', tipo_documento:'f_tipo_documento',
+    objeto_principal:'f_objeto_principal', causa_raiz:'f_causa_raiz',
+    autor_nome:'f_autor_nome', autor_cpf:'f_autor_cpf'
+  };
+  Object.entries(IDS).forEach(([campo, elId]) => {
+    const el = document.getElementById(elId);
+    if (!el || !el.classList.contains('auto')) return;
+    const fg = el.closest('.fg');
+    if (!fg) return;
+    const lbl = fg.querySelector('label');
+    if (!lbl) return;
+    lbl.querySelectorAll('.badge-conf').forEach(b => b.remove());
+    const val = el.value;
+    let nivel;
+    if (!val) { nivel = 'low'; }
+    else if (['npu','tipo_justica','uf'].includes(campo)) { nivel = 'high'; }
+    else { nivel = 'med'; }
+    window._confiancaCampos[campo] = nivel;
+    const dot = document.createElement('span');
+    dot.className = 'badge-conf ' + (nivel === 'high' ? 'conf-high' : nivel === 'med' ? 'conf-med' : 'conf-low');
+    dot.title = nivel === 'high' ? 'Alta confianca' : nivel === 'med' ? 'Media confianca' : 'Baixa confianca';
+    lbl.appendChild(dot);
+  });
+}
+
+// ── FEATURE 8: NPU PRE-FILL FROM HISTORY ─────────────────────────────────────
+let _npuBuscaTimer = null;
+let _npuHistDados = null;
+
+function agendarBuscaNPU(valor, immediate) {
+  clearTimeout(_npuBuscaTimer);
+  const v = (valor || '').trim();
+  if (v.length < 20) { document.getElementById('npuHistBanner').classList.remove('show'); return; }
+  const delay = immediate ? 0 : 800;
+  _npuBuscaTimer = setTimeout(() => buscarNPUHistorico(v), delay);
+}
+
+async function buscarNPUHistorico(npu) {
+  if (!sessaoToken) return;
+  const anyAuto = document.querySelector('.auto');
+  if (anyAuto) return;
+  try {
+    const r = await fetch('/api/buscar-npu?npu=' + encodeURIComponent(npu) + '&token=' + encodeURIComponent(sessaoToken));
+    if (!r.ok) return;
+    const data = await r.json();
+    if (data.found && data.campos) {
+      _npuHistDados = data;
+      const dt = data.data_upload ? new Date(data.data_upload).toLocaleDateString('pt-BR') : '';
+      document.getElementById('npuHistMsg').textContent = 'Processo encontrado no historico' + (dt ? ' (' + dt + ')' : '') + '. Pre-preencher campos?';
+      document.getElementById('npuHistBanner').classList.add('show');
+    }
+  } catch(e) {}
+}
+
+function npuHistSim() {
+  document.getElementById('npuHistBanner').classList.remove('show');
+  if (_npuHistDados && _npuHistDados.campos) preencherFormulario(_npuHistDados.campos);
+}
+
+// ── FEATURE 9: CORRECTION CHIPS ──────────────────────────────────────────────
+window._chipsSugestao = {};
+
+function carregarChipsSugestao(erros) {
+  window._chipsSugestao = {};
+  (erros || []).forEach(e => {
+    if (!window._chipsSugestao[e.campo]) window._chipsSugestao[e.campo] = [];
+    window._chipsSugestao[e.campo].push(e);
+  });
+}
+
+function mostrarChips(el, campo) {
+  const containerId = 'chips_' + campo;
+  const old = document.getElementById(containerId);
+  if (old) old.remove();
+  const sugestoes = (window._chipsSugestao[campo] || []).slice(0, 3);
+  if (!sugestoes.length || !el.classList.contains('auto')) return;
+  const div = document.createElement('div');
+  div.id = containerId;
+  div.className = 'chips-container';
+  sugestoes.forEach(s => {
+    const btn = document.createElement('button');
+    btn.className = 'chip-sug';
+    btn.textContent = 'Sugestao: ' + s.valor_correto;
+    btn.onclick = () => { el.value = s.valor_correto; el.dispatchEvent(new Event('input')); div.remove(); };
+    div.appendChild(btn);
+  });
+  el.parentElement.appendChild(div);
+}
+
+function ativarChipsEmCampos() {
+  const CAMPO_IDS = {
+    npu:'f_npu', uf:'f_uf', comarca:'f_comarca', data_ajuizamento:'f_data_ajuizamento',
+    valor_causa:'f_valor_causa', vara_cartorio:'f_vara_cartorio',
+    rito:'f_rito', objeto_principal:'f_objeto_principal', causa_raiz:'f_causa_raiz',
+    autor_nome:'f_autor_nome'
+  };
+  Object.entries(CAMPO_IDS).forEach(([campo, elId]) => {
+    const el = document.getElementById(elId);
+    if (!el || el._chipsListenerAdded) return;
+    el._chipsListenerAdded = true;
+    el.addEventListener('focus', () => mostrarChips(el, campo));
+    el.addEventListener('blur', () => setTimeout(() => { const c = document.getElementById('chips_' + campo); if (c) c.remove(); }, 200));
+  });
+}
+
+// ── FEATURE 13: ESPELHO FILTER ────────────────────────────────────────────────
+function filtrarEspelho(termo) {
+  const rows = document.querySelectorAll('#fatEspelhoBody tr');
+  rows.forEach(tr => {
+    tr.style.display = tr.textContent.toLowerCase().includes(termo.toLowerCase()) ? '' : 'none';
+  });
+}
+
+// ── FEATURE 14: SLA IN HISTORY ────────────────────────────────────────────────
+function calcularSLA(dataUpload, dataConcluido) {
+  if (!dataUpload || !dataConcluido) return '-';
+  try {
+    const d1 = new Date(dataUpload).getTime();
+    const d2 = new Date(dataConcluido).getTime();
+    if (isNaN(d1) || isNaN(d2) || d2 <= d1) return '-';
+    const diffMs = d2 - d1;
+    const horas = Math.floor(diffMs / 3600000);
+    const mins = Math.floor((diffMs % 3600000) / 60000);
+    return horas > 0 ? horas + 'h ' + mins + 'm' : mins + 'm';
+  } catch(e) { return '-'; }
+}
+
+const _origAbrirHistorico = abrirHistorico;
+window.abrirHistorico = async function() {
+  const modal = document.getElementById('modalHistorico');
+  const conteudo = document.getElementById('modalHistoricoConteudo');
+  modal.style.display = 'block';
+  conteudo.innerHTML = '<p style="color:var(--chumbo);font-size:12px">Carregando...</p>';
+  try {
+    const resp = await fetch('/api/historico');
+    const { processos, stats, erros } = await resp.json();
+    let html = '';
+    html += '<h3 style="font-size:13px;font-weight:600;margin-bottom:12px;color:var(--verde)">Acuracia por campo</h3>';
+    if (stats && stats.length > 0) {
+      html += '<div style="display:grid;gap:6px;margin-bottom:20px">';
+      stats.forEach(s => {
+        const cor = s.pct >= 80 ? 'var(--vok)' : s.pct >= 50 ? 'var(--amb)' : 'var(--err)';
+        html += `<div style="display:flex;align-items:center;gap:8px;font-size:11px"><span style="width:160px;color:var(--chumbo)">${s.campo}</span><div style="flex:1;background:var(--off);border-radius:4px;height:8px;overflow:hidden"><div style="width:${s.pct}%;height:100%;background:${cor};border-radius:4px"></div></div><span style="width:50px;text-align:right;font-weight:600;color:${cor}">${s.pct}%</span><span style="color:var(--chumbo)">${s.acertos}/${s.total}</span></div>`;
+      });
+      html += '</div>';
+    } else {
+      html += '<p style="font-size:11px;color:var(--chumbo);margin-bottom:16px">Nenhuma validacao registrada ainda.</p>';
+    }
+    if (erros && erros.length > 0) {
+      html += '<h3 style="font-size:13px;font-weight:600;margin-bottom:10px;color:var(--verde)">Erros mais frequentes</h3>';
+      html += '<table style="width:100%;border-collapse:collapse;font-size:11px;margin-bottom:20px"><thead><tr style="background:var(--off)"><th style="padding:6px 8px;text-align:left;color:var(--chumbo)">Campo</th><th style="padding:6px 8px;text-align:left;color:var(--chumbo)">Extraido</th><th style="padding:6px 8px;text-align:left;color:var(--chumbo)">Correto</th><th style="padding:6px 8px;text-align:center;color:var(--chumbo)">Vezes</th></tr></thead><tbody>';
+      erros.forEach((e, i) => {
+        const bg = i % 2 === 0 ? '#fff' : 'var(--off)';
+        html += `<tr style="background:${bg}"><td style="padding:5px 8px;color:var(--chumbo)">${e.campo}</td><td style="padding:5px 8px;color:var(--err)">${e.valor_extraido || '(vazio)'}</td><td style="padding:5px 8px;color:var(--vok)">${e.valor_correto}</td><td style="padding:5px 8px;text-align:center;font-weight:600">${e.ocorrencias}</td></tr>`;
+      });
+      html += '</tbody></table>';
+    }
+    html += '<h3 style="font-size:13px;font-weight:600;margin-bottom:10px;color:var(--verde)">Ultimos processos (' + (processos ? processos.length : 0) + ')</h3>';
+    if (processos && processos.length > 0) {
+      html += '<div style="margin-bottom:10px"><input type="text" id="histBuscaNPU" placeholder="Buscar por NPU ou advogado..." style="width:100%;padding:7px 10px;border:1px solid var(--borda);border-radius:var(--r);font-size:12px;font-family:inherit" oninput="filtrarHistoricoNPU(this.value)"></div>';
+      html += '<table id="histProcessosTable" style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr style="background:var(--off)"><th style="padding:6px 8px;text-align:left;color:var(--chumbo)">#</th><th style="padding:6px 8px;text-align:left;color:var(--chumbo)">NPU</th><th style="padding:6px 8px;text-align:left;color:var(--chumbo)">Arquivo</th><th style="padding:6px 8px;text-align:left;color:var(--chumbo)">Data</th><th style="padding:6px 8px;text-align:left;color:var(--chumbo)">Tempo</th><th style="padding:6px 8px;text-align:center;color:var(--chumbo)">Status</th></tr></thead><tbody>';
+      let totalSLAms = 0, countSLA = 0;
+      processos.forEach((p, i) => {
+        const bg = i % 2 === 0 ? '#fff' : 'var(--off)';
+        const data = new Date(p.data_upload).toLocaleDateString('pt-BR');
+        const statusCor = p.status === 'validado' ? 'var(--vok)' : 'var(--amb)';
+        const sla = calcularSLA(p.data_upload, p.concluido_em);
+        if (sla !== '-') {
+          const d1 = new Date(p.data_upload).getTime();
+          const d2 = new Date(p.concluido_em).getTime();
+          if (!isNaN(d1) && !isNaN(d2) && d2 > d1) { totalSLAms += (d2 - d1); countSLA++; }
+        }
+        html += `<tr style="background:${bg}"><td style="padding:5px 8px;color:var(--chumbo)">${p.id}</td><td style="padding:5px 8px;font-family:monospace;font-size:10px">${p.npu || '-'}</td><td style="padding:5px 8px;color:var(--chumbo);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.arquivo_nome || '-'}</td><td style="padding:5px 8px;color:var(--chumbo)">${data}</td><td style="padding:5px 8px;color:var(--chumbo)">${sla}</td><td style="padding:5px 8px;text-align:center;color:${statusCor};font-weight:600;font-size:10px">${p.status}</td></tr>`;
+      });
+      html += '</tbody></table>';
+      if (countSLA > 0) {
+        const avgMs = totalSLAms / countSLA;
+        const avgH = Math.floor(avgMs / 3600000);
+        const avgM = Math.floor((avgMs % 3600000) / 60000);
+        html += '<div style="margin-top:10px;font-size:11px;color:var(--chumbo);text-align:right">Tempo medio de conclusao: <strong>' + (avgH > 0 ? avgH + 'h ' + avgM + 'm' : avgM + 'm') + '</strong></div>';
+      }
+    } else {
+      html += '<p style="font-size:11px;color:var(--chumbo)">Nenhum processo salvo ainda.</p>';
+    }
+    conteudo.innerHTML = html;
+  } catch (e) {
+    conteudo.innerHTML = '<p style="color:var(--err);font-size:12px">Erro ao carregar: ' + e.message + '</p>';
+  }
+};
+
+// ── POST-PREENCHIMENTO HOOKS ──────────────────────────────────────────────────
+const _origPreencherFormulario = preencherFormulario;
+window.preencherFormulario = function(c) {
+  _origPreencherFormulario(c);
+  setTimeout(registrarCamposIA, 200);
+  setTimeout(mostrarBadgesConfianca, 250);
+  setTimeout(ativarChipsEmCampos, 300);
+};
+
+// ── FEATURES 10, 11, 12: ACURACIA TAB EXTENSIONS ─────────────────────────────
+const _origCarregarAcuracia = carregarAcuracia;
+window.carregarAcuracia = async function() {
+  await _origCarregarAcuracia();
+  try {
+    const r = await fetch('/api/historico');
+    const data = await r.json();
+    const { erros, acuraciaOperadores, tiposDocumento } = data;
+    carregarChipsSugestao(erros);
+
+    // Feature 10: Operator accuracy
+    if (acuraciaOperadores && acuraciaOperadores.length > 0) {
+      let html = '<div class="acc-card" style="margin-bottom:20px"><div class="acc-card-ttl" style="margin-bottom:12px"><span>Acuracia por Operador</span></div>';
+      acuraciaOperadores.forEach(op => {
+        const pct = op.pct || 0;
+        const cor = pct >= 80 ? '#22c55e' : pct >= 50 ? '#f59e0b' : '#ef4444';
+        html += `<div class="op-bar-row"><span class="op-nome" title="${op.operador}">${op.operador}</span><div class="op-bar-track"><div class="op-bar-fill" style="width:${pct}%;background:${cor}"></div></div><span class="op-pct" style="color:${cor}">${pct}%</span></div>`;
+      });
+      html += '</div>';
+      const accGrid = document.querySelector('.acc-grid');
+      if (accGrid) accGrid.insertAdjacentHTML('afterend', html);
+    }
+
+    // Feature 11: Doc type chart
+    if (tiposDocumento && tiposDocumento.length > 0) {
+      const maxCount = Math.max(...tiposDocumento.map(t => t.total), 1);
+      let html = '<div class="acc-card" style="margin-bottom:20px"><div class="acc-card-ttl" style="margin-bottom:12px"><span>Tipos de Documento</span></div>';
+      tiposDocumento.forEach(t => {
+        const pct = Math.round((t.total / maxCount) * 100);
+        html += `<div class="acc-bar-row"><span class="acc-bar-label" title="${t.tipo}">${t.tipo}</span><div class="acc-bar-track"><div class="acc-bar-fill" style="width:${pct}%;background:var(--ciano)"></div></div><span class="acc-count" style="font-weight:600;color:var(--verde)">${t.total}</span></div>`;
+      });
+      html += '</div>';
+      const accGrid = document.querySelector('.acc-grid');
+      if (accGrid) accGrid.insertAdjacentHTML('afterend', html);
+    }
+
+    // Feature 12: Learning ROI card
+    const totalPadroes = Object.values(padroesAprendidos || {}).flat().length;
+    const correcoesPadroes = erros ? erros.length : 0;
+    const roiHtml = `<div class="acc-card roi-card" style="margin-top:20px"><div class="roi-card-ttl">ROI do Aprendizado</div><div class="roi-stat"><span>Total de padroes aprendidos</span><span class="roi-n">${totalPadroes}</span></div><div class="roi-stat"><span>Campos corrigidos ensinados a IA</span><span class="roi-n">${correcoesPadroes}</span></div><div class="roi-stat"><span>Correcoes que geraram padroes</span><span class="roi-n">${Math.min(totalPadroes, correcoesPadroes)}</span></div></div>`;
+    const accWrap = document.querySelector('.acuracia-wrap');
+    if (accWrap) accWrap.insertAdjacentHTML('beforeend', roiHtml);
+  } catch(e) {
+    console.warn('Erro ao carregar dados estendidos de acuracia:', e);
+  }
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+  const saved = localStorage.getItem('eagle-tema');
+  const html = document.documentElement;
+  const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  if (saved === 'dark' || (!saved && prefersDark)) {
+    html.classList.add('dark');
+    const ico = document.getElementById('darkModeIco');
+    if (ico) ico.textContent = '☀';
+  } else if (saved === 'light') {
+    html.classList.remove('dark');
+  }
+});
 </script>
 </body>
 </html>
