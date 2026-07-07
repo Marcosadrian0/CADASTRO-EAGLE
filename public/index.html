@@ -573,6 +573,30 @@ html.dark .z-info-row{border-color:var(--border-color)}
     <div style="font-size:12px;color:var(--chumbo)">Preencha os dados da demanda para obter o roteamento correto e pre-preencher o formulario Benner.</div>
   </div>
 
+  <!-- Zona de upload de documento -->
+  <div class="scard" style="margin-bottom:20px">
+    <div class="scard-head">
+      <div class="scard-ico">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      </div>
+      <span class="scard-ttl">Analisar Documento</span>
+    </div>
+    <div class="scard-body">
+      <div id="z-drop-zone" class="drop-zone" style="min-height:80px;cursor:pointer" onclick="document.getElementById('z-file-input').click()" ondragover="event.preventDefault();this.classList.add('dz-over')" ondragleave="this.classList.remove('dz-over')" ondrop="zDropFile(event)">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--chumbo)" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <div id="z-drop-label" style="font-size:12px;color:var(--chumbo);margin-top:6px">Arraste um PDF aqui ou clique para selecionar</div>
+      </div>
+      <input type="file" id="z-file-input" accept=".pdf" style="display:none" onchange="zSelecionarArquivo(this.files[0])">
+      <div id="z-progress-wrap" style="display:none;margin-top:10px">
+        <div style="font-size:11px;color:var(--chumbo);margin-bottom:4px" id="z-progress-label">Processando...</div>
+        <div style="height:4px;background:var(--borda-l);border-radius:2px;overflow:hidden">
+          <div id="z-progress-bar" style="height:100%;background:var(--verde);width:0%;transition:width .3s"></div>
+        </div>
+      </div>
+      <div id="z-doc-alert" style="display:none;margin-top:8px;font-size:11px;padding:7px 10px;border-radius:6px"></div>
+    </div>
+  </div>
+
   <div class="zurich-cols">
     <!-- Coluna esquerda: formulario -->
     <div class="zurich-col-left">
@@ -7321,6 +7345,137 @@ function zurichLimpar() {
   document.getElementById('z-trabalhista').checked = false;
   document.getElementById('z-resultado').innerHTML = '<div class="z-result-placeholder">Preencha os dados e clique em Calcular Roteamento.</div>';
   document.getElementById('zb-copy-msg').textContent = '';
+  // Limpa estado do upload
+  _zPdfBuffer = null;
+  const dz = document.getElementById('z-drop-zone');
+  if (dz) { document.getElementById('z-drop-label').textContent = 'Arraste um PDF aqui ou clique para selecionar'; dz.classList.remove('dz-over'); }
+  const pw = document.getElementById('z-progress-wrap'); if (pw) pw.style.display = 'none';
+  const da = document.getElementById('z-doc-alert'); if (da) da.style.display = 'none';
+  const fi = document.getElementById('z-file-input'); if (fi) fi.value = '';
+}
+
+// ── ANALISE DE DOCUMENTO NA ABA ZURICH ───────────────────────────────────────
+let _zPdfBuffer = null;
+
+function zDropFile(event) {
+  event.preventDefault();
+  document.getElementById('z-drop-zone').classList.remove('dz-over');
+  const f = event.dataTransfer.files[0];
+  if (f) zSelecionarArquivo(f);
+}
+
+function zSelecionarArquivo(file) {
+  if (!file || file.type !== 'application/pdf') {
+    zDocAlerta('err', 'Selecione um arquivo PDF valido.');
+    return;
+  }
+  document.getElementById('z-drop-label').textContent = file.name;
+  const reader = new FileReader();
+  reader.onload = e => { _zPdfBuffer = e.target.result; zAnalisarDocumento(); };
+  reader.readAsArrayBuffer(file);
+}
+
+function zDocAlerta(tipo, msg) {
+  const el = document.getElementById('z-doc-alert');
+  if (!el) return;
+  el.style.display = 'block';
+  el.style.background = tipo === 'err' ? 'var(--err-bg)' : 'var(--ok-bg, #f0fdf4)';
+  el.style.color = tipo === 'err' ? 'var(--err)' : 'var(--vok)';
+  el.style.border = '1px solid ' + (tipo === 'err' ? 'var(--err)' : 'var(--vok)');
+  el.textContent = msg;
+}
+
+function zSetProgress(pct, label) {
+  const pw = document.getElementById('z-progress-wrap');
+  if (pw) pw.style.display = 'block';
+  const bar = document.getElementById('z-progress-bar');
+  if (bar) bar.style.width = pct + '%';
+  const lbl = document.getElementById('z-progress-label');
+  if (lbl) lbl.textContent = label;
+}
+
+async function zAnalisarDocumento() {
+  if (!_zPdfBuffer) return;
+  const docAlert = document.getElementById('z-doc-alert');
+  if (docAlert) docAlert.style.display = 'none';
+
+  try {
+    zSetProgress(20, 'Extraindo texto do PDF...');
+    const pdf = await pdfjsLib.getDocument({ data: _zPdfBuffer }).promise;
+    const MAX = Math.min(pdf.numPages, 30);
+    let texto = '';
+    for (let p = 1; p <= MAX; p++) {
+      const page = await pdf.getPage(p);
+      const content = await page.getTextContent();
+      let ultima = null;
+      content.items.forEach(item => {
+        if (ultima !== null && Math.abs(item.transform[5] - ultima) > 4) texto += '\n';
+        texto += item.str + ' ';
+        ultima = item.transform[5];
+      });
+      texto += '\n\n';
+    }
+    texto = texto.replace(/ {3,}/g, '  ').trim();
+
+    zSetProgress(50, 'Enviando para IA...');
+
+    const instrucoes = `Analise este documento juridico relacionado a seguro Zurich e extraia as informacoes em JSON puro sem markdown:
+{"tipo_demanda":"(odonto|venda_casada|vida|residencial|consignatoria|pretamista|covid|credito_imobiliario|cessao_margem|cancelamento_apolice|reajuste_premio|exibicao_documentos|resgate_previdencia|nao_aceitacao_risco|devolucao_premio|cpf_cnpj_nao_localizado|premio_encerrado_transferencia|assistencia_24h|previdencia|sinistro|outro)","envolve_sinistro":"(sim|nao)","objeto":"","assunto":"","adverso_nome":"","valor_causa":"","num_processo":"","data_citacao":"","trabalhista":false,"regiao":"","obs":""}
+Identifique o tipo correto pelo conteudo. Se for sobre sinistro negado/indenizacao use "sinistro". Se mencionar plano odonto use "odonto". Se mencionar previdencia use "previdencia". Retorne apenas o JSON.`;
+
+    const sessao = localStorage.getItem('eagle_sessao');
+    const resp = await fetch('/api/extrair', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tipo: 'extrair_texto', texto: texto.substring(0, 6000), instrucoes, token: sessao })
+    });
+    const data = await resp.json();
+    zSetProgress(80, 'Preenchendo campos...');
+
+    const raw = (data.content?.[0]?.text || data.texto || '').replace(/```json|```/g,'').trim();
+    let campos = {};
+    try { campos = JSON.parse(raw); } catch(e) { throw new Error('Resposta da IA invalida: ' + raw.substring(0,100)); }
+
+    // Preenche assistente de roteamento
+    if (campos.tipo_demanda && campos.tipo_demanda !== 'outro') {
+      const sel = document.getElementById('z-tipo');
+      if (sel) sel.value = campos.tipo_demanda;
+    }
+    if (campos.envolve_sinistro) {
+      const sel = document.getElementById('z-sinistro');
+      if (sel) sel.value = campos.envolve_sinistro;
+    }
+    if (campos.objeto) { const el = document.getElementById('z-objeto'); if (el) el.value = campos.objeto; }
+    if (campos.assunto) { const el = document.getElementById('z-assunto'); if (el) el.value = campos.assunto; }
+    if (campos.regiao) { const el = document.getElementById('z-regiao'); if (el) el.value = campos.regiao; }
+    if (campos.trabalhista) { const el = document.getElementById('z-trabalhista'); if (el) el.checked = !!campos.trabalhista; }
+
+    // Preenche Benner diretamente com o que a IA extraiu
+    if (campos.adverso_nome) { const el = document.getElementById('zb-adverso'); if (el) el.value = campos.adverso_nome; }
+    if (campos.valor_causa) { const el = document.getElementById('zb-valor-causa'); if (el) el.value = campos.valor_causa; }
+    if (campos.num_processo) { const el = document.getElementById('zb-num-processo'); if (el) el.value = campos.num_processo; }
+    if (campos.data_citacao) { const el = document.getElementById('zb-data-citacao'); if (el) el.value = campos.data_citacao; }
+    if (campos.obs) { const el = document.getElementById('zb-obs'); if (el) el.value = campos.obs; }
+
+    // Define hora de recebimento como agora se nao preenchido
+    const zHora = document.getElementById('z-hora');
+    if (zHora && !zHora.value) {
+      const now = new Date();
+      zHora.value = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0') + 'T' + String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+    }
+
+    zSetProgress(100, 'Concluido.');
+    zDocAlerta('ok', 'Documento analisado. Revise os campos e clique em Calcular Roteamento.');
+
+    // Aciona calculo automatico se tipo foi identificado
+    if (campos.tipo_demanda && campos.tipo_demanda !== 'outro') zurichCalcular();
+
+  } catch(err) {
+    zSetProgress(0, '');
+    document.getElementById('z-progress-wrap').style.display = 'none';
+    zDocAlerta('err', 'Erro ao analisar: ' + (err.message || err));
+    console.error('[Zurich] analise doc:', err);
+  }
 }
 </script>
 </body>
