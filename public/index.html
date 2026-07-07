@@ -6702,6 +6702,8 @@ window.preencherFormulario = function(c) {
 // ── FEATURES 10, 11, 12: ACURACIA TAB EXTENSIONS ─────────────────────────────
 const _origCarregarAcuracia = carregarAcuracia;
 window.carregarAcuracia = async function() {
+  // Remove cards injetados anteriormente para evitar duplicação
+  document.querySelectorAll('.acc-card-extra, .roi-card').forEach(el => el.remove());
   await _origCarregarAcuracia();
   try {
     const r = await fetch('/api/historico');
@@ -6711,7 +6713,7 @@ window.carregarAcuracia = async function() {
 
     // Feature 10: Operator accuracy
     if (acuraciaOperadores && acuraciaOperadores.length > 0) {
-      let html = '<div class="acc-card" style="margin-bottom:20px"><div class="acc-card-ttl" style="margin-bottom:12px"><span>Acuracia por Operador</span></div>';
+      let html = '<div class="acc-card acc-card-extra" style="margin-bottom:20px"><div class="acc-card-ttl" style="margin-bottom:12px"><span>Acuracia por Operador</span></div>';
       acuraciaOperadores.forEach(op => {
         const pct = op.pct || 0;
         const cor = pct >= 80 ? '#22c55e' : pct >= 50 ? '#f59e0b' : '#ef4444';
@@ -6725,7 +6727,7 @@ window.carregarAcuracia = async function() {
     // Feature 11: Doc type chart
     if (tiposDocumento && tiposDocumento.length > 0) {
       const maxCount = Math.max(...tiposDocumento.map(t => t.total), 1);
-      let html = '<div class="acc-card" style="margin-bottom:20px"><div class="acc-card-ttl" style="margin-bottom:12px"><span>Tipos de Documento</span></div>';
+      let html = '<div class="acc-card acc-card-extra" style="margin-bottom:20px"><div class="acc-card-ttl" style="margin-bottom:12px"><span>Tipos de Documento</span></div>';
       tiposDocumento.forEach(t => {
         const pct = Math.round((t.total / maxCount) * 100);
         html += `<div class="acc-bar-row"><span class="acc-bar-label" title="${t.tipo}">${t.tipo}</span><div class="acc-bar-track"><div class="acc-bar-fill" style="width:${pct}%;background:var(--ciano)"></div></div><span class="acc-count" style="font-weight:600;color:var(--verde)">${t.total}</span></div>`;
