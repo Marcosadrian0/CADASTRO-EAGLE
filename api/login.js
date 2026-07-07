@@ -11,8 +11,7 @@ import { ipBloqueado } from './_ipGuard.js';
 
 export const config = { maxDuration: 30 };
 
-function hashSenha(senha) {
-  const salt = 'eagle_sbk_2026';
+function hashSenha(senha, salt) {
   return pbkdf2Sync(senha, salt, 100000, 32, 'sha256').toString('hex');
 }
 
@@ -54,12 +53,14 @@ export default async function handler(req, res) {
     await initDB(sql);
 
     // Seed admin se tabela vazia
+    await sql`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS senha_salt TEXT`;
     const rows0 = await sql`SELECT COUNT(*)::int AS count FROM usuarios`;
     if (rows0[0].count === 0) {
-      const hash = hashSenha('1234');
+      const seedSalt = randomBytes(16).toString('hex');
+      const hash = hashSenha('1234', seedSalt);
       await sql`
-        INSERT INTO usuarios (usuario, senha_hash, nome, perfil, abas)
-        VALUES ('marcos.oliveira', ${hash}, 'Marcos Oliveira', 'admin', 'analise,acuracia,faturamento,usuarios')
+        INSERT INTO usuarios (usuario, senha_hash, senha_salt, nome, perfil, abas)
+        VALUES ('marcos.oliveira', ${hash}, ${seedSalt}, 'Marcos Oliveira', 'admin', 'analise,acuracia,faturamento,usuarios')
       `;
     }
 
@@ -76,13 +77,16 @@ export default async function handler(req, res) {
     const { usuario, senha } = req.body || {};
     if (!usuario || !senha) return res.status(400).json({ error: 'Usuário e senha obrigatórios.' });
 
-    const hash = hashSenha(senha);
     const rows = await sql`
-      SELECT id, nome, perfil, abas FROM usuarios
-      WHERE LOWER(usuario) = LOWER(${usuario}) AND senha_hash = ${hash} AND ativo = true
+      SELECT id, usuario, senha_hash, senha_salt, nome, perfil, abas FROM usuarios
+      WHERE LOWER(usuario) = LOWER(${usuario}) AND ativo = true
     `;
     const user = rows[0];
-    if (!user) return res.status(401).json({ error: 'Usuário ou senha incorretos.' });
+    if (!user) return res.status(401).json({ error: 'Credenciais inválidas.' });
+
+    const salt = user.senha_salt || 'eagle_sbk_2026';
+    const hash = hashSenha(senha, salt);
+    if (hash !== user.senha_hash) return res.status(401).json({ error: 'Credenciais inválidas.' });
 
     // Garante que admin sempre tenha a aba faturamento
     if (user.perfil === 'admin' && !user.abas.split(',').map(s => s.trim()).includes('faturamento')) {

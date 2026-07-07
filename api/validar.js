@@ -21,6 +21,7 @@ export default async function handler(req, res) {
 
   try {
     const sql = neon(DB);
+    await sql`ALTER TABLE processos ADD COLUMN IF NOT EXISTS concluido_em TIMESTAMPTZ`;
     const { processo_id, validacoes } = req.body || {};
 
     if (!processo_id || !Array.isArray(validacoes)) {
@@ -42,7 +43,7 @@ export default async function handler(req, res) {
     }
 
     await sql`
-      UPDATE processos SET status = 'validado' WHERE id = ${processo_id}
+      UPDATE processos SET status = 'validado', concluido_em = NOW() WHERE id = ${processo_id}
     `;
 
     return res.status(200).json({ ok: true });

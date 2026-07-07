@@ -10,7 +10,7 @@
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --verde:#023631; --ciano:#075056; --ciano-med:#2A7C79; --verde-prof:#012824;
+  --verde:#023631; --ciano:#00e5ff; --ciano-med:#2A7C79; --verde-prof:#012824;
   --chumbo:#4A545E; --off:#ECEFF3; --branco:#fff;
   --borda:#D8DDE3; --borda-l:#EEF1F5;
   --vok:#1A7F4B; --vok-bg:#EAF5EE; --vok-b:#b8dfc7;
@@ -20,8 +20,33 @@
   --r:8px; --rlg:12px;
   --shadow:0 1px 4px rgba(2,54,49,.07);
   --shadow-md:0 2px 12px rgba(2,54,49,.10);
+  --bg:#F0F3F7; --surface:#fff; --text:#1a2421; --border-color:#D8DDE3;
 }
-body{font-family:'Plus Jakarta Sans',Calibri,sans-serif;font-weight:300;background:#F0F3F7;color:#1a2421;font-size:13px;line-height:1.6;min-height:100vh}
+html.dark{
+  --bg:#0f1117; --surface:#1a1d27; --border-color:#2d3147; --text:#e2e8f0;
+  --branco:#1a1d27; --off:#1e2130; --borda:#2d3147; --borda-l:#2d3147;
+  --chumbo:#94a3b8; --verde:#00e5ff;
+}
+@media(prefers-color-scheme:dark){
+  html:not(.light){
+    --bg:#0f1117; --surface:#1a1d27; --border-color:#2d3147; --text:#e2e8f0;
+    --branco:#1a1d27; --off:#1e2130; --borda:#2d3147; --borda-l:#2d3147;
+    --chumbo:#94a3b8; --verde:#00e5ff;
+  }
+}
+body{font-family:'Plus Jakarta Sans',Calibri,sans-serif;font-weight:300;background:var(--bg);color:var(--text);font-size:13px;line-height:1.6;min-height:100vh}
+/* Dark mode overrides */
+html.dark body,.dark .scard,.dark .login-box,.dark .acc-card,.dark .fat-card,.dark .fat-modal-box,.dark .usr-table,.dark .usr-form{background:var(--surface);color:var(--text)}
+html.dark input[type=text],html.dark select,html.dark textarea{background:var(--surface);color:var(--text);border-color:var(--border-color)}
+html.dark .topbar{background:#0a0d12}
+html.dark .sidebar{background:var(--surface);border-color:var(--border-color)}
+html.dark .tab-bar{background:var(--surface);border-color:var(--border-color)}
+html.dark .scard{background:var(--surface);border-color:var(--border-color)}
+html.dark .scard-head{background:var(--off);border-color:var(--border-color)}
+html.dark .drop-zone{background:var(--off);border-color:var(--border-color)}
+/* Dark mode toggle button */
+#btnDarkMode{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;padding:6px 10px;border-radius:6px;cursor:pointer;font-size:14px;line-height:1;display:flex;align-items:center;gap:5px}
+#btnDarkMode:hover{background:rgba(255,255,255,.2)}
 
 /* TOPBAR */
 .topbar{background:var(--verde);height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 28px;position:sticky;top:0;z-index:200;box-shadow:0 2px 12px rgba(0,0,0,.25)}
@@ -379,6 +404,42 @@ textarea{resize:vertical;min-height:52px}
     border:1.5px solid var(--borda);border-radius:var(--r);padding:6px 8px;
     font-family:inherit;font-size:11px;font-weight:300;color:#1a2421;background:var(--branco)
   }
+/* Confidence badges */
+.badge-conf{display:inline-block;width:8px;height:8px;border-radius:50%;margin-left:4px;vertical-align:middle;flex-shrink:0}
+.conf-high{background:#22c55e}.conf-med{background:#f59e0b}.conf-low{background:#ef4444}
+/* Diff original */
+.diff-original{display:block;font-size:10px;color:var(--chumbo);margin-top:2px;font-style:italic}
+/* Chips sugestão */
+.chips-container{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.chip-sug{background:var(--auto-bg);border:1px solid var(--auto-b);border-radius:12px;padding:2px 10px;font-size:10px;color:var(--verde);cursor:pointer;font-family:inherit;transition:background .12s}
+.chip-sug:hover{background:var(--auto-b);color:#fff}
+/* NPU history banner */
+.npu-hist-banner{display:none;background:#FFFBEB;border:1px solid #F4D080;border-radius:var(--r);padding:8px 10px;font-size:11px;color:#92400E;margin-top:6px;gap:8px;align-items:center}
+.npu-hist-banner.show{display:flex}
+.npu-hist-banner button{padding:4px 10px;border-radius:5px;border:1px solid currentColor;background:transparent;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;color:inherit}
+/* Operator accuracy chart */
+.op-bar-row{display:flex;align-items:center;gap:8px;font-size:11px;margin-bottom:8px}
+.op-nome{width:130px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text)}
+.op-bar-track{flex:1;background:var(--off);border-radius:6px;height:10px;overflow:hidden}
+.op-bar-fill{height:100%;border-radius:6px;background:var(--ciano);transition:width .5s ease}
+.op-pct{width:38px;text-align:right;font-weight:700;font-size:12px;color:var(--verde)}
+/* Progress bar granular */
+.progress-bar-wrap{display:none;margin-top:8px}
+.progress-bar-track{width:100%;height:6px;background:var(--off);border-radius:4px;overflow:hidden;margin-bottom:4px}
+.progress-bar-fill{height:100%;background:var(--ciano);border-radius:4px;transition:width .3s ease;width:0%}
+.progress-bar-lbl{font-size:10px;color:var(--chumbo);text-align:center}
+/* Shortcut legend */
+.shortcut-legend{font-size:10px;color:var(--chumbo);margin-top:8px;text-align:center}
+/* Espelho filter */
+#espelhoFiltro{width:100%;padding:6px 10px;border:1.5px solid var(--borda);border-radius:var(--r);font-size:12px;font-family:inherit;margin-bottom:8px;outline:none}
+#espelhoFiltro:focus{border-color:var(--ciano)}
+/* ROI card */
+.roi-card{background:linear-gradient(135deg,var(--auto-bg),#d4ece9);border:1px solid var(--auto-b);border-radius:var(--rlg);padding:18px 20px}
+.roi-card-ttl{font-size:11px;font-weight:600;color:var(--verde);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px}
+.roi-stat{display:flex;justify-content:space-between;align-items:baseline;padding:6px 0;border-bottom:1px solid rgba(0,0,0,.06);font-size:12px}
+.roi-stat:last-child{border:none}
+.roi-stat .roi-n{font-size:20px;font-weight:700;color:var(--verde)}
+
   @media print {
     body > *:not(#panel-dashboard) { display:none !important; }
     #panel-dashboard { display:block !important; }
@@ -430,6 +491,9 @@ textarea{resize:vertical;min-height:52px}
     <button class="tbtn tbtn-ciano" onclick="exportarCampos()">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
       Exportar campos
+    </button>
+    <button id="btnDarkMode" onclick="toggleDarkMode()" title="Alternar tema claro/escuro">
+      <span id="darkModeIco">&#9790;</span>
     </button>
     <div id="userMenuWrap" style="position:relative;display:none">
       <button class="tbtn tbtn-ghost" id="btnUserMenu" onclick="toggleUserMenu()" style="gap:7px">
@@ -848,6 +912,7 @@ textarea{resize:vertical;min-height:52px}
       <div class="dz-hint">Somente .pdf</div>
       <input type="file" id="fileInput" accept="application/pdf,.pdf">
     </div>
+    <div id="pdf-thumb" style="display:none;text-align:center;margin-top:6px"><canvas id="pdfThumbCanvas" style="max-width:120px;border-radius:4px;box-shadow:var(--shadow-md)"></canvas></div>
     <div class="file-pill" id="fileCard">
       <div class="fpdf">PDF</div>
       <div class="finfo">
