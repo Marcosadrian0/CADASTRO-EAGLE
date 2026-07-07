@@ -445,6 +445,37 @@ textarea{resize:vertical;min-height:52px}
     .fat-card { box-shadow:none !important; break-inside:avoid; }
     #dashPrintBtn, #dashMesSelect, #dashMesLabel { display:none !important; }
   }
+
+/* ZURICH */
+.zurich-wrap{padding:28px 32px;max-width:1400px;margin:0 auto}
+.zurich-cols{display:flex;gap:20px;margin-bottom:20px;align-items:flex-start}
+.zurich-col-left{flex:1;min-width:0}
+.zurich-col-right{flex:1;min-width:0}
+.z-result-card{background:var(--branco);border:1px solid var(--borda-l);border-radius:var(--rlg);padding:18px;box-shadow:var(--shadow);min-height:120px}
+.z-result-placeholder{font-size:12px;color:var(--chumbo);padding:20px 0;text-align:center}
+.z-info-row{display:flex;gap:8px;font-size:12px;padding:5px 0;border-bottom:1px solid var(--borda-l)}
+.z-info-row:last-child{border-bottom:none}
+.z-info-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;color:var(--chumbo);width:140px;flex-shrink:0;padding-top:1px}
+.z-info-val{color:var(--text);font-weight:600}
+.z-alert{background:var(--err-bg);border:1px solid var(--err-b);border-radius:var(--r);padding:10px 12px;font-size:11px;color:var(--err);margin-top:8px}
+.z-warn{background:var(--amb-bg);border:1px solid var(--amb-b);border-radius:var(--r);padding:10px 12px;font-size:11px;color:var(--amb);margin-top:8px}
+.z-badge-orange{display:inline-block;background:#FFF0E0;border:1px solid #F4A44A;border-radius:20px;padding:2px 10px;font-size:11px;font-weight:600;color:#92400E}
+.z-rule-chip{display:inline-block;background:var(--auto-bg);border:1px solid var(--auto-b);border-radius:4px;padding:2px 7px;font-size:10px;font-weight:600;color:var(--ciano-med);margin-right:4px;margin-bottom:2px}
+.z-rule-motivo{font-size:10px;color:var(--chumbo);margin-top:2px;margin-bottom:6px}
+.z-section-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--chumbo);margin:12px 0 6px}
+.benner-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px 14px}
+.benner-field{display:flex;flex-direction:column;gap:4px}
+.benner-field label{font-size:10px;font-weight:600;color:var(--chumbo);text-transform:uppercase;letter-spacing:.45px}
+.benner-field-full{grid-column:1/-1}
+.z-btn-row{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+.z-btn-primary{padding:9px 18px;background:var(--verde);color:#fff;border:none;border-radius:var(--r);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px;transition:background .15s}
+.z-btn-primary:hover{background:var(--ciano-med)}
+.z-btn-ghost{padding:9px 18px;background:none;color:var(--chumbo);border:1.5px solid var(--borda);border-radius:var(--r);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s}
+.z-btn-ghost:hover{border-color:var(--ciano);color:var(--verde)}
+.z-radio-group{display:flex;gap:14px;align-items:center;padding-top:6px}
+.z-radio-group label{font-size:12px;font-weight:400;display:flex;align-items:center;gap:5px;cursor:pointer;text-transform:none;letter-spacing:0}
+html.dark .z-result-card{background:var(--surface);border-color:var(--border-color)}
+html.dark .z-info-row{border-color:var(--border-color)}
 </style>
 </head>
 <body>
@@ -531,6 +562,293 @@ textarea{resize:vertical;min-height:52px}
   <button class="tab-btn" id="tab-usuarios" onclick="mudarAba('usuarios')" style="display:none">Usuários</button>
   <button class="tab-btn" id="tab-faturamento" onclick="mudarAba('faturamento')" style="display:none">Faturamento</button>
   <button class="tab-btn" id="tab-dashboard" onclick="mudarAba('dashboard')" style="display:none">Dashboard</button>
+  <button class="tab-btn" id="tab-zurich" onclick="mudarAba('zurich')">Zurich</button>
+</div>
+
+<!-- ABA ZURICH -->
+<div class="tab-panel" id="panel-zurich">
+<div class="zurich-wrap">
+  <div style="margin-bottom:20px">
+    <div style="font-size:18px;font-weight:600;color:var(--verde);margin-bottom:4px">Zurich — Assistente de Roteamento</div>
+    <div style="font-size:12px;color:var(--chumbo)">Preencha os dados da demanda para obter o roteamento correto e pre-preencher o formulario Benner.</div>
+  </div>
+
+  <div class="zurich-cols">
+    <!-- Coluna esquerda: formulario -->
+    <div class="zurich-col-left">
+      <div class="scard">
+        <div class="scard-head">
+          <div class="scard-ico">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+          <span class="scard-ttl">Assistente de Roteamento</span>
+        </div>
+        <div class="scard-body">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 14px">
+            <div class="fg">
+              <label>Tipo de demanda</label>
+              <select id="z-tipo">
+                <option value="">Selecione...</option>
+                <option value="odonto">Plano odontologico</option>
+                <option value="venda_casada">Venda casada</option>
+                <option value="vida">Vida</option>
+                <option value="residencial">Residencial</option>
+                <option value="consignatoria">Acao consignatoria</option>
+                <option value="pretamista">Pretamista</option>
+                <option value="covid">Covid-19</option>
+                <option value="credito_imobiliario">Credito imobiliario</option>
+                <option value="cessao_margem">Cessao de margem</option>
+                <option value="cancelamento_apolice">Cancelamento de apolice</option>
+                <option value="reajuste_premio">Reajuste de premio</option>
+                <option value="exibicao_documentos">Exibicao de documentos</option>
+                <option value="resgate_previdencia">Resgate de previdencia</option>
+                <option value="nao_aceitacao_risco">Nao aceitacao de risco</option>
+                <option value="devolucao_premio">Devolucao de premio</option>
+                <option value="cpf_cnpj_nao_localizado">CPF/CNPJ nao localizado</option>
+                <option value="premio_encerrado_transferencia">Premio encerrado por transferencia</option>
+                <option value="assistencia_24h">Assistencia 24h</option>
+                <option value="previdencia">Previdencia</option>
+                <option value="sinistro">Discute sinistro (geral)</option>
+              </select>
+            </div>
+            <div class="fg">
+              <label>Envolve sinistro?</label>
+              <select id="z-sinistro">
+                <option value="">Nao informado</option>
+                <option value="sim">Sim</option>
+                <option value="nao">Nao</option>
+              </select>
+            </div>
+            <div class="fg">
+              <label>Regiao</label>
+              <input type="text" id="z-regiao" placeholder="Ex: Sul, Nordeste...">
+            </div>
+            <div class="fg">
+              <label>Objeto</label>
+              <input type="text" id="z-objeto" placeholder="Objeto do processo">
+            </div>
+            <div class="fg">
+              <label>Assunto</label>
+              <input type="text" id="z-assunto" placeholder="Assunto do processo">
+            </div>
+            <div class="fg">
+              <label>Data/Hora de recebimento</label>
+              <input type="datetime-local" id="z-hora">
+            </div>
+            <div class="fg">
+              <label>Confirmacao do gestor (Previdencia)</label>
+              <select id="z-gestor">
+                <option value="">Nenhum</option>
+                <option value="guilherme">Guilherme</option>
+                <option value="tatiane">Tatiane</option>
+              </select>
+            </div>
+            <div class="fg">
+              <label>Ramos (manual, se nao fixado pela regra)</label>
+              <input type="text" id="z-ramos-manual" placeholder="Ex: 71, 14, 18">
+            </div>
+          </div>
+          <div style="margin-top:12px">
+            <div class="fg" style="flex-direction:row;align-items:center;gap:8px;padding:8px 0">
+              <input type="checkbox" id="z-trabalhista" style="width:16px;height:16px;cursor:pointer;margin:0">
+              <label for="z-trabalhista" style="font-size:12px;font-weight:400;text-transform:none;letter-spacing:0;cursor:pointer;color:var(--text)">Materia trabalhista</label>
+            </div>
+          </div>
+          <div class="z-btn-row">
+            <button class="z-btn-primary" id="z-calcular" onclick="zurichCalcular()">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              Calcular Roteamento
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Coluna direita: resultado -->
+    <div class="zurich-col-right">
+      <div class="scard">
+        <div class="scard-head">
+          <div class="scard-ico">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          </div>
+          <span class="scard-ttl">Resultado do Roteamento</span>
+        </div>
+        <div class="scard-body">
+          <div id="z-resultado">
+            <div class="z-result-placeholder">Preencha os dados e clique em Calcular Roteamento.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Formulario Benner -->
+  <div class="scard">
+    <div class="scard-head">
+      <div class="scard-ico">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 7h8M8 11h8M8 15h5"/></svg>
+      </div>
+      <span class="scard-ttl">Formulario Benner</span>
+    </div>
+    <div class="scard-body">
+      <div class="benner-grid">
+        <div class="benner-field">
+          <label>Coligada *</label>
+          <input type="text" id="zb-coligada" placeholder="">
+        </div>
+        <div class="benner-field">
+          <label>Data inicio</label>
+          <input type="text" id="zb-data-inicio" placeholder="DD/MM/AAAA">
+        </div>
+        <div class="benner-field"></div>
+
+        <div class="benner-field">
+          <label>Departamento *</label>
+          <input type="text" id="zb-departamento" placeholder="">
+        </div>
+        <div class="benner-field">
+          <label>Categoria *</label>
+          <input type="text" id="zb-categoria" placeholder="">
+        </div>
+        <div class="benner-field">
+          <label>Subcategoria *</label>
+          <input type="text" id="zb-subcategoria" placeholder="">
+        </div>
+
+        <div class="benner-field">
+          <label>Tipo de acao *</label>
+          <input type="text" id="zb-tipo-acao" placeholder="">
+        </div>
+        <div class="benner-field">
+          <label>Objeto padrao *</label>
+          <input type="text" id="zb-objeto" placeholder="">
+        </div>
+        <div class="benner-field">
+          <label>Assunto *</label>
+          <input type="text" id="zb-assunto" placeholder="">
+        </div>
+
+        <div class="benner-field">
+          <label>Natureza *</label>
+          <input type="text" id="zb-natureza" placeholder="">
+        </div>
+        <div class="benner-field">
+          <label>Data de citacao</label>
+          <input type="text" id="zb-data-citacao" placeholder="DD/MM/AAAA">
+        </div>
+        <div class="benner-field">
+          <label>Numero do processo</label>
+          <input type="text" id="zb-num-processo" placeholder="">
+        </div>
+
+        <div class="benner-field">
+          <label>Adverso principal</label>
+          <input type="text" id="zb-adverso" placeholder="">
+        </div>
+        <div class="benner-field">
+          <label>Risco</label>
+          <input type="text" id="zb-risco" placeholder="">
+        </div>
+        <div class="benner-field">
+          <label>% Risco</label>
+          <input type="text" id="zb-pct-risco" placeholder="">
+        </div>
+
+        <div class="benner-field">
+          <label>Banco/Empresa origem</label>
+          <input type="text" id="zb-banco-origem" placeholder="">
+        </div>
+        <div class="benner-field">
+          <label>Banco incorporado</label>
+          <input type="text" id="zb-banco-incorporado" placeholder="">
+        </div>
+        <div class="benner-field">
+          <label>Agencia/Departamento</label>
+          <input type="text" id="zb-agencia" placeholder="">
+        </div>
+
+        <div class="benner-field">
+          <label>Canal de contratacao</label>
+          <input type="text" id="zb-canal-contratacao" placeholder="">
+        </div>
+        <div class="benner-field">
+          <label>Tipo de captura</label>
+          <input type="text" id="zb-tipo-captura" placeholder="">
+        </div>
+        <div class="benner-field">
+          <label>Causa raiz</label>
+          <input type="text" id="zb-causa-raiz" placeholder="">
+        </div>
+
+        <div class="benner-field">
+          <label>Valor da causa *</label>
+          <input type="text" id="zb-valor-causa" placeholder="">
+        </div>
+        <div class="benner-field">
+          <label>Revisao</label>
+          <input type="text" id="zb-revisao" placeholder="">
+        </div>
+        <div class="benner-field">
+          <label>Danos</label>
+          <input type="text" id="zb-danos" placeholder="">
+        </div>
+
+        <div class="benner-field">
+          <label>Classificacao do processo</label>
+          <input type="text" id="zb-class-processo" placeholder="">
+        </div>
+        <div class="benner-field">
+          <label>Classificacao da contingencia</label>
+          <input type="text" id="zb-class-contingencia" placeholder="">
+        </div>
+        <div class="benner-field">
+          <label>Passo antigo</label>
+          <input type="text" id="zb-passo-antigo" placeholder="">
+        </div>
+
+        <div class="benner-field">
+          <label>Segmento</label>
+          <input type="text" id="zb-segmento" placeholder="">
+        </div>
+        <div class="benner-field">
+          <label>Tipo desdobramento</label>
+          <input type="text" id="zb-tipo-desdobramento" placeholder="">
+        </div>
+        <div class="benner-field"></div>
+
+        <div class="benner-field">
+          <label>Processo relevante</label>
+          <div class="z-radio-group">
+            <label><input type="radio" name="zb-proc-relevante" id="zb-proc-relevante-nao" value="Nao"> Nao</label>
+            <label><input type="radio" name="zb-proc-relevante" id="zb-proc-relevante-sim" value="Sim"> Sim</label>
+          </div>
+        </div>
+        <div class="benner-field">
+          <label>Dossie urgente</label>
+          <div class="z-radio-group">
+            <label><input type="radio" name="zb-urgente" id="zb-urgente-nao" value="Nao" checked> Nao</label>
+            <label><input type="radio" name="zb-urgente" id="zb-urgente-sim" value="Sim"> Sim</label>
+          </div>
+        </div>
+        <div class="benner-field"></div>
+
+        <div class="benner-field benner-field-full">
+          <label>Observacoes</label>
+          <textarea id="zb-obs" rows="3" placeholder="Observacoes adicionais..."></textarea>
+        </div>
+      </div>
+
+      <div class="z-btn-row">
+        <button class="z-btn-ghost" onclick="zurichCopiarBenner()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          Copiar para area de transferencia
+        </button>
+        <button class="z-btn-ghost" onclick="zurichLimpar()">Limpar</button>
+      </div>
+      <div id="zb-copy-msg" style="font-size:11px;color:var(--vok);margin-top:6px;min-height:16px"></div>
+    </div>
+  </div>
+</div>
 </div>
 
 <!-- ABA ACURÁCIA -->
@@ -6760,6 +7078,250 @@ document.addEventListener('DOMContentLoaded', () => {
     html.classList.remove('dark');
   }
 });
+
+// ── ZURICH ────────────────────────────────────────────────────────────────────
+
+const REGRAS_ZURICH = [
+  { id:'odonto', label:'Plano odontologico', priority:1,
+    match:(c)=>c.tipo==='odonto',
+    output:{ coligada:'927', credenciado:'FRIL', carteira:'Tatiane', objetoSugerido:'Plano odontologico', assuntoSugerido:'Sinistro negado' },
+    motivo:'Demanda de plano odontologico direciona sempre para FRIL, coligada 927, carteira da Tatiane.' },
+  { id:'venda_casada', label:'Venda casada', priority:2,
+    match:(c)=>c.tipo==='venda_casada',
+    output:{ coligada:'136', ramos:'71, 14, 18', credenciado:'Fabio Torres', colaborador:'Guilherme Luis' },
+    motivo:'Venda casada usa credenciado padrao Fabio Torres e colaborador Guilherme Luis, coligada 136.' },
+  { id:'vida', label:'Vida', priority:3,
+    match:(c)=>c.tipo==='vida',
+    output:{ coligada:'507', ramos:'82, 93, 77' },
+    motivo:'Casos de vida sempre coligada 507, ramos 82/93/77.' },
+  { id:'residencial', label:'Residencial', priority:4,
+    match:(c)=>c.tipo==='residencial',
+    output:{ coligada:'136', ramos:'71, 18, 14' },
+    motivo:'Casos residenciais sempre coligada 136, ramos 71/18/14.' },
+  { id:'consignatoria', label:'Acao consignatoria', priority:5,
+    match:(c)=>c.tipo==='consignatoria',
+    output:{ credenciado:'Fernandes Ribeiro Instaqui e Lopes Sociedade de Advogados' },
+    motivo:'Toda acao consignatoria vai para o credenciado Fernandes Ribeiro Instaqui e Lopes.' },
+  { id:'cabanellos', label:'Pretamista / Covid / Credito imobiliario', priority:6,
+    match:(c)=>['pretamista','covid','credito_imobiliario'].includes(c.tipo),
+    output:{ credenciado:'Cabanellos' },
+    motivo:'Pretamista, Covid e Credito imobiliario sempre vinculados ao credenciado Cabanellos.' },
+  { id:'guilherme_lista', label:'Lista vinculada a Guilherme Luis', priority:7,
+    match:(c)=>['cessao_margem','cancelamento_apolice','reajuste_premio','exibicao_documentos','resgate_previdencia','nao_aceitacao_risco','devolucao_premio','cpf_cnpj_nao_localizado','premio_encerrado_transferencia','assistencia_24h'].includes(c.tipo),
+    output:(c)=>({ colaborador:'Guilherme Luis', credenciado:'Conforme tabela de terceirizacao'+(c.regiao?' - regiao: '+c.regiao:' (informar regiao)') }),
+    motivo:'Cessao de margem, cancelamento de apolice, reajuste de premio, exibicao de documentos, resgate de previdencia, nao aceitacao de risco, devolucao de premio, CPF/CNPJ nao localizado, premio encerrado por transferencia e assistencia 24h vao para o colaborador Guilherme Luis, credenciado por regiao.' },
+  { id:'previdencia_sem_sinistro', label:'Previdencia sem sinistro', priority:8,
+    match:(c)=>c.tipo==='previdencia'&&c.envolveSinistro==='nao'&&!!c.gestorConfirma,
+    output:{ carteira:'Guilherme', credenciado:'Tortoro Madureira & Ragazzi Advogados' },
+    motivo:'Previdencia sem sinistro: carteira do Guilherme, credenciado Tortoro Madureira & Ragazzi.' },
+  { id:'previdencia_com_sinistro', label:'Previdencia com sinistro', priority:8,
+    match:(c)=>c.tipo==='previdencia'&&c.envolveSinistro==='sim'&&!!c.gestorConfirma,
+    output:{ carteira:'Tatiane', credenciado:'Queiroz Cavalcanti' },
+    motivo:'Previdencia com sinistro: carteira da Tatiane, credenciado Queiroz Cavalcanti.' },
+  { id:'sinistro_geral', label:'Discute sinistro', priority:9,
+    match:(c)=>c.tipo==='sinistro'||c.envolveSinistro==='sim',
+    output:(c)=>({ colaborador:'Tatiane Alkmim', credenciado:'Conforme regiao'+(c.regiao?' - '+c.regiao:' (informar regiao)') }),
+    motivo:'Casos que discutem sinistro sempre vinculados a advogada colaboradora Tatiane Alkmim, credenciado conforme regiao.' },
+];
+
+function zurichRotear(caso) {
+  const resultado = { coligada:null, ramos:null, credenciado:null, colaborador:null, carteira:null, objetoSugerido:null, assuntoSugerido:null };
+  const regrasAplicadas = [];
+  for (const regra of [...REGRAS_ZURICH].sort((a,b)=>a.priority-b.priority)) {
+    if (!regra.match(caso)) continue;
+    const saida = typeof regra.output==='function' ? regra.output(caso) : regra.output;
+    for (const campo of Object.keys(saida)) {
+      if (resultado[campo]===null||resultado[campo]===undefined) resultado[campo]=saida[campo];
+    }
+    regrasAplicadas.push({ id:regra.id, label:regra.label, motivo:regra.motivo });
+  }
+  let equipe=null, equipeMotivo=null;
+  if (caso.trabalhista && caso.envolveSinistro==='sim') {
+    equipe='Civel-Seguros';
+    equipeMotivo='Materia trabalhista + discute sinistro: equipe forcada para Civel-Seguros.';
+  }
+  return { resultado, regrasAplicadas, equipe, equipeMotivo };
+}
+
+function zurichValidar(caso, resultado) {
+  const alertas = [];
+  const txt = ((caso.objeto||'')+' '+(caso.assunto||'')).toLowerCase();
+  if (resultado.colaborador==='Tatiane Alkmim' && (caso.objeto||caso.assunto) && !txt.includes('sinistro'))
+    alertas.push('Colaboradora Tatiane Alkmim exige que Objeto ou Assunto contenham "sinistro". Ajuste antes de cadastrar.');
+  if (resultado.colaborador==='Guilherme Luis' && txt.includes('sinistro'))
+    alertas.push('Colaborador Guilherme Luis nao pode ter Objeto/Assunto relacionados a sinistro. Revise os campos.');
+  return alertas;
+}
+
+function zurichPrazo(horaISO) {
+  if (!horaISO) return null;
+  const rec = new Date(horaISO);
+  const limite = new Date(rec); limite.setHours(16,0,0,0);
+  const dataCad = new Date(rec);
+  const mesmoDia = rec <= limite;
+  if (!mesmoDia) dataCad.setDate(dataCad.getDate()+1);
+  return { dataCadastro: dataCad.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'}), mesmoDia };
+}
+
+function zurichProcessar(caso) {
+  const { resultado, regrasAplicadas, equipe, equipeMotivo } = zurichRotear(caso);
+  const alertasBloqueio = zurichValidar(caso, resultado);
+  const prazo = zurichPrazo(caso.horaRecebimento);
+  const pendenteValidacaoManual = caso.tipo==='previdencia' && !caso.gestorConfirma;
+  const podeCadastrar = !!caso.tipo && alertasBloqueio.length===0 && !pendenteValidacaoManual;
+  return { resultado, ramosFinal: resultado.ramos||caso.ramosManual||null, regrasAplicadas, equipe, equipeMotivo, alertasBloqueio, pendenteValidacaoManual, prazo, podeCadastrar };
+}
+
+function zurichCalcular() {
+  const caso = {
+    tipo: document.getElementById('z-tipo').value,
+    envolveSinistro: document.getElementById('z-sinistro').value,
+    regiao: document.getElementById('z-regiao').value.trim(),
+    trabalhista: document.getElementById('z-trabalhista').checked,
+    objeto: document.getElementById('z-objeto').value.trim(),
+    assunto: document.getElementById('z-assunto').value.trim(),
+    horaRecebimento: document.getElementById('z-hora').value,
+    gestorConfirma: document.getElementById('z-gestor').value,
+    ramosManual: document.getElementById('z-ramos-manual').value.trim(),
+  };
+
+  const proc = zurichProcessar(caso);
+  const { resultado, ramosFinal, regrasAplicadas, equipe, equipeMotivo, alertasBloqueio, pendenteValidacaoManual, prazo } = proc;
+
+  let html = '';
+
+  if (alertasBloqueio.length) {
+    alertasBloqueio.forEach(a => { html += `<div class="z-alert">${a}</div>`; });
+  }
+  if (pendenteValidacaoManual) {
+    html += `<div class="z-warn">Previdencia requer confirmacao do gestor antes do roteamento ser concluido. Selecione o gestor no campo acima.</div>`;
+  }
+
+  const campos = [
+    ['Coligada', resultado.coligada],
+    ['Ramos', ramosFinal],
+    ['Credenciado', resultado.credenciado],
+    ['Colaborador', resultado.colaborador],
+    ['Carteira', resultado.carteira],
+    ['Objeto sugerido', resultado.objetoSugerido],
+    ['Assunto sugerido', resultado.assuntoSugerido],
+  ];
+  html += '<div style="margin-top:8px">';
+  campos.forEach(([lbl, val]) => {
+    if (val) html += `<div class="z-info-row"><span class="z-info-label">${lbl}</span><span class="z-info-val">${val}</span></div>`;
+  });
+  if (equipe) {
+    html += `<div class="z-info-row"><span class="z-info-label">Equipe</span><span><span class="z-badge-orange">${equipe}</span></span></div>`;
+    if (equipeMotivo) html += `<div style="font-size:10px;color:var(--chumbo);padding:2px 0 6px 148px">${equipeMotivo}</div>`;
+  }
+  if (prazo) {
+    const extra = prazo.mesmoDia ? 'mesmo dia' : 'dia seguinte';
+    html += `<div class="z-info-row"><span class="z-info-label">Prazo de cadastro</span><span class="z-info-val">${prazo.dataCadastro} <span style="font-weight:400;color:var(--chumbo)">(${extra})</span></span></div>`;
+  }
+  html += '</div>';
+
+  if (regrasAplicadas.length) {
+    html += '<div class="z-section-title">Regras aplicadas</div>';
+    regrasAplicadas.forEach(r => {
+      html += `<span class="z-rule-chip">${r.label}</span>`;
+    });
+    html += '<div style="margin-top:8px">';
+    regrasAplicadas.forEach(r => {
+      html += `<div class="z-rule-motivo">${r.motivo}</div>`;
+    });
+    html += '</div>';
+  } else if (caso.tipo) {
+    html += '<div class="z-warn" style="margin-top:8px">Nenhuma regra especifica encontrada para este tipo de demanda. Verifique o roteamento manualmente.</div>';
+  }
+
+  document.getElementById('z-resultado').innerHTML = html;
+
+  // Pre-fill Benner
+  if (resultado.coligada) document.getElementById('zb-coligada').value = resultado.coligada;
+  if (resultado.objetoSugerido) document.getElementById('zb-objeto').value = resultado.objetoSugerido;
+  if (resultado.assuntoSugerido) document.getElementById('zb-assunto').value = resultado.assuntoSugerido;
+  document.getElementById('zb-departamento').value = 'JURIDICO';
+  document.getElementById('zb-categoria').value = 'Juridico Civil';
+  document.getElementById('zb-subcategoria').value = resultado.carteira || 'Zurich';
+  if (!document.getElementById('zb-danos').value) document.getElementById('zb-danos').value = 'Moral + Material';
+  if (!document.getElementById('zb-revisao').value) document.getElementById('zb-revisao').value = 'Nao Revisado';
+  if (!document.getElementById('zb-class-contingencia').value) document.getElementById('zb-class-contingencia').value = 'Contingencia Inicial';
+}
+
+function zurichCopiarBenner() {
+  const fields = [
+    ['Coligada', 'zb-coligada'],
+    ['Data inicio', 'zb-data-inicio'],
+    ['Departamento', 'zb-departamento'],
+    ['Categoria', 'zb-categoria'],
+    ['Subcategoria', 'zb-subcategoria'],
+    ['Tipo de acao', 'zb-tipo-acao'],
+    ['Objeto padrao', 'zb-objeto'],
+    ['Assunto', 'zb-assunto'],
+    ['Natureza', 'zb-natureza'],
+    ['Data de citacao', 'zb-data-citacao'],
+    ['Numero do processo', 'zb-num-processo'],
+    ['Adverso principal', 'zb-adverso'],
+    ['Risco', 'zb-risco'],
+    ['% Risco', 'zb-pct-risco'],
+    ['Banco/Empresa origem', 'zb-banco-origem'],
+    ['Banco incorporado', 'zb-banco-incorporado'],
+    ['Agencia/Departamento', 'zb-agencia'],
+    ['Canal de contratacao', 'zb-canal-contratacao'],
+    ['Tipo de captura', 'zb-tipo-captura'],
+    ['Causa raiz', 'zb-causa-raiz'],
+    ['Valor da causa', 'zb-valor-causa'],
+    ['Revisao', 'zb-revisao'],
+    ['Danos', 'zb-danos'],
+    ['Classificacao do processo', 'zb-class-processo'],
+    ['Classificacao da contingencia', 'zb-class-contingencia'],
+    ['Passo antigo', 'zb-passo-antigo'],
+    ['Segmento', 'zb-segmento'],
+    ['Tipo desdobramento', 'zb-tipo-desdobramento'],
+    ['Observacoes', 'zb-obs'],
+  ];
+  const procRel = document.querySelector('input[name="zb-proc-relevante"]:checked');
+  const urgente = document.querySelector('input[name="zb-urgente"]:checked');
+  let txt = 'FORMULARIO BENNER - ZURICH\n' + '='.repeat(40) + '\n';
+  fields.forEach(([lbl, id]) => {
+    const el = document.getElementById(id);
+    if (el && el.value.trim()) txt += `${lbl}: ${el.value.trim()}\n`;
+  });
+  if (procRel) txt += `Processo relevante: ${procRel.value}\n`;
+  if (urgente) txt += `Dossie urgente: ${urgente.value}\n`;
+  navigator.clipboard.writeText(txt).then(() => {
+    const msg = document.getElementById('zb-copy-msg');
+    msg.textContent = 'Copiado para a area de transferencia.';
+    setTimeout(() => { msg.textContent = ''; }, 3000);
+  }).catch(() => {
+    const msg = document.getElementById('zb-copy-msg');
+    msg.textContent = 'Nao foi possivel copiar. Copie manualmente.';
+  });
+}
+
+function zurichLimpar() {
+  ['zb-coligada','zb-data-inicio','zb-departamento','zb-categoria','zb-subcategoria',
+   'zb-tipo-acao','zb-objeto','zb-assunto','zb-natureza','zb-data-citacao','zb-num-processo',
+   'zb-adverso','zb-risco','zb-pct-risco','zb-banco-origem','zb-banco-incorporado',
+   'zb-agencia','zb-canal-contratacao','zb-tipo-captura','zb-causa-raiz','zb-valor-causa',
+   'zb-revisao','zb-danos','zb-class-processo','zb-class-contingencia','zb-passo-antigo',
+   'zb-segmento','zb-tipo-desdobramento','zb-obs'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  ['z-tipo','z-sinistro','z-gestor'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  ['z-regiao','z-objeto','z-assunto','z-ramos-manual'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('z-hora').value = '';
+  document.getElementById('z-trabalhista').checked = false;
+  document.getElementById('z-resultado').innerHTML = '<div class="z-result-placeholder">Preencha os dados e clique em Calcular Roteamento.</div>';
+  document.getElementById('zb-copy-msg').textContent = '';
+}
 </script>
 </body>
 </html>
