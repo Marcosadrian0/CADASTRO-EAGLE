@@ -7399,10 +7399,15 @@ async function zAnalisarDocumento() {
   const docAlert = document.getElementById('z-doc-alert');
   if (docAlert) docAlert.style.display = 'none';
 
+  const instrucoes = `Analise este documento juridico e extraia as informacoes em JSON puro sem markdown nem texto adicional.
+Retorne SOMENTE este JSON preenchido, sem mais nenhum texto:
+{"tipo_demanda":"odonto|venda_casada|vida|residencial|consignatoria|pretamista|covid|credito_imobiliario|cessao_margem|cancelamento_apolice|reajuste_premio|exibicao_documentos|resgate_previdencia|nao_aceitacao_risco|devolucao_premio|cpf_cnpj_nao_localizado|premio_encerrado_transferencia|assistencia_24h|previdencia|sinistro|outro","envolve_sinistro":"sim ou nao","objeto":"titulo ou objeto da acao","assunto":"assunto principal","adverso_nome":"nome do autor ou reclamante","valor_causa":"valor em R$","num_processo":"numero completo do processo","data_citacao":"DD/MM/AAAA ou vazio","trabalhista":false,"regiao":"UF ou estado","obs":"resumo em uma frase"}
+Criterios de classificacao: indenizacao por sinistro negado = "sinistro"; plano odontologico = "odonto"; previdencia privada = "previdencia"; consignado/desconto em folha = "cessao_margem"; se nao identificar claramente use "outro".`;
+
   try {
-    zSetProgress(20, 'Extraindo texto do PDF...');
+    zSetProgress(15, 'Extraindo texto do PDF...');
     const pdf = await pdfjsLib.getDocument({ data: _zPdfBuffer }).promise;
-    const MAX = Math.min(pdf.numPages, 30);
+    const MAX = Math.min(pdf.numPages, 20);
     let texto = '';
     for (let p = 1; p <= MAX; p++) {
       const page = await pdf.getPage(p);
@@ -7417,21 +7422,31 @@ async function zAnalisarDocumento() {
     }
     texto = texto.replace(/ {3,}/g, '  ').trim();
 
-    zSetProgress(50, 'Enviando para IA...');
+    let data;
+    if (texto.length < 100) {
+      // PDF escaneado: envia como base64 diretamente para a IA
+      zSetProgress(40, 'PDF escaneado — enviando imagem para IA...');
+      const bytes = new Uint8Array(_zPdfBuffer);
+      let bin = '';
+      for (let i = 0; i < bytes.byteLength; i++) bin += String.fromCharCode(bytes[i]);
+      const pdf_b64 = btoa(bin);
+      data = await chamarAPI('extrair_pdf', { pdf_b64, instrucoes });
+    } else {
+      zSetProgress(40, 'Enviando texto para IA...');
+      // Pega primeiros 4000 chars + ultimos 1000 (captura cabecalho e final da peticao)
+      const trecho = texto.length > 5000
+        ? texto.substring(0, 4000) + '\n...\n' + texto.substring(texto.length - 1000)
+        : texto;
+      data = await chamarAPI('extrair_texto', { texto: trecho, instrucoes });
+    }
 
-    const instrucoes = `Analise este documento juridico relacionado a seguro Zurich e extraia as informacoes em JSON puro sem markdown nem texto adicional:
-{"tipo_demanda":"odonto|venda_casada|vida|residencial|consignatoria|pretamista|covid|credito_imobiliario|cessao_margem|cancelamento_apolice|reajuste_premio|exibicao_documentos|resgate_previdencia|nao_aceitacao_risco|devolucao_premio|cpf_cnpj_nao_localizado|premio_encerrado_transferencia|assistencia_24h|previdencia|sinistro|outro","envolve_sinistro":"sim|nao","objeto":"texto resumido do objeto","assunto":"texto resumido do assunto","adverso_nome":"nome do autor/reclamante","valor_causa":"R$ X.XXX,XX","num_processo":"numero do processo","data_citacao":"DD/MM/AAAA","trabalhista":false,"regiao":"estado ou regiao","obs":"breve resumo"}
-Regras: sinistro negado ou indenizacao = tipo "sinistro"; plano odonto = "odonto"; previdencia = "previdencia"; desconto em folha/consignado = "cessao_margem". Retorne SOMENTE o JSON, sem explicacoes.`;
-
-    const data = await chamarAPI('extrair_texto', { texto: texto.substring(0, 6000), instrucoes });
     zSetProgress(80, 'Preenchendo campos...');
 
     const rawText = (data.content?.[0]?.text || data.texto || data.result || '');
-    // Extrai o JSON mesmo se vier com texto extra ao redor
-    const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error('Resposta da IA nao continha JSON: ' + rawText.substring(0, 120));
+    const jsonMatch = rawText.match(/\{[\s\S]*?\}/);
+    if (!jsonMatch) throw new Error('IA nao retornou JSON valido. Resposta: ' + rawText.substring(0, 150));
     let campos = {};
-    try { campos = JSON.parse(jsonMatch[0]); } catch(e) { throw new Error('JSON invalido: ' + jsonMatch[0].substring(0, 120)); }
+    try { campos = JSON.parse(jsonMatch[0]); } catch(e) { throw new Error('Erro ao interpretar JSON: ' + jsonMatch[0].substring(0, 150)); }
 
     // Preenche assistente de roteamento
     if (campos.tipo_demanda && campos.tipo_demanda !== 'outro') {
