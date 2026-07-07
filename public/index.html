@@ -7419,22 +7419,19 @@ async function zAnalisarDocumento() {
 
     zSetProgress(50, 'Enviando para IA...');
 
-    const instrucoes = `Analise este documento juridico relacionado a seguro Zurich e extraia as informacoes em JSON puro sem markdown:
-{"tipo_demanda":"(odonto|venda_casada|vida|residencial|consignatoria|pretamista|covid|credito_imobiliario|cessao_margem|cancelamento_apolice|reajuste_premio|exibicao_documentos|resgate_previdencia|nao_aceitacao_risco|devolucao_premio|cpf_cnpj_nao_localizado|premio_encerrado_transferencia|assistencia_24h|previdencia|sinistro|outro)","envolve_sinistro":"(sim|nao)","objeto":"","assunto":"","adverso_nome":"","valor_causa":"","num_processo":"","data_citacao":"","trabalhista":false,"regiao":"","obs":""}
-Identifique o tipo correto pelo conteudo. Se for sobre sinistro negado/indenizacao use "sinistro". Se mencionar plano odonto use "odonto". Se mencionar previdencia use "previdencia". Retorne apenas o JSON.`;
+    const instrucoes = `Analise este documento juridico relacionado a seguro Zurich e extraia as informacoes em JSON puro sem markdown nem texto adicional:
+{"tipo_demanda":"odonto|venda_casada|vida|residencial|consignatoria|pretamista|covid|credito_imobiliario|cessao_margem|cancelamento_apolice|reajuste_premio|exibicao_documentos|resgate_previdencia|nao_aceitacao_risco|devolucao_premio|cpf_cnpj_nao_localizado|premio_encerrado_transferencia|assistencia_24h|previdencia|sinistro|outro","envolve_sinistro":"sim|nao","objeto":"texto resumido do objeto","assunto":"texto resumido do assunto","adverso_nome":"nome do autor/reclamante","valor_causa":"R$ X.XXX,XX","num_processo":"numero do processo","data_citacao":"DD/MM/AAAA","trabalhista":false,"regiao":"estado ou regiao","obs":"breve resumo"}
+Regras: sinistro negado ou indenizacao = tipo "sinistro"; plano odonto = "odonto"; previdencia = "previdencia"; desconto em folha/consignado = "cessao_margem". Retorne SOMENTE o JSON, sem explicacoes.`;
 
-    const sessao = localStorage.getItem('eagle_sessao');
-    const resp = await fetch('/api/extrair', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tipo: 'extrair_texto', texto: texto.substring(0, 6000), instrucoes, token: sessao })
-    });
-    const data = await resp.json();
+    const data = await chamarAPI('extrair_texto', { texto: texto.substring(0, 6000), instrucoes });
     zSetProgress(80, 'Preenchendo campos...');
 
-    const raw = (data.content?.[0]?.text || data.texto || '').replace(/```json|```/g,'').trim();
+    const rawText = (data.content?.[0]?.text || data.texto || data.result || '');
+    // Extrai o JSON mesmo se vier com texto extra ao redor
+    const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('Resposta da IA nao continha JSON: ' + rawText.substring(0, 120));
     let campos = {};
-    try { campos = JSON.parse(raw); } catch(e) { throw new Error('Resposta da IA invalida: ' + raw.substring(0,100)); }
+    try { campos = JSON.parse(jsonMatch[0]); } catch(e) { throw new Error('JSON invalido: ' + jsonMatch[0].substring(0, 120)); }
 
     // Preenche assistente de roteamento
     if (campos.tipo_demanda && campos.tipo_demanda !== 'outro') {
