@@ -5143,8 +5143,28 @@ async function fatLoadMonthState(mk) {
     return val || fatEmptyState();
   } catch(e) { return fatEmptyState(); }
 }
+function fatCompactState(st) {
+  // Guarda apenas campos essenciais para economizar espaco no IndexedDB
+  const compact = row => ({ processo: row.processo, data: row.data, tipoOcorrencia: row.tipoOcorrencia, pasta: row.pasta });
+  const compactCad = row => ({ processo: row.processo, pasta: row.pasta, dataCadastro: row.dataCadastro, cadastrante: row.cadastrante });
+  return {
+    cadastro: {
+      rows: (st.cadastro?.rows || []).map(compactCad),
+      manuaisRows: (st.cadastro?.manuaisRows || []).map(compactCad),
+      outrosRows: (st.cadastro?.outrosRows || []).map(compactCad),
+      uploadedAt: st.cadastro?.uploadedAt,
+      fileName: st.cadastro?.fileName,
+      totalRaw: st.cadastro?.totalRaw,
+      totalFiltrado: st.cadastro?.totalFiltrado,
+      outrosPorCadastrante: st.cadastro?.outrosPorCadastrante || {}
+    },
+    captura: { rows: (st.captura?.rows || []).map(compact) },
+    dje: { rows: (st.dje?.rows || []).map(compact) }
+  };
+}
+
 async function fatSaveMonthState(mk, st) {
-  try { await fatIDB.set('mes:' + mk, st); } catch(e) { console.warn('[fat] IDB save error:', e); }
+  try { await fatIDB.set('mes:' + mk, fatCompactState(st)); } catch(e) { console.warn('[fat] IDB save error:', e); }
 }
 
 function fatLoadPrecos() {
@@ -5163,7 +5183,16 @@ function fatLoadVolumesManuais(mk) {
 }
 function fatSaveVolumesManuais(mk, v) { fatStorage.set('espelho-manual:' + mk, JSON.stringify(v)); }
 
-function fatNormalizeNPU(v) { return String(v || '').replace(/\D/g, ''); }
+function fatNormalizeNPU(v) {
+  let s = String(v || '').trim();
+  // Remove sufixos como "(1)", "(2)", " - copia", " cópia" após o número do processo
+  s = s.replace(/\s*[\(\[]\s*\d+\s*[\)\]].*/g, '').replace(/\s*-?\s*(copia|cópia|duplicata).*/gi, '').trim();
+  // Extrai apenas os dígitos
+  const digits = s.replace(/\D/g, '');
+  // NPU CNJ tem sempre 20 dígitos: se tiver 19, assume zero à esquerda faltando
+  if (digits.length === 19) return '0' + digits;
+  return digits;
+}
 
 function fatNpuEsfera(npu) {
   const m = String(npu || '').match(/\d{7}-\d{2}\.\d{4}\.(\d)\.\d{2}\.\d{4}/);
@@ -5917,7 +5946,15 @@ function fatRenderSemCadLista(semCad) {
   const totalAtual = semCad.length - totalAntes;
   let resumo = `${semCad.length} processo(s) sem cadastro`;
   if (totalAntes > 0) resumo += ` — ${totalAtual} deste mês + ${totalAntes} de meses anteriores`;
-  let html = `<div style="font-size:11px;color:var(--chumbo);margin-bottom:10px">${resumo}</div>`;
+  // Agrupa por data para facilitar auditoria
+  const porData = {};
+  semCad.forEach(r => { const d = r.data || 'Sem data'; porData[d] = (porData[d] || 0) + 1; });
+  const datasInfo = Object.entries(porData).sort().map(([d,c]) => `${d}: ${c}`).join(' | ');
+
+  let html = `<div style="font-size:11px;color:var(--chumbo);margin-bottom:6px">${resumo}</div>`;
+  html += `<div style="font-size:10px;color:var(--chumbo);background:var(--off);border:1px solid var(--borda-l);border-radius:6px;padding:6px 10px;margin-bottom:10px;overflow-x:auto;white-space:nowrap">
+    Por data de captura: ${datasInfo || 'nenhuma data encontrada'}
+  </div>`;
   html += `<table style="width:100%;border-collapse:collapse;font-size:11px">
     <thead><tr style="background:var(--off)">
       <th style="padding:7px 8px;text-align:left;color:var(--chumbo);font-size:10px;text-transform:uppercase;letter-spacing:.3px">Processo</th>
