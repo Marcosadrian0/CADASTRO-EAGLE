@@ -1173,10 +1173,13 @@ html.dark .z-info-row{border-color:var(--border-color)}
     <div class="fat-modal-hdr">
       <div class="fat-modal-ttl">Casos sem cadastro</div>
       <div style="display:flex;gap:8px;align-items:center">
+        <button class="fat-btn fat-btn-ghost" style="font-size:11px;padding:6px 12px" onclick="document.getElementById('fatImportPendentes').click()" title="Importe o arquivo Eagle_Cadastro_CADASTRO_Todos para adicionar casos pendentes da fila da empresa">Importar fila da empresa</button>
         <button class="fat-btn fat-btn-ghost" style="font-size:11px;padding:6px 12px" onclick="fatDownloadSemCadastro()">Exportar lista (.xlsx)</button>
         <button class="fat-modal-close" onclick="fatFecharSemCadastro()">&#xd7;</button>
       </div>
     </div>
+    <input type="file" id="fatImportPendentes" accept=".xlsx,.xls" style="display:none" onchange="fatImportarFilaPendentes(this.files[0])">
+    <div id="fatImportPendentesMsg" style="display:none;font-size:11px;padding:6px 10px;margin:0 0 8px;border-radius:6px"></div>
 
     <!-- Lista de sem cadastro -->
     <div id="fatSemCadLista" style="max-height:500px;overflow-y:auto">
@@ -5932,6 +5935,19 @@ async function fatGetAllSemCadRows() {
     }
   } catch(e) { console.warn('[fat] getAllSemCad error:', e); }
 
+  // Adiciona pendentes importados diretamente da fila da empresa (nao detectados via captura/DJE)
+  try {
+    const filaPendentes = await fatIDB.get(FAT_IDB_PENDENTES_KEY) || [];
+    filaPendentes.forEach(r => {
+      const n = fatNormalizeNPU(r.processo);
+      if (!n || vistos.has(n)) return;
+      // Se ja foi cadastrado (esta na base), nao exibe
+      if (sbkSet.has(n) || outrosSet.has(n)) return;
+      vistos.add(n);
+      result.push({ ...r, mesRef: r.data ? r.data.substring(3) : labelAtual }); // mesRef = MM/AAAA
+    });
+  } catch(e) { console.warn('[fat] filaPendentes error:', e); }
+
   return result;
 }
 
@@ -6025,6 +6041,77 @@ async function fatAdicionarManual() {
   fatRenderAll();
   fatRenderSemCadLista();
   fatShowToast('Processo ' + npu + ' marcado como cadastrado SBK.');
+}
+
+// Chave IDB para pendentes importados da fila da empresa
+const FAT_IDB_PENDENTES_KEY = 'pendentes:fila-empresa';
+
+async function fatImportarFilaPendentes(file) {
+  if (!file) return;
+  const msg = document.getElementById('fatImportPendentesMsg');
+  msg.style.display = 'block';
+  msg.style.background = 'var(--off)';
+  msg.style.color = 'var(--chumbo)';
+  msg.style.border = '1px solid var(--borda-l)';
+  msg.textContent = 'Lendo arquivo...';
+  try {
+    const aoa = await fatReadWorkbook(file);
+    if (aoa.length < 2) throw new Error('Arquivo vazio ou sem dados.');
+
+    // Detecta cabecalho: espera colunas como "Numero do Processo", "Data Cadastro", "Dias SLA"
+    const hdrRow = aoa[0].map(h => String(h || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').trim());
+    const iProc = hdrRow.findIndex(h => h.includes('processo'));
+    const iData = hdrRow.findIndex(h => h.includes('data') && h.includes('cadastro'));
+    const iDias = hdrRow.findIndex(h => h.includes('dias') || h.includes('sla'));
+    const iStatus = hdrRow.findIndex(h => h.includes('status'));
+
+    if (iProc < 0) throw new Error('Coluna "Numero do Processo" nao encontrada. Verifique o arquivo.');
+
+    const existentes = await fatIDB.get(FAT_IDB_PENDENTES_KEY) || [];
+    const existentesNPUs = new Set(existentes.map(r => fatNormalizeNPU(r.processo)));
+
+    let adicionados = 0, ignorados = 0;
+    const novos = [...existentes];
+
+    for (let i = 1; i < aoa.length; i++) {
+      const row = aoa[i];
+      const proc = String(row[iProc] || '').trim();
+      if (!proc) continue;
+      const n = fatNormalizeNPU(proc);
+      if (!n || n.length < 10) continue;
+      const dias = iDias >= 0 ? Number(row[iDias]) : null;
+      // Exclui D+0 automaticamente (mesmos criterios do dashboard da empresa)
+      if (dias === 0) { ignorados++; continue; }
+      if (existentesNPUs.has(n)) { ignorados++; continue; }
+      existentesNPUs.add(n);
+      novos.push({
+        processo: proc,
+        data: iData >= 0 ? fatExcelDateToStr(row[iData]) : '',
+        tipoOcorrencia: iStatus >= 0 ? String(row[iStatus] || '') : 'FILA',
+        diasSLA: dias,
+        _origem: 'fila-empresa'
+      });
+      adicionados++;
+    }
+
+    await fatIDB.set(FAT_IDB_PENDENTES_KEY, novos);
+    msg.style.background = '#f0fdf4';
+    msg.style.color = 'var(--vok)';
+    msg.style.border = '1px solid var(--vok)';
+    msg.textContent = `${adicionados} caso(s) adicionados da fila da empresa. ${ignorados} ja existiam ou eram D+0.`;
+
+    // Atualiza o KPI e a lista
+    const semCad = await fatGetAllSemCadRows();
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    set('fatKpiSemCad', semCad.length.toLocaleString('pt-BR'));
+    fatRenderSemCadLista(semCad);
+  } catch(e) {
+    msg.style.background = 'var(--err-bg)';
+    msg.style.color = 'var(--err)';
+    msg.style.border = '1px solid var(--err)';
+    msg.textContent = 'Erro: ' + e.message;
+  }
+  document.getElementById('fatImportPendentes').value = '';
 }
 
 async function fatDownloadSemCadastro() {
