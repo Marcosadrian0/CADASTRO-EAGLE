@@ -1019,6 +1019,7 @@ html.dark .z-info-row{border-color:var(--border-color)}
       <div class="fat-kpi"><div class="fat-kpi-val" id="fatKpiDupl">—</div><div class="fat-kpi-lbl">Duplicados</div></div>
       <div class="fat-kpi" style="border-color:var(--auto-b);background:var(--auto-bg)"><div class="fat-kpi-val" id="fatKpiTotal" style="color:var(--ciano)">—</div><div class="fat-kpi-lbl">Volume sem duplicidade</div></div>
       <div class="fat-kpi fat-kpi-warn" onclick="fatAbrirSemCadastro()" title="Clique para ver e gerenciar os casos sem cadastro"><div class="fat-kpi-val" id="fatKpiSemCad">—</div><div class="fat-kpi-lbl">Sem cadastro</div><div style="font-size:9px;color:var(--err);margin-top:4px;opacity:.8">clique para gerenciar</div></div>
+      <div class="fat-kpi" style="border-color:#a855f7;background:#faf5ff;cursor:pointer" onclick="fatAbrirDuplBase()" title="Clique para analisar os processos em duplicidade na base iiLex"><div class="fat-kpi-val" id="fatKpiDuplBase" style="color:#7c3aed">—</div><div class="fat-kpi-lbl">Duplicidade iiLex</div><div style="font-size:9px;color:#7c3aed;margin-top:4px;opacity:.8">clique para avaliar</div></div>
     </div>
 
     <!-- GRÁFICOS -->
@@ -1183,6 +1184,23 @@ html.dark .z-info-row{border-color:var(--border-color)}
 
     <!-- Lista de sem cadastro -->
     <div id="fatSemCadLista" style="max-height:500px;overflow-y:auto">
+      <p style="font-size:11px;color:var(--chumbo)">Carregando...</p>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DUPLICIDADE IILEX -->
+<div class="fat-modal" id="fatModalDuplBase" onclick="if(event.target===this)document.getElementById('fatModalDuplBase').classList.remove('open')">
+  <div class="fat-modal-box" style="max-width:780px">
+    <div class="fat-modal-hdr">
+      <div class="fat-modal-ttl">Duplicidade na base iiLex</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="fat-btn fat-btn-ghost" style="font-size:11px;padding:6px 12px" onclick="fatExportarDuplicatas()">Exportar lista (.xlsx)</button>
+        <button class="fat-modal-close" onclick="document.getElementById('fatModalDuplBase').classList.remove('open')">&#xd7;</button>
+      </div>
+    </div>
+    <p style="font-size:11px;color:var(--chumbo);margin:0 0 10px">Processos cadastrados mais de uma vez na base iiLex. A primeira ocorrencia deve ser mantida; as demais podem ser excluidas do sistema.</p>
+    <div id="fatDuplBaseLista" style="max-height:520px;overflow-y:auto">
       <p style="font-size:11px;color:var(--chumbo)">Carregando...</p>
     </div>
   </div>
@@ -5440,6 +5458,8 @@ async function fatRenderCapturas() {
   // KPI sem cadastro inclui meses anteriores (async, atualiza em seguida)
   set('fatKpiSemCad', semCad.toLocaleString('pt-BR'));
   fatGetAllSemCadRows().then(all => set('fatKpiSemCad', all.length.toLocaleString('pt-BR'))).catch(() => {});
+  // KPI duplicidade iiLex (calculado a partir da base consolidada)
+  fatAtualizarKpiDupl();
 
   // Gráfico 1: processos por cadastrante (captura + DJE combinados)
   const porCad = {};
@@ -5737,6 +5757,128 @@ async function fatAbrirSemCadastro() {
 function fatFecharSemCadastro() {
   document.getElementById('fatModalSemCad').classList.remove('open');
 }
+
+// ---- DUPLICIDADE IILEX ----
+
+function fatDetectarDuplicatas() {
+  // Consolida todas as rows da base iiLex (sbk + manuais)
+  const allRows = [
+    ...(fatCadastroConsolidado?.rows || []),
+    ...(fatCadastroConsolidado?.manuaisRows || [])
+  ];
+  // Agrupa por NPU normalizado
+  const grupos = {};
+  allRows.forEach(r => {
+    const npu = fatNormalizeNPU(r.processo);
+    if (!npu) return;
+    if (!grupos[npu]) grupos[npu] = [];
+    grupos[npu].push(r);
+  });
+  // Filtra apenas duplicatas (2+ entradas)
+  return Object.entries(grupos)
+    .filter(([, rows]) => rows.length > 1)
+    .map(([npu, rows]) => ({ npu, rows }));
+}
+
+function fatRenderDuplLista(grupos) {
+  const el = document.getElementById('fatDuplBaseLista');
+  if (!grupos.length) {
+    el.innerHTML = '<p style="font-size:12px;color:var(--verde);padding:16px 0;text-align:center">Nenhuma duplicidade encontrada na base iiLex.</p>';
+    return;
+  }
+  let html = `<table style="width:100%;border-collapse:collapse;font-size:11px">
+    <thead><tr style="border-bottom:2px solid var(--borda)">
+      <th style="text-align:left;padding:6px 8px;color:var(--chumbo)">Processo (NPU)</th>
+      <th style="text-align:left;padding:6px 8px;color:var(--chumbo)">Pasta</th>
+      <th style="text-align:left;padding:6px 8px;color:var(--chumbo)">Cadastrante</th>
+      <th style="text-align:left;padding:6px 8px;color:var(--chumbo)">Data</th>
+      <th style="text-align:center;padding:6px 8px;color:var(--chumbo)">Acao</th>
+    </tr></thead><tbody>`;
+
+  grupos.forEach(({ npu, rows }) => {
+    rows.forEach((r, idx) => {
+      const isManter = idx === 0;
+      const badge = isManter
+        ? `<span style="background:#d1fae5;color:#065f46;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600">Manter</span>`
+        : `<span style="background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600">Excluir</span>`;
+      const acao = isManter ? '' : `<button onclick="fatMarcarDuplicataExcluir('${npu}',${idx})" style="font-size:10px;padding:3px 10px;border:1px solid #ef4444;border-radius:6px;background:#fff;color:#ef4444;cursor:pointer">Marcar excluir</button>`;
+      const rowStyle = isManter ? '' : 'background:rgba(239,68,68,0.04)';
+      const proc = r.processo || npu;
+      html += `<tr style="border-bottom:1px solid var(--borda);${rowStyle}">
+        <td style="padding:6px 8px;font-family:monospace;font-size:10px">${proc}</td>
+        <td style="padding:6px 8px">${r.pasta || '-'}</td>
+        <td style="padding:6px 8px">${r.cadastrante || '-'}</td>
+        <td style="padding:6px 8px">${r.dataCadastro || '-'}</td>
+        <td style="padding:6px 8px;text-align:center">${badge} ${acao}</td>
+      </tr>`;
+    });
+    // Linha separadora entre grupos
+    html += `<tr><td colspan="5" style="padding:2px;background:var(--borda)"></td></tr>`;
+  });
+
+  html += '</tbody></table>';
+  el.innerHTML = html;
+}
+
+async function fatAbrirDuplBase() {
+  if (!fatCadastroConsolidado) {
+    alert('Carregue a base iiLex primeiro (importe os arquivos Eagle_Cadastro).');
+    return;
+  }
+  document.getElementById('fatModalDuplBase').classList.add('open');
+  const grupos = fatDetectarDuplicatas();
+  fatRenderDuplLista(grupos);
+  // Atualiza o KPI com o numero de entradas duplicadas (todas exceto a primeira de cada grupo)
+  const totalDupl = grupos.reduce((acc, g) => acc + g.rows.length - 1, 0);
+  const kpiEl = document.getElementById('fatKpiDuplBase');
+  if (kpiEl) kpiEl.textContent = totalDupl.toLocaleString('pt-BR');
+}
+
+function fatMarcarDuplicataExcluir(npu, idx) {
+  if (!confirm('Marcar essa entrada como "a excluir" no relatorio? Isso nao remove o registro do sistema.')) return;
+  // Salvar marcacao em sessionStorage para exportacao
+  const key = `dupl_excluir_${npu}_${idx}`;
+  sessionStorage.setItem(key, '1');
+  // Atualizar visual da linha: trocar botao por texto confirmado
+  const btns = document.querySelectorAll(`#fatDuplBaseLista button`);
+  btns.forEach(btn => {
+    if (btn.getAttribute('onclick') === `fatMarcarDuplicataExcluir('${npu}',${idx})`) {
+      btn.replaceWith(Object.assign(document.createElement('span'), {
+        textContent: 'Marcado',
+        style: 'font-size:10px;color:#6b7280'
+      }));
+    }
+  });
+}
+
+async function fatExportarDuplicatas() {
+  const grupos = fatDetectarDuplicatas();
+  if (!grupos.length) { alert('Nenhuma duplicidade encontrada.'); return; }
+  if (typeof XLSX === 'undefined') { alert('Biblioteca XLSX nao disponivel.'); return; }
+  const linhas = [['Processo', 'Pasta', 'Cadastrante', 'Data cadastro', 'Acao recomendada']];
+  grupos.forEach(({ npu, rows }) => {
+    rows.forEach((r, idx) => {
+      const key = `dupl_excluir_${npu}_${idx}`;
+      const acao = idx === 0 ? 'Manter' : (sessionStorage.getItem(key) ? 'Excluir (confirmado)' : 'Excluir');
+      linhas.push([r.processo || npu, r.pasta || '', r.cadastrante || '', r.dataCadastro || '', acao]);
+    });
+    linhas.push(['', '', '', '', '']);
+  });
+  const ws = XLSX.utils.aoa_to_sheet(linhas);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Duplicidades');
+  XLSX.writeFile(wb, `duplicidades_iilex_${fatMonthKey || 'base'}.xlsx`);
+}
+
+function fatAtualizarKpiDupl() {
+  if (!fatCadastroConsolidado) return;
+  const grupos = fatDetectarDuplicatas();
+  const totalDupl = grupos.reduce((acc, g) => acc + g.rows.length - 1, 0);
+  const kpiEl = document.getElementById('fatKpiDuplBase');
+  if (kpiEl) kpiEl.textContent = totalDupl > 0 ? totalDupl.toLocaleString('pt-BR') : '0';
+}
+
+// ---- FIM DUPLICIDADE IILEX ----
 
 function fatAbrirCadastrados() {
   document.getElementById('fatModalCadastrados').classList.add('open');
