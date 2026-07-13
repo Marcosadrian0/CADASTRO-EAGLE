@@ -350,11 +350,13 @@ textarea{resize:vertical;min-height:52px}
 .fat-download-sub{font-size:12px;color:rgba(255,255,255,.7);margin-bottom:18px}
 .fat-btn-download{background:#fff;color:var(--verde);padding:12px 28px;border-radius:8px;font-size:13px;font-weight:700;border:none;cursor:pointer;font-family:inherit;transition:background .15s}
 .fat-btn-download:hover{background:var(--off)}
-.fat-kpi-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:12px;margin-bottom:20px}
+.fat-kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
 .fat-kpi{background:#fff;border:1px solid var(--borda-l);border-radius:var(--rlg);padding:16px 14px;box-shadow:var(--shadow);text-align:center}
 .fat-kpi-warn{border-color:var(--err-b);background:var(--err-bg);cursor:pointer;transition:box-shadow .15s}
 .fat-kpi-warn:hover{box-shadow:0 0 0 2px var(--err),var(--shadow-md)}
 .fat-kpi-ok{border-color:var(--vok-b);background:var(--vok-bg)}
+.fat-kpi-dupl{border-color:#d8b4fe;background:#faf5ff;cursor:pointer;transition:box-shadow .15s}
+.fat-kpi-dupl:hover{box-shadow:0 0 0 2px #a855f7,var(--shadow-md)}
 .fat-kpi-val{font-size:24px;font-weight:700;color:var(--verde);line-height:1.1;margin-bottom:4px}
 .fat-kpi-warn .fat-kpi-val{color:var(--err)}
 .fat-kpi-ok .fat-kpi-val{color:var(--vok)}
@@ -1012,14 +1014,16 @@ html.dark .z-info-row{border-color:var(--border-color)}
 
     <!-- KPI CARDS -->
     <div class="fat-kpi-grid">
-      <div class="fat-kpi fat-kpi-ok" onclick="fatAbrirCadastrados()" title="Clique para ver os processos cadastrados SBK neste mês" style="cursor:pointer"><div class="fat-kpi-val" id="fatKpiSBK">—</div><div class="fat-kpi-lbl">Cadastrados SBK</div><div style="font-size:9px;color:var(--vok);margin-top:4px;opacity:.8">clique para ver</div></div>
-      <div class="fat-kpi" onclick="fatAbrirCadastradosOutros()" title="Clique para ver os processos cadastrados por outros" style="cursor:pointer;border-color:#FDE68A;background:#FFFBEB"><div class="fat-kpi-val" id="fatKpiOutros" style="color:#B45309">—</div><div class="fat-kpi-lbl">Cadastrados Outros</div><div style="font-size:9px;color:#B45309;margin-top:4px;opacity:.8">clique para ver</div></div>
+      <!-- Linha 1: volumes de entrada -->
       <div class="fat-kpi"><div class="fat-kpi-val" id="fatKpiCaptura">—</div><div class="fat-kpi-lbl">Processos Captura</div></div>
       <div class="fat-kpi"><div class="fat-kpi-val" id="fatKpiDje">—</div><div class="fat-kpi-lbl">Processos DJE</div></div>
-      <div class="fat-kpi"><div class="fat-kpi-val" id="fatKpiDupl">—</div><div class="fat-kpi-lbl">Duplicados</div></div>
+      <div class="fat-kpi"><div class="fat-kpi-val" id="fatKpiDupl">—</div><div class="fat-kpi-lbl">Duplicados Cap+DJE</div></div>
       <div class="fat-kpi" style="border-color:var(--auto-b);background:var(--auto-bg)"><div class="fat-kpi-val" id="fatKpiTotal" style="color:var(--ciano)">—</div><div class="fat-kpi-lbl">Volume sem duplicidade</div></div>
+      <!-- Linha 2: cadastros e alertas -->
+      <div class="fat-kpi fat-kpi-ok" onclick="fatAbrirCadastrados()" title="Clique para ver os processos cadastrados SBK neste mês" style="cursor:pointer"><div class="fat-kpi-val" id="fatKpiSBK">—</div><div class="fat-kpi-lbl">Cadastrados SBK</div><div style="font-size:9px;color:var(--vok);margin-top:4px;opacity:.8">clique para ver</div></div>
+      <div class="fat-kpi" onclick="fatAbrirCadastradosOutros()" title="Clique para ver os processos cadastrados por outros" style="cursor:pointer;border-color:#FDE68A;background:#FFFBEB"><div class="fat-kpi-val" id="fatKpiOutros" style="color:#B45309">—</div><div class="fat-kpi-lbl">Cadastrados Outros</div><div style="font-size:9px;color:#B45309;margin-top:4px;opacity:.8">clique para ver</div></div>
       <div class="fat-kpi fat-kpi-warn" onclick="fatAbrirSemCadastro()" title="Clique para ver e gerenciar os casos sem cadastro"><div class="fat-kpi-val" id="fatKpiSemCad">—</div><div class="fat-kpi-lbl">Sem cadastro</div><div style="font-size:9px;color:var(--err);margin-top:4px;opacity:.8">clique para gerenciar</div></div>
-      <div class="fat-kpi" style="border-color:#a855f7;background:#faf5ff;cursor:pointer" onclick="fatAbrirDuplBase()" title="Clique para analisar os processos em duplicidade na base iiLex"><div class="fat-kpi-val" id="fatKpiDuplBase" style="color:#7c3aed">—</div><div class="fat-kpi-lbl">Duplicidade iiLex</div><div style="font-size:9px;color:#7c3aed;margin-top:4px;opacity:.8">clique para avaliar</div></div>
+      <div class="fat-kpi fat-kpi-dupl" onclick="fatAbrirDuplBase()" title="Clique para analisar os processos em duplicidade na base iiLex"><div class="fat-kpi-val" id="fatKpiDuplBase" style="color:#7c3aed">—</div><div class="fat-kpi-lbl">Duplicidade iiLex</div><div style="font-size:9px;color:#7c3aed;margin-top:4px;opacity:.8">clique para avaliar</div></div>
     </div>
 
     <!-- GRÁFICOS -->
@@ -5766,17 +5770,19 @@ function fatDetectarDuplicatas() {
     ...(fatCadastroConsolidado?.rows || []),
     ...(fatCadastroConsolidado?.manuaisRows || [])
   ];
-  // Agrupa por NPU normalizado
+  // Agrupa por numero do processo (apenas digitos, sem formatacao)
+  // fatNormalizeNPU ja strip pontos/hifens e normaliza zeros iniciais
   const grupos = {};
   allRows.forEach(r => {
     const npu = fatNormalizeNPU(r.processo);
-    if (!npu) return;
+    if (!npu || npu.length < 15) return; // ignora valores sem numero valido
     if (!grupos[npu]) grupos[npu] = [];
     grupos[npu].push(r);
   });
-  // Filtra apenas duplicatas (2+ entradas)
+  // Filtra apenas duplicatas (2+ entradas com o mesmo NPU)
   return Object.entries(grupos)
     .filter(([, rows]) => rows.length > 1)
+    .sort((a, b) => b[1].length - a[1].length) // mais duplicados primeiro
     .map(([npu, rows]) => ({ npu, rows }));
 }
 
