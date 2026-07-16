@@ -5808,10 +5808,18 @@ function fatDetectarDuplicatas() {
     grupos[npu].push(r);
   });
   // Filtra apenas duplicatas (2+ entradas com o mesmo NPU)
+  // Ordena cada grupo: menor numero de pasta primeiro (Manter), resto (Excluir)
   return Object.entries(grupos)
     .filter(([, rows]) => rows.length > 1)
-    .sort((a, b) => b[1].length - a[1].length) // mais duplicados primeiro
-    .map(([npu, rows]) => ({ npu, rows }));
+    .sort((a, b) => b[1].length - a[1].length) // grupos com mais duplicatas primeiro
+    .map(([npu, rows]) => {
+      const sorted = [...rows].sort((a, b) => {
+        const pa = parseInt(String(a.pasta || '').replace(/\D/g, '') || '999999999');
+        const pb = parseInt(String(b.pasta || '').replace(/\D/g, '') || '999999999');
+        return pa - pb; // menor pasta = manter (primeiro da lista)
+      });
+      return { npu, rows: sorted };
+    });
 }
 
 function fatRenderDuplLista(grupos) {
@@ -5820,37 +5828,41 @@ function fatRenderDuplLista(grupos) {
     el.innerHTML = '<p style="font-size:12px;color:var(--verde);padding:16px 0;text-align:center">Nenhuma duplicidade encontrada na base iiLex.</p>';
     return;
   }
-  let html = `<table style="width:100%;border-collapse:collapse;font-size:11px">
-    <thead><tr style="border-bottom:2px solid var(--borda)">
-      <th style="text-align:left;padding:6px 8px;color:var(--chumbo)">Processo (NPU)</th>
-      <th style="text-align:left;padding:6px 8px;color:var(--chumbo)">Pasta</th>
-      <th style="text-align:left;padding:6px 8px;color:var(--chumbo)">Cadastrante</th>
-      <th style="text-align:left;padding:6px 8px;color:var(--chumbo)">Data</th>
-      <th style="text-align:center;padding:6px 8px;color:var(--chumbo)">Acao</th>
-    </tr></thead><tbody>`;
-
-  grupos.forEach(({ npu, rows }) => {
+  let html = '';
+  grupos.forEach(({ npu, rows }, gi) => {
+    const totalExcluir = rows.length - 1;
+    html += `<div style="border:1px solid var(--borda-l);border-radius:10px;margin-bottom:12px;overflow:hidden">
+      <div style="background:var(--off);padding:8px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--borda-l)">
+        <span style="font-family:monospace;font-size:11px;font-weight:600;color:var(--chumbo)">${rows[0].processo || npu}</span>
+        <span style="background:#fce7f3;color:#9d174d;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600">${rows.length} cadastros</span>
+        <span style="font-size:10px;color:var(--chumbo);opacity:.7;margin-left:auto">${totalExcluir} para excluir</span>
+      </div>
+      <table style="width:100%;border-collapse:collapse;font-size:11px">
+        <thead><tr style="border-bottom:1px solid var(--borda-l)">
+          <th style="text-align:left;padding:6px 12px;color:var(--chumbo);font-size:10px;font-weight:600;background:#fafafa">Pasta iiLex</th>
+          <th style="text-align:left;padding:6px 12px;color:var(--chumbo);font-size:10px;font-weight:600;background:#fafafa">Cadastrante</th>
+          <th style="text-align:left;padding:6px 12px;color:var(--chumbo);font-size:10px;font-weight:600;background:#fafafa">Data cadastro</th>
+          <th style="text-align:center;padding:6px 12px;color:var(--chumbo);font-size:10px;font-weight:600;background:#fafafa">Situacao</th>
+        </tr></thead><tbody>`;
     rows.forEach((r, idx) => {
       const isManter = idx === 0;
+      const key = `dupl_${gi}_${idx}`;
+      const marcado = sessionStorage.getItem(key);
       const badge = isManter
-        ? `<span style="background:#d1fae5;color:#065f46;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600">Manter</span>`
-        : `<span style="background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600">Excluir</span>`;
-      const acao = isManter ? '' : `<button onclick="fatMarcarDuplicataExcluir('${npu}',${idx})" style="font-size:10px;padding:3px 10px;border:1px solid #ef4444;border-radius:6px;background:#fff;color:#ef4444;cursor:pointer">Marcar excluir</button>`;
-      const rowStyle = isManter ? '' : 'background:rgba(239,68,68,0.04)';
-      const proc = r.processo || npu;
-      html += `<tr style="border-bottom:1px solid var(--borda);${rowStyle}">
-        <td style="padding:6px 8px;font-family:monospace;font-size:10px">${proc}</td>
-        <td style="padding:6px 8px">${r.pasta || '-'}</td>
-        <td style="padding:6px 8px">${r.cadastrante || '-'}</td>
-        <td style="padding:6px 8px">${r.dataCadastro || '-'}</td>
-        <td style="padding:6px 8px;text-align:center">${badge} ${acao}</td>
+        ? `<span style="background:#d1fae5;color:#065f46;padding:3px 12px;border-radius:20px;font-size:10px;font-weight:700">MANTER</span>`
+        : (marcado
+            ? `<span style="background:#fee2e2;color:#991b1b;padding:3px 12px;border-radius:20px;font-size:10px;font-weight:700">EXCLUIR</span>`
+            : `<button onclick="fatMarcarDuplicataExcluir('${gi}','${idx}')" style="font-size:10px;padding:3px 12px;border:1.5px solid #ef4444;border-radius:20px;background:#fff;color:#ef4444;cursor:pointer;font-weight:600">Marcar excluir</button>`);
+      const rowBg = isManter ? 'background:#f0fdf4' : (marcado ? 'background:#fef2f2' : '');
+      html += `<tr style="border-bottom:1px solid var(--borda-l);${rowBg}">
+        <td style="padding:7px 12px;font-weight:${isManter?'700':'400'};color:${isManter?'var(--verde)':'var(--chumbo)'}">${r.pasta || '-'}</td>
+        <td style="padding:7px 12px;color:var(--chumbo)">${r.cadastrante || '-'}</td>
+        <td style="padding:7px 12px;color:var(--chumbo)">${r.dataCadastro || '-'}</td>
+        <td style="padding:7px 12px;text-align:center">${badge}</td>
       </tr>`;
     });
-    // Linha separadora entre grupos
-    html += `<tr><td colspan="5" style="padding:2px;background:var(--borda)"></td></tr>`;
+    html += `</tbody></table></div>`;
   });
-
-  html += '</tbody></table>';
   el.innerHTML = html;
 }
 
@@ -5868,21 +5880,12 @@ async function fatAbrirDuplBase() {
   if (kpiEl) kpiEl.textContent = totalDupl.toLocaleString('pt-BR');
 }
 
-function fatMarcarDuplicataExcluir(npu, idx) {
-  if (!confirm('Marcar essa entrada como "a excluir" no relatorio? Isso nao remove o registro do sistema.')) return;
-  // Salvar marcacao em sessionStorage para exportacao
-  const key = `dupl_excluir_${npu}_${idx}`;
+function fatMarcarDuplicataExcluir(gi, idx) {
+  const key = `dupl_${gi}_${idx}`;
   sessionStorage.setItem(key, '1');
-  // Atualizar visual da linha: trocar botao por texto confirmado
-  const btns = document.querySelectorAll(`#fatDuplBaseLista button`);
-  btns.forEach(btn => {
-    if (btn.getAttribute('onclick') === `fatMarcarDuplicataExcluir('${npu}',${idx})`) {
-      btn.replaceWith(Object.assign(document.createElement('span'), {
-        textContent: 'Marcado',
-        style: 'font-size:10px;color:#6b7280'
-      }));
-    }
-  });
+  // Re-renderizar para atualizar visual
+  const grupos = fatDetectarDuplicatas();
+  fatRenderDuplLista(grupos);
 }
 
 async function fatExportarDuplicatas() {
@@ -5890,9 +5893,9 @@ async function fatExportarDuplicatas() {
   if (!grupos.length) { alert('Nenhuma duplicidade encontrada.'); return; }
   if (typeof XLSX === 'undefined') { alert('Biblioteca XLSX nao disponivel.'); return; }
   const linhas = [['Processo', 'Pasta', 'Cadastrante', 'Data cadastro', 'Acao recomendada']];
-  grupos.forEach(({ npu, rows }) => {
+  grupos.forEach(({ npu, rows }, gi) => {
     rows.forEach((r, idx) => {
-      const key = `dupl_excluir_${npu}_${idx}`;
+      const key = `dupl_${gi}_${idx}`;
       const acao = idx === 0 ? 'Manter' : (sessionStorage.getItem(key) ? 'Excluir (confirmado)' : 'Excluir');
       linhas.push([r.processo || npu, r.pasta || '', r.cadastrante || '', r.dataCadastro || '', acao]);
     });
@@ -6326,7 +6329,8 @@ async function fatInit() {
       const allowed = fatLoadCadastrantes();
       const allowedNorm = allowed.map(a => a.toLowerCase().trim());
       let raw = 0, novos = 0, duplicados = 0;
-      const sbkNPUs = new Set((fatCadastroConsolidado.rows || []).map(r => fatNormalizeNPU(r.processo)));
+      // Mapa NPU -> row para registros ja existentes na base consolidada
+      const sbkExistentes = new Map((fatCadastroConsolidado.rows || []).map(r => [fatNormalizeNPU(r.processo), r]));
       const outrosNPUs = new Set((fatCadastroConsolidado.outrosRows || []).map(r => fatNormalizeNPU(r.processo)));
       for (let i = headerRowIdx + 1; i < aoa.length; i++) {
         const r = aoa[i];
@@ -6339,11 +6343,25 @@ async function fatInit() {
         const pasta = cols.pasta > -1 ? String(r[cols.pasta] || '').trim() : '';
         const dataCadastro = cols.dataCadastro > -1 ? fatExcelDateToStr(r[cols.dataCadastro]) : '';
         if (allowedNorm.includes(cad.toLowerCase())) {
-          if (!sbkNPUs.has(n)) {
-            sbkNPUs.add(n);
-            fatCadastroConsolidado.rows.push({ processo, pasta, dataCadastro, cadastrante: cad });
+          if (!sbkExistentes.has(n)) {
+            // Primeiro registro com esse NPU: inserir normalmente
+            const row = { processo, pasta, dataCadastro, cadastrante: cad };
+            sbkExistentes.set(n, row);
+            fatCadastroConsolidado.rows.push(row);
             novos++;
-          } else { duplicados++; }
+          } else {
+            // NPU ja existe: verificar se e realmente um registro diferente (pasta diferente)
+            const existente = sbkExistentes.get(n);
+            const pastaExist = String(existente.pasta || '');
+            const pastaNew = pasta;
+            if (pastaExist !== pastaNew && pastaNew) {
+              // E um cadastro duplicado real: inserir para que fatDetectarDuplicatas o encontre
+              fatCadastroConsolidado.rows.push({ processo, pasta, dataCadastro, cadastrante: cad, _duplicata: true });
+              duplicados++;
+            } else {
+              duplicados++;
+            }
+          }
         } else {
           if (!outrosNPUs.has(n)) {
             outrosNPUs.add(n);
