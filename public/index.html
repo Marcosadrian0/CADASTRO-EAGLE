@@ -6328,10 +6328,11 @@ async function fatInit() {
       if (cols.processo === -1 || cols.cadastrante === -1) { fatShowToast('Não foi possível identificar as colunas. Verifique o cabeçalho.'); return; }
       const allowed = fatLoadCadastrantes();
       const allowedNorm = allowed.map(a => a.toLowerCase().trim());
-      let raw = 0, novos = 0, duplicados = 0;
-      // Mapa NPU -> row para registros ja existentes na base consolidada
-      const sbkExistentes = new Map((fatCadastroConsolidado.rows || []).map(r => [fatNormalizeNPU(r.processo), r]));
-      const outrosNPUs = new Set((fatCadastroConsolidado.outrosRows || []).map(r => fatNormalizeNPU(r.processo)));
+      let raw = 0, novos = 0, duplicados = 0, excluidos = 0;
+
+      // --- PASSO 1: Ler todos os registros do novo arquivo ---
+      // Mapa NPU -> lista de pastas presentes no novo arquivo
+      const npuNoArquivo = new Map(); // npu -> [{ processo, pasta, dataCadastro, cad }]
       for (let i = headerRowIdx + 1; i < aoa.length; i++) {
         const r = aoa[i];
         const cad = String(r[cols.cadastrante] || '').trim();
@@ -6340,43 +6341,90 @@ async function fatInit() {
         raw++;
         const processo = String(r[cols.processo] || '').trim();
         const n = fatNormalizeNPU(processo);
+        if (!n || n.length < 15) continue;
         const pasta = cols.pasta > -1 ? String(r[cols.pasta] || '').trim() : '';
         const dataCadastro = cols.dataCadastro > -1 ? fatExcelDateToStr(r[cols.dataCadastro]) : '';
-        if (allowedNorm.includes(cad.toLowerCase())) {
-          if (!sbkExistentes.has(n)) {
-            // Primeiro registro com esse NPU: inserir normalmente
-            const row = { processo, pasta, dataCadastro, cadastrante: cad };
-            sbkExistentes.set(n, row);
-            fatCadastroConsolidado.rows.push(row);
-            novos++;
-          } else {
-            // NPU ja existe: verificar se e realmente um registro diferente (pasta diferente)
-            const existente = sbkExistentes.get(n);
-            const pastaExist = String(existente.pasta || '');
-            const pastaNew = pasta;
-            if (pastaExist !== pastaNew && pastaNew) {
-              // E um cadastro duplicado real: inserir para que fatDetectarDuplicatas o encontre
-              fatCadastroConsolidado.rows.push({ processo, pasta, dataCadastro, cadastrante: cad, _duplicata: true });
-              duplicados++;
-            } else {
-              duplicados++;
-            }
-          }
-        } else {
-          if (!outrosNPUs.has(n)) {
-            outrosNPUs.add(n);
-            fatCadastroConsolidado.outrosRows.push({ processo, pasta, dataCadastro, cadastrante: cad });
-            fatCadastroConsolidado.outrosPorCadastrante[cad] = (fatCadastroConsolidado.outrosPorCadastrante[cad] || 0) + 1;
-          }
-        }
+        if (!npuNoArquivo.has(n)) npuNoArquivo.set(n, []);
+        npuNoArquivo.get(n).push({ processo, pasta, dataCadastro, cad });
       }
+
+      // --- PASSO 2: Limpar duplicatas resolvidas da base consolidada ---
+      // Se um NPU que tinha _duplicata na base agora aparece so uma vez no novo arquivo,
+      // significa que a duplicata foi excluida: remover os registros excedentes da base.
+      const npusDuplicatosNaBase = new Map();
+      (fatCadastroConsolidado.rows || []).forEach((r, idx) => {
+        const n = fatNormalizeNPU(r.processo);
+        if (!npusDuplicatosNaBase.has(n)) npusDuplicatosNaBase.set(n, []);
+        npusDuplicatosNaBase.get(n).push(idx);
+      });
+      const indicesToRemover = new Set();
+      npusDuplicatosNaBase.forEach((indices, npu) => {
+        if (indices.length <= 1) return; // sem duplicata na base, ignorar
+        const noArquivo = npuNoArquivo.get(npu);
+        if (!noArquivo) return; // nao esta no novo arquivo, nao mexer
+        const qtdNoArquivo = noArquivo.length;
+        if (qtdNoArquivo < indices.length) {
+          // Arquivo tem menos entradas que a base: remover o excesso (os de indice maior = pastas maiores)
+          const indicesOrdenados = indices
+            .map(i => ({ i, pasta: parseInt(String(fatCadastroConsolidado.rows[i].pasta || '').replace(/\D/g,'') || '999999999') }))
+            .sort((a, b) => a.pasta - b.pasta); // menor pasta primeiro
+          // Remover os excedentes (alem de qtdNoArquivo)
+          indicesOrdenados.slice(qtdNoArquivo).forEach(({ i }) => { indicesToRemover.add(i); excluidos++; });
+        }
+      });
+      if (indicesToRemover.size > 0) {
+        fatCadastroConsolidado.rows = fatCadastroConsolidado.rows.filter((_, i) => !indicesToRemover.has(i));
+      }
+
+      // --- PASSO 3: Inserir novos registros e detectar duplicatas no arquivo ---
+      const outrosNPUs = new Set((fatCadastroConsolidado.outrosRows || []).map(r => fatNormalizeNPU(r.processo)));
+      // Reconstruir mapa de existentes apos limpeza
+      const sbkExistentes = new Map();
+      (fatCadastroConsolidado.rows || []).forEach(r => {
+        const n = fatNormalizeNPU(r.processo);
+        if (!sbkExistentes.has(n)) sbkExistentes.set(n, []);
+        sbkExistentes.get(n).push(r);
+      });
+
+      npuNoArquivo.forEach((entradas, n) => {
+        const isSBK = entradas.some(e => allowedNorm.includes(e.cad.toLowerCase()));
+        if (!isSBK) {
+          // Cadastrante nao SBK: tratar como "outros"
+          if (!outrosNPUs.has(n)) {
+            const e = entradas[0];
+            outrosNPUs.add(n);
+            fatCadastroConsolidado.outrosRows.push({ processo: e.processo, pasta: e.pasta, dataCadastro: e.dataCadastro, cadastrante: e.cad });
+            fatCadastroConsolidado.outrosPorCadastrante[e.cad] = (fatCadastroConsolidado.outrosPorCadastrante[e.cad] || 0) + 1;
+          }
+          return;
+        }
+        const existentesNaBase = sbkExistentes.get(n) || [];
+        const pastasNaBase = new Set(existentesNaBase.map(r => String(r.pasta || '')));
+        entradas.forEach(e => {
+          if (!allowedNorm.includes(e.cad.toLowerCase())) return;
+          if (!pastasNaBase.has(e.pasta)) {
+            // Registro novo (pasta ainda nao esta na base)
+            const row = { processo: e.processo, pasta: e.pasta, dataCadastro: e.dataCadastro, cadastrante: e.cad };
+            if (existentesNaBase.length > 0) row._duplicata = true; // ha outro com mesmo NPU
+            fatCadastroConsolidado.rows.push(row);
+            if (!sbkExistentes.has(n)) sbkExistentes.set(n, []);
+            sbkExistentes.get(n).push(row);
+            pastasNaBase.add(e.pasta);
+            if (existentesNaBase.length === 0) novos++; else duplicados++;
+          }
+        });
+        if (existentesNaBase.length === 0 && (sbkExistentes.get(n)||[]).length > 0) novos++;
+      });
+
       fatCadastroConsolidado.uploads = fatCadastroConsolidado.uploads || [];
       fatCadastroConsolidado.uploads.push({ fileName: file.name, uploadedAt: new Date().toISOString(), totalRaw: raw, novos });
       await fatSaveCadastroConsolidado();
       fatRenderCadastro();
       fatRenderCapturas();
       fatRenderEspelho();
-      fatShowToast(`Base iiLex incorporada: ${novos} novos + ${duplicados} ja existiam. Total consolidado: ${fatCadastroConsolidado.rows.length}.`);
+      fatAtualizarKpiDupl();
+      const msgExcl = excluidos > 0 ? ` | ${excluidos} duplicata(s) resolvida(s) removidas.` : '';
+      fatShowToast(`Base iiLex incorporada: ${novos} novos + ${duplicados} duplicado(s) detectado(s).${msgExcl} Total: ${fatCadastroConsolidado.rows.length}.`);
     } catch(err) {
       fatShowToast('Erro ao ler o arquivo: ' + err.message);
     }
