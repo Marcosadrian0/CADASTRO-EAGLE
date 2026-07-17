@@ -1,12 +1,22 @@
 /**
  * EAGLE — Restrição de acesso por IP
  * Apenas IPs da VPN autorizada podem acessar qualquer endpoint da API.
+ *
+ * Para configurar no Vercel: adicione a variável de ambiente IPS_VPN
+ * com os IPs separados por vírgula. Exemplo:
+ *   IPS_VPN=186.193.236.194,179.191.112.34,10.0.0.5
  */
 
-const IPS_PERMITIDOS = new Set([
+const IPS_FALLBACK = [
   '186.193.236.194',
   '179.191.112.34',
-]);
+];
+
+const IPS_PERMITIDOS = new Set(
+  process.env.IPS_VPN
+    ? process.env.IPS_VPN.split(',').map(ip => ip.trim()).filter(Boolean)
+    : IPS_FALLBACK
+);
 
 /**
  * Extrai o IP real do request, considerando proxies/Vercel.

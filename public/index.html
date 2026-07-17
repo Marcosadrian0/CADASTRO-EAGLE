@@ -36,6 +36,15 @@ html.dark{
 }
 body{font-family:'Plus Jakarta Sans',Calibri,sans-serif;font-weight:300;background:var(--bg);color:var(--text);font-size:13px;line-height:1.6;min-height:100vh}
 html.dark body,.dark .scard,.dark .login-box,.dark .acc-card,.dark .fat-card,.dark .fat-modal-box,.dark .usr-table,.dark .usr-form{background:var(--surface);color:var(--text)}
+html.dark .fat-kpi{background:var(--surface);border-color:var(--border-color)}
+html.dark .fat-kpi-ok{background:color-mix(in srgb, var(--vok-bg) 20%, var(--surface));border-color:var(--vok-b)}
+html.dark .fat-kpi-warn{background:color-mix(in srgb, var(--err-bg) 20%, var(--surface));border-color:var(--err-b)}
+html.dark .fat-kpi-dupl{background:#1e1630;border-color:#7c3aed}
+html.dark .acc-kpi{background:var(--surface);border-color:var(--border-color)}
+html.dark .fat-modal-box{background:var(--surface);border-color:var(--border-color)}
+html.dark .fat-table thead{background:var(--off)}
+html.dark .fat-table td,html.dark .fat-table th{border-color:var(--border-color)}
+html.dark #monGraficoCategorias .fat-kpi{background:var(--surface)}
 html.dark input[type=text],html.dark select,html.dark textarea{background:var(--surface);color:var(--text);border-color:var(--border-color)}
 html.dark .topbar{background:#0a0d12}
 html.dark .sidebar{background:var(--surface);border-color:var(--border-color)}
@@ -545,6 +554,9 @@ html.dark .z-info-row{border-color:var(--border-color)}
         <button onclick="baixarBackupJSON();fecharUserMenu()" id="menuBtnBackup" style="width:100%;padding:10px 14px;border:none;background:none;text-align:left;font-size:12px;color:#1a2421;cursor:pointer;font-family:inherit;display:none" onmouseover="this.style.background='var(--off)'" onmouseout="this.style.background='none'">
           Backup de dados (.json)
         </button>
+        <a href="/zurich.html" target="_blank" id="menuBtnZurich" style="width:100%;padding:10px 14px;border:none;background:none;text-align:left;font-size:12px;color:#1a2421;cursor:pointer;font-family:inherit;display:block;text-decoration:none" onmouseover="this.style.background='var(--off)'" onmouseout="this.style.background='none'">
+          Acessar Zurich
+        </a>
         <button onclick="fazerLogout()" style="width:100%;padding:10px 14px;border:none;background:none;text-align:left;font-size:12px;color:var(--err);cursor:pointer;font-family:inherit;border-top:1px solid var(--borda-l)" onmouseover="this.style.background='var(--err-bg)'" onmouseout="this.style.background='none'">
           Sair da conta
         </button>
@@ -557,6 +569,18 @@ html.dark .z-info-row{border-color:var(--border-color)}
   </div>
 </header>
 
+<!-- BANNER SESSAO EXPIRANDO -->
+<div id="session-expiry-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:9998;background:#b45309;color:#fff;padding:10px 20px;font-size:12px;font-weight:600;text-align:center;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.2)" onclick="fazerLogout()" title="Clique para sair e fazer login novamente">
+  <span id="session-expiry-text">Sua sessao expira em breve. Clique para renovar.</span>
+</div>
+
+<!-- IA CONFIDENCE BANNER -->
+<div id="ia-confidence-banner" style="display:none;background:#FFF8ED;border:1px solid #F4D080;border-radius:8px;padding:10px 14px;font-size:12px;color:#92400E;margin:12px 32px 0;position:relative">
+  <button onclick="document.getElementById('ia-confidence-banner').style.display='none'" style="position:absolute;right:8px;top:6px;background:none;border:none;cursor:pointer;font-size:14px;color:#92400E;line-height:1">&times;</button>
+  <strong>Atencao:</strong> <span id="ia-confidence-text">A IA nao identificou campos criticos. Revise o documento antes de salvar.</span>
+  <div id="ia-confidence-campos" style="margin-top:4px;font-size:11px"></div>
+</div>
+
 <!-- TABS -->
 <div class="tab-bar" id="tabBar" style="display:none">
   <button class="tab-btn active" id="tab-analise" onclick="mudarAba('analise')">Análise de Petição</button>
@@ -564,7 +588,6 @@ html.dark .z-info-row{border-color:var(--border-color)}
   <button class="tab-btn" id="tab-usuarios" onclick="mudarAba('usuarios')" style="display:none">Usuários</button>
   <button class="tab-btn" id="tab-faturamento" onclick="mudarAba('faturamento')" style="display:none">Faturamento</button>
   <button class="tab-btn" id="tab-dashboard" onclick="mudarAba('dashboard')" style="display:none">Dashboard</button>
-  <button class="tab-btn" id="tab-zurich" onclick="mudarAba('zurich')">Zurich</button>
   <button class="tab-btn" id="tab-monitor" onclick="mudarAba('monitor')" style="display:none">Monitor API</button>
 </div>
 
@@ -647,315 +670,6 @@ html.dark .z-info-row{border-color:var(--border-color)}
   </div>
 </div>
 
-<!-- ABA ZURICH -->
-<div class="tab-panel" id="panel-zurich">
-<div class="zurich-wrap">
-  <div style="margin-bottom:20px">
-    <div style="font-size:18px;font-weight:600;color:var(--verde);margin-bottom:4px">Zurich — Assistente de Roteamento</div>
-    <div style="font-size:12px;color:var(--chumbo)">Preencha os dados da demanda para obter o roteamento correto e pre-preencher o formulario Benner.</div>
-  </div>
-
-  <!-- Zona de upload de documento -->
-  <div class="scard" style="margin-bottom:20px">
-    <div class="scard-head">
-      <div class="scard-ico">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-      </div>
-      <span class="scard-ttl">Analisar Documento</span>
-    </div>
-    <div class="scard-body">
-      <div id="z-drop-zone" class="drop-zone" style="min-height:80px;cursor:pointer" onclick="document.getElementById('z-file-input').click()" ondragover="event.preventDefault();this.classList.add('dz-over')" ondragleave="this.classList.remove('dz-over')" ondrop="zDropFile(event)">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--chumbo)" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-        <div id="z-drop-label" style="font-size:12px;color:var(--chumbo);margin-top:6px">Arraste um PDF aqui ou clique para selecionar</div>
-      </div>
-      <input type="file" id="z-file-input" accept=".pdf" style="display:none" onchange="zSelecionarArquivo(this.files[0])">
-      <div id="z-progress-wrap" style="display:none;margin-top:10px">
-        <div style="font-size:11px;color:var(--chumbo);margin-bottom:4px" id="z-progress-label">Processando...</div>
-        <div style="height:4px;background:var(--borda-l);border-radius:2px;overflow:hidden">
-          <div id="z-progress-bar" style="height:100%;background:var(--verde);width:0%;transition:width .3s"></div>
-        </div>
-      </div>
-      <div id="z-doc-alert" style="display:none;margin-top:8px;font-size:11px;padding:7px 10px;border-radius:6px"></div>
-    </div>
-  </div>
-
-  <div class="zurich-cols">
-    <!-- Coluna esquerda: formulario -->
-    <div class="zurich-col-left">
-      <div class="scard">
-        <div class="scard-head">
-          <div class="scard-ico">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-          </div>
-          <span class="scard-ttl">Assistente de Roteamento</span>
-        </div>
-        <div class="scard-body">
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 14px">
-            <div class="fg">
-              <label>Tipo de demanda</label>
-              <select id="z-tipo">
-                <option value="">Selecione...</option>
-                <option value="odonto">Plano odontologico</option>
-                <option value="venda_casada">Venda casada</option>
-                <option value="vida">Vida</option>
-                <option value="residencial">Residencial</option>
-                <option value="consignatoria">Acao consignatoria</option>
-                <option value="pretamista">Pretamista</option>
-                <option value="covid">Covid-19</option>
-                <option value="credito_imobiliario">Credito imobiliario</option>
-                <option value="cessao_margem">Cessao de margem</option>
-                <option value="cancelamento_apolice">Cancelamento de apolice</option>
-                <option value="reajuste_premio">Reajuste de premio</option>
-                <option value="exibicao_documentos">Exibicao de documentos</option>
-                <option value="resgate_previdencia">Resgate de previdencia</option>
-                <option value="nao_aceitacao_risco">Nao aceitacao de risco</option>
-                <option value="devolucao_premio">Devolucao de premio</option>
-                <option value="cpf_cnpj_nao_localizado">CPF/CNPJ nao localizado</option>
-                <option value="premio_encerrado_transferencia">Premio encerrado por transferencia</option>
-                <option value="assistencia_24h">Assistencia 24h</option>
-                <option value="previdencia">Previdencia</option>
-                <option value="sinistro">Discute sinistro (geral)</option>
-              </select>
-            </div>
-            <div class="fg">
-              <label>Envolve sinistro?</label>
-              <select id="z-sinistro">
-                <option value="">Nao informado</option>
-                <option value="sim">Sim</option>
-                <option value="nao">Nao</option>
-              </select>
-            </div>
-            <div class="fg">
-              <label>Regiao</label>
-              <input type="text" id="z-regiao" placeholder="Ex: Sul, Nordeste...">
-            </div>
-            <div class="fg">
-              <label>Objeto</label>
-              <input type="text" id="z-objeto" placeholder="Objeto do processo">
-            </div>
-            <div class="fg">
-              <label>Assunto</label>
-              <input type="text" id="z-assunto" placeholder="Assunto do processo">
-            </div>
-            <div class="fg">
-              <label>Data/Hora de recebimento</label>
-              <input type="datetime-local" id="z-hora">
-            </div>
-            <div class="fg">
-              <label>Confirmacao do gestor (Previdencia)</label>
-              <select id="z-gestor">
-                <option value="">Nenhum</option>
-                <option value="guilherme">Guilherme</option>
-                <option value="tatiane">Tatiane</option>
-              </select>
-            </div>
-            <div class="fg">
-              <label>Ramos (manual, se nao fixado pela regra)</label>
-              <input type="text" id="z-ramos-manual" placeholder="Ex: 71, 14, 18">
-            </div>
-          </div>
-          <div style="margin-top:12px">
-            <div class="fg" style="flex-direction:row;align-items:center;gap:8px;padding:8px 0">
-              <input type="checkbox" id="z-trabalhista" style="width:16px;height:16px;cursor:pointer;margin:0">
-              <label for="z-trabalhista" style="font-size:12px;font-weight:400;text-transform:none;letter-spacing:0;cursor:pointer;color:var(--text)">Materia trabalhista</label>
-            </div>
-          </div>
-          <div class="z-btn-row">
-            <button class="z-btn-primary" id="z-calcular" onclick="zurichCalcular()">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-              Calcular Roteamento
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Coluna direita: resultado -->
-    <div class="zurich-col-right">
-      <div class="scard">
-        <div class="scard-head">
-          <div class="scard-ico">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-          </div>
-          <span class="scard-ttl">Resultado do Roteamento</span>
-        </div>
-        <div class="scard-body">
-          <div id="z-resultado">
-            <div class="z-result-placeholder">Preencha os dados e clique em Calcular Roteamento.</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Formulario Benner -->
-  <div class="scard">
-    <div class="scard-head">
-      <div class="scard-ico">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 7h8M8 11h8M8 15h5"/></svg>
-      </div>
-      <span class="scard-ttl">Formulario Benner</span>
-    </div>
-    <div class="scard-body">
-      <div class="benner-grid">
-        <div class="benner-field">
-          <label>Coligada *</label>
-          <input type="text" id="zb-coligada" placeholder="">
-        </div>
-        <div class="benner-field">
-          <label>Data inicio</label>
-          <input type="text" id="zb-data-inicio" placeholder="DD/MM/AAAA">
-        </div>
-        <div class="benner-field"></div>
-
-        <div class="benner-field">
-          <label>Departamento *</label>
-          <input type="text" id="zb-departamento" placeholder="">
-        </div>
-        <div class="benner-field">
-          <label>Categoria *</label>
-          <input type="text" id="zb-categoria" placeholder="">
-        </div>
-        <div class="benner-field">
-          <label>Subcategoria *</label>
-          <input type="text" id="zb-subcategoria" placeholder="">
-        </div>
-
-        <div class="benner-field">
-          <label>Tipo de acao *</label>
-          <input type="text" id="zb-tipo-acao" placeholder="">
-        </div>
-        <div class="benner-field">
-          <label>Objeto padrao *</label>
-          <input type="text" id="zb-objeto" placeholder="">
-        </div>
-        <div class="benner-field">
-          <label>Assunto *</label>
-          <input type="text" id="zb-assunto" placeholder="">
-        </div>
-
-        <div class="benner-field">
-          <label>Natureza *</label>
-          <input type="text" id="zb-natureza" placeholder="">
-        </div>
-        <div class="benner-field">
-          <label>Data de citacao</label>
-          <input type="text" id="zb-data-citacao" placeholder="DD/MM/AAAA">
-        </div>
-        <div class="benner-field">
-          <label>Numero do processo</label>
-          <input type="text" id="zb-num-processo" placeholder="">
-        </div>
-
-        <div class="benner-field">
-          <label>Adverso principal</label>
-          <input type="text" id="zb-adverso" placeholder="">
-        </div>
-        <div class="benner-field">
-          <label>Risco</label>
-          <input type="text" id="zb-risco" placeholder="">
-        </div>
-        <div class="benner-field">
-          <label>% Risco</label>
-          <input type="text" id="zb-pct-risco" placeholder="">
-        </div>
-
-        <div class="benner-field">
-          <label>Banco/Empresa origem</label>
-          <input type="text" id="zb-banco-origem" placeholder="">
-        </div>
-        <div class="benner-field">
-          <label>Banco incorporado</label>
-          <input type="text" id="zb-banco-incorporado" placeholder="">
-        </div>
-        <div class="benner-field">
-          <label>Agencia/Departamento</label>
-          <input type="text" id="zb-agencia" placeholder="">
-        </div>
-
-        <div class="benner-field">
-          <label>Canal de contratacao</label>
-          <input type="text" id="zb-canal-contratacao" placeholder="">
-        </div>
-        <div class="benner-field">
-          <label>Tipo de captura</label>
-          <input type="text" id="zb-tipo-captura" placeholder="">
-        </div>
-        <div class="benner-field">
-          <label>Causa raiz</label>
-          <input type="text" id="zb-causa-raiz" placeholder="">
-        </div>
-
-        <div class="benner-field">
-          <label>Valor da causa *</label>
-          <input type="text" id="zb-valor-causa" placeholder="">
-        </div>
-        <div class="benner-field">
-          <label>Revisao</label>
-          <input type="text" id="zb-revisao" placeholder="">
-        </div>
-        <div class="benner-field">
-          <label>Danos</label>
-          <input type="text" id="zb-danos" placeholder="">
-        </div>
-
-        <div class="benner-field">
-          <label>Classificacao do processo</label>
-          <input type="text" id="zb-class-processo" placeholder="">
-        </div>
-        <div class="benner-field">
-          <label>Classificacao da contingencia</label>
-          <input type="text" id="zb-class-contingencia" placeholder="">
-        </div>
-        <div class="benner-field">
-          <label>Passo antigo</label>
-          <input type="text" id="zb-passo-antigo" placeholder="">
-        </div>
-
-        <div class="benner-field">
-          <label>Segmento</label>
-          <input type="text" id="zb-segmento" placeholder="">
-        </div>
-        <div class="benner-field">
-          <label>Tipo desdobramento</label>
-          <input type="text" id="zb-tipo-desdobramento" placeholder="">
-        </div>
-        <div class="benner-field"></div>
-
-        <div class="benner-field">
-          <label>Processo relevante</label>
-          <div class="z-radio-group">
-            <label><input type="radio" name="zb-proc-relevante" id="zb-proc-relevante-nao" value="Nao"> Nao</label>
-            <label><input type="radio" name="zb-proc-relevante" id="zb-proc-relevante-sim" value="Sim"> Sim</label>
-          </div>
-        </div>
-        <div class="benner-field">
-          <label>Dossie urgente</label>
-          <div class="z-radio-group">
-            <label><input type="radio" name="zb-urgente" id="zb-urgente-nao" value="Nao" checked> Nao</label>
-            <label><input type="radio" name="zb-urgente" id="zb-urgente-sim" value="Sim"> Sim</label>
-          </div>
-        </div>
-        <div class="benner-field"></div>
-
-        <div class="benner-field benner-field-full">
-          <label>Observacoes</label>
-          <textarea id="zb-obs" rows="3" placeholder="Observacoes adicionais..."></textarea>
-        </div>
-      </div>
-
-      <div class="z-btn-row">
-        <button class="z-btn-ghost" onclick="zurichCopiarBenner()">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-          Copiar para area de transferencia
-        </button>
-        <button class="z-btn-ghost" onclick="zurichLimpar()">Limpar</button>
-      </div>
-      <div id="zb-copy-msg" style="font-size:11px;color:var(--vok);margin-top:6px;min-height:16px"></div>
-    </div>
-  </div>
-</div>
-</div>
 
 <!-- ABA ACURÁCIA -->
 <div class="tab-panel" id="panel-acuracia">
@@ -977,6 +691,12 @@ html.dark .z-info-row{border-color:var(--border-color)}
       <div class="acc-kpi"><div class="acc-kpi-val" id="kpiProcessos" style="color:var(--ciano)">--</div><div class="acc-kpi-lbl">Processos salvos</div></div>
       <div class="acc-kpi"><div class="acc-kpi-val" id="kpiAceitos" style="color:var(--vok)">--</div><div class="acc-kpi-lbl">Campos aceitos</div></div>
       <div class="acc-kpi"><div class="acc-kpi-val" id="kpiAlterados" style="color:var(--err)">--</div><div class="acc-kpi-lbl">Campos alterados</div></div>
+    </div>
+
+    <!-- Alerta campos baixa acuracia -->
+    <div id="accAlertaCampos" style="display:none;background:#FFFBEB;border:1px solid #F4D080;border-radius:var(--r);padding:12px 16px;margin-bottom:16px">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#d97706;margin-bottom:6px">Campos com acuracia abaixo de 60%</div>
+      <div id="accAlertaCamposBody" style="display:flex;flex-wrap:wrap;gap:6px"></div>
     </div>
 
     <!-- Gráficos -->
@@ -1001,6 +721,10 @@ html.dark .z-info-row{border-color:var(--border-color)}
     <div class="acc-card" style="margin-bottom:0">
       <div class="acc-card-ttl">
         <span>Histórico de processos</span>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="text" id="accHistoricoSearch" placeholder="Buscar processo..." style="padding:5px 10px;border:1.5px solid var(--borda);border-radius:var(--r);font-size:11px;font-family:inherit;outline:none;width:200px" oninput="accFiltrarHistorico(this.value)">
+          <button onclick="accExportarHistorico()" title="Exportar histórico" style="padding:5px 12px;background:var(--verde);color:#fff;border:none;border-radius:var(--r);font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">Exportar .xlsx</button>
+        </div>
       </div>
       <div id="accProcessosContent"><p style="font-size:11px;color:var(--chumbo)">Salve processos para ver o histórico.</p></div>
     </div>
@@ -3583,6 +3307,10 @@ async function chamarAPI(tipo, payload) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ tipo, ...payload })
   });
+  if (resp.status === 401 || resp.status === 403) {
+    fazerLogout();
+    throw new Error('Sessao expirada. Faca login novamente.');
+  }
   const data = await resp.json();
   if (!resp.ok) throw new Error(data.error || `HTTP ${resp.status}`);
   return data;
@@ -4476,9 +4204,12 @@ async function fazerLogin() {
     const data = await r.json();
     if (!r.ok) { err.textContent = data.error || 'Erro ao entrar.'; err.style.display='block'; btn.disabled=false; btn.textContent='Entrar'; return; }
     localStorage.setItem('eagle_token', data.token);
+    // Salvar expiry de sessao: 8 horas a partir do login
+    localStorage.setItem('eagle_expiry', Date.now() + 8 * 60 * 60 * 1000);
     sessaoToken = data.token;
     sessaoUser = data;
     aplicarSessao(data);
+    iniciarVerificacaoSessao();
   } catch(e) {
     err.textContent = 'Erro de conexão.';
     err.style.display = 'block';
@@ -4492,15 +4223,53 @@ async function fazerLogout() {
   sessaoToken = null;
   sessaoUser = null;
   localStorage.removeItem('eagle_token');
+  localStorage.removeItem('eagle_expiry');
   if (token) fetch('/api/login', { method: 'DELETE', headers: {'Content-Type':'application/json'}, body: JSON.stringify({token}) }).catch(()=>{});
   document.getElementById('btnLogout').style.display = 'none';
   document.getElementById('userMenuWrap').style.display = 'none';
   document.getElementById('topUserName').textContent = '';
+  const banner = document.getElementById('session-expiry-banner');
+  if (banner) banner.style.display = 'none';
   mostrarLogin();
   document.getElementById('loginUsuario').value = '';
   document.getElementById('loginSenha').value = '';
   document.getElementById('loginBtn').disabled = false;
   document.getElementById('loginBtn').textContent = 'Entrar';
+}
+
+// ── CONTROLE DE SESSAO ────────────────────────────────────────────────────────
+let _sessaoExpiryInterval = null;
+
+function iniciarVerificacaoSessao() {
+  if (_sessaoExpiryInterval) clearInterval(_sessaoExpiryInterval);
+  _sessaoExpiryInterval = setInterval(checkSessionExpiry, 60 * 1000);
+  checkSessionExpiry();
+}
+
+function checkSessionExpiry() {
+  const expiry = parseInt(localStorage.getItem('eagle_expiry') || '0', 10);
+  if (!expiry) return;
+  const agora = Date.now();
+  const restante = expiry - agora;
+  const banner = document.getElementById('session-expiry-banner');
+  if (!banner) return;
+  if (restante <= 0) {
+    fazerLogout();
+    return;
+  }
+  if (restante < 10 * 60 * 1000) {
+    const minutos = Math.ceil(restante / 60000);
+    document.getElementById('session-expiry-text').textContent =
+      'Sua sessao expira em ' + minutos + ' minuto' + (minutos > 1 ? 's' : '') + '. Clique para renovar.';
+    banner.style.display = 'block';
+    // Ajustar posicao do topbar para nao sobrepor
+    const tabBar = document.getElementById('tabBar');
+    if (tabBar) tabBar.style.top = '64px';
+  } else {
+    banner.style.display = 'none';
+    const tabBar = document.getElementById('tabBar');
+    if (tabBar) tabBar.style.top = '54px';
+  }
 }
 
 function mudarAba(aba) {
@@ -4512,6 +4281,7 @@ function mudarAba(aba) {
   if (aba === 'usuarios') carregarUsuarios();
   if (aba === 'faturamento') fatInit();
   if (aba === 'dashboard') dashRender();
+  if (aba === 'monitor') monRestaurarIDB();
 }
 
 // ── ABA ACURÁCIA ──────────────────────────────────────────────────────────────
@@ -4568,6 +4338,21 @@ async function carregarAcuracia() {
       });
     }
     document.getElementById('accStatsContent').innerHTML = htmlS || '<p style="font-size:11px;color:var(--chumbo)">Salve processos para ver os dados.</p>';
+
+    // Alertas de campos com acuracia abaixo de 60%
+    const camposCriticos = todosCampos.filter(s => s.comDados && s.pct < 60);
+    const alertaCont = document.getElementById('accAlertaCampos');
+    if (alertaCont) {
+      if (camposCriticos.length) {
+        document.getElementById('accAlertaCamposBody').innerHTML = camposCriticos.map(f => {
+          const cor = f.pct < 40 ? '#dc2626' : '#d97706';
+          return `<span style="background:#fff;border:1px solid ${cor};border-radius:6px;padding:3px 10px;font-size:11px;color:${cor};font-weight:600">${f.label}: ${f.pct}%</span>`;
+        }).join('');
+        alertaCont.style.display = 'block';
+      } else {
+        alertaCont.style.display = 'none';
+      }
+    }
 
     // Campos mais corrigidos
     let htmlE = '';
@@ -4633,9 +4418,103 @@ async function carregarAcuracia() {
       </div>`;
     }
     document.getElementById('accProcessosContent').innerHTML = htmlP;
+    _accProcessosCached = processos || [];
+
+    // Alertas de campos frequentemente corrigidos
+    accRenderAlertas(stats || []);
   } catch(e) {
     document.getElementById('accStatsContent').innerHTML = `<p style="color:var(--err);font-size:11px">Erro ao carregar: ${e.message}</p>`;
   }
+}
+
+function accRenderAlertas(stats) {
+  // Remover alertas anteriores
+  document.querySelectorAll('.acc-campo-alerta').forEach(el => el.remove());
+  const dispensados = JSON.parse(sessionStorage.getItem('acc_alertas_dispensados') || '[]');
+  const piores = stats
+    .filter(s => s.pct < 60 && s.total > 0 && !dispensados.includes(s.campo))
+    .sort((a, b) => a.pct - b.pct)
+    .slice(0, 3);
+  if (!piores.length) return;
+  const wrap = document.querySelector('.acuracia-wrap');
+  if (!wrap) return;
+  const kpis = wrap.querySelector('.acc-kpis');
+  if (!kpis) return;
+  piores.forEach(s => {
+    const label = CAMPO_LABELS[s.campo] || s.campo;
+    const pctErro = 100 - s.pct;
+    const div = document.createElement('div');
+    div.className = 'acc-campo-alerta';
+    div.style.cssText = 'background:var(--err-bg);border:1px solid var(--err-b);border-radius:var(--rlg);padding:12px 16px;margin-bottom:10px;font-size:12px;color:var(--err);display:flex;justify-content:space-between;align-items:center;gap:12px';
+    div.innerHTML = `<span><strong>Atencao:</strong> <em>${label}</em> esta sendo corrigido em <strong>${pctErro}%</strong> dos processos. Considere ajustar as instrucoes de extracao.</span>
+      <button onclick="accDispensarAlerta('${s.campo}',this.parentElement)" style="background:none;border:none;cursor:pointer;font-size:16px;color:var(--err);line-height:1;flex-shrink:0">&times;</button>`;
+    kpis.insertAdjacentElement('beforebegin', div);
+  });
+}
+
+function accDispensarAlerta(campo, el) {
+  const dispensados = JSON.parse(sessionStorage.getItem('acc_alertas_dispensados') || '[]');
+  if (!dispensados.includes(campo)) dispensados.push(campo);
+  sessionStorage.setItem('acc_alertas_dispensados', JSON.stringify(dispensados));
+  if (el) el.remove();
+}
+
+let _accProcessosCached = [];
+
+function accFiltrarHistorico(termo) {
+  const t = (termo || '').toLowerCase().trim();
+  if (!_accProcessosCached.length) return;
+  const filtrados = t ? _accProcessosCached.filter(p =>
+    (p.npu || '').toLowerCase().includes(t) ||
+    (p.arquivo_nome || '').toLowerCase().includes(t) ||
+    (p.usuario_nome || '').toLowerCase().includes(t)
+  ) : _accProcessosCached;
+
+  const cont = document.getElementById('accProcessosContent');
+  if (!filtrados.length) {
+    cont.innerHTML = '<p style="font-size:11px;color:var(--chumbo);padding:12px 0">Nenhum resultado para "' + termo + '".</p>';
+    return;
+  }
+  let html = `<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:11px">
+    <thead><tr style="background:var(--off)">
+      <th style="padding:8px 10px;text-align:left;color:var(--chumbo);font-size:10px;text-transform:uppercase;letter-spacing:.4px;font-weight:600">#</th>
+      <th style="padding:8px 10px;text-align:left;color:var(--chumbo);font-size:10px;text-transform:uppercase;letter-spacing:.4px;font-weight:600">NPU</th>
+      <th style="padding:8px 10px;text-align:left;color:var(--chumbo);font-size:10px;text-transform:uppercase;letter-spacing:.4px;font-weight:600">Arquivo</th>
+      <th style="padding:8px 10px;text-align:left;color:var(--chumbo);font-size:10px;text-transform:uppercase;letter-spacing:.4px;font-weight:600">Usuario</th>
+      <th style="padding:8px 10px;text-align:left;color:var(--chumbo);font-size:10px;text-transform:uppercase;letter-spacing:.4px;font-weight:600">Data</th>
+      <th style="padding:8px 10px;text-align:center;color:var(--chumbo);font-size:10px;text-transform:uppercase;letter-spacing:.4px;font-weight:600">Status</th>
+    </tr></thead><tbody>`;
+  filtrados.forEach((p, i) => {
+    const bg = i % 2 === 0 ? '#fff' : '#fafbfc';
+    const data = new Date(p.data_upload).toLocaleDateString('pt-BR');
+    const badge = p.status === 'validado'
+      ? `<span style="background:var(--vok-bg);color:var(--vok);padding:2px 8px;border-radius:8px;font-size:10px;font-weight:600">Salvo</span>`
+      : `<span style="background:var(--amb-bg);color:var(--amb);padding:2px 8px;border-radius:8px;font-size:10px;font-weight:600">Pendente</span>`;
+    html += `<tr style="background:${bg};border-top:1px solid var(--borda-l)">
+      <td style="padding:7px 10px;color:var(--chumbo)">${p.id}</td>
+      <td style="padding:7px 10px;font-family:monospace;font-size:10px;color:var(--verde)">${p.npu||'-'}</td>
+      <td style="padding:7px 10px;color:var(--chumbo);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.arquivo_nome||'-'}</td>
+      <td style="padding:7px 10px;color:var(--chumbo);white-space:nowrap">${p.usuario_nome||'-'}</td>
+      <td style="padding:7px 10px;color:var(--chumbo);white-space:nowrap">${data}</td>
+      <td style="padding:7px 10px;text-align:center">${badge}</td>
+    </tr>`;
+  });
+  html += '</tbody></table></div>';
+  cont.innerHTML = html;
+}
+
+function accExportarHistorico() {
+  if (!_accProcessosCached.length) { alert('Carregue o historico antes de exportar.'); return; }
+  if (typeof XLSX === 'undefined') { alert('Biblioteca XLSX nao disponivel.'); return; }
+  const linhas = [['ID', 'NPU', 'Arquivo', 'Usuario', 'Data', 'Status']];
+  _accProcessosCached.forEach(p => {
+    const data = p.data_upload ? new Date(p.data_upload).toLocaleDateString('pt-BR') : '-';
+    linhas.push([p.id, p.npu || '-', p.arquivo_nome || '-', p.usuario_nome || '-', data, p.status || '-']);
+  });
+  const ws = XLSX.utils.aoa_to_sheet(linhas);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Historico');
+  XLSX.writeFile(wb, 'historico_processos.xlsx');
 }
 
 async function enviarInsumo() {
@@ -7486,7 +7365,34 @@ window.preencherFormulario = function(c) {
   setTimeout(registrarCamposIA, 200);
   setTimeout(mostrarBadgesConfianca, 250);
   setTimeout(ativarChipsEmCampos, 300);
+  setTimeout(verificarConfiancaIA, 400);
 };
+
+function verificarConfiancaIA() {
+  const CAMPOS_CRITICOS = [
+    { id: 'f_npu', label: 'NPU' },
+    { id: 'f_autor_nome', label: 'Nome do autor' },
+    { id: 'f_autor_cpf', label: 'CPF do autor' },
+    { id: 'f_reu_nome', label: 'Nome do reu' },
+    { id: 'f_valor_causa', label: 'Valor da causa' },
+    { id: 'f_data_ajuizamento', label: 'Data de ajuizamento' },
+  ];
+  const faltando = CAMPOS_CRITICOS.filter(({ id }) => {
+    const el = document.getElementById(id);
+    return !el || !el.value.trim();
+  });
+  const banner = document.getElementById('ia-confidence-banner');
+  if (!banner) return;
+  if (faltando.length >= 3) {
+    document.getElementById('ia-confidence-text').textContent =
+      'A IA nao identificou ' + faltando.length + ' campos criticos. Revise o documento antes de salvar.';
+    document.getElementById('ia-confidence-campos').textContent =
+      'Campos faltantes: ' + faltando.map(f => f.label).join(', ');
+    banner.style.display = 'block';
+  } else {
+    banner.style.display = 'none';
+  }
+}
 
 // ── FEATURES 10, 11, 12: ACURACIA TAB EXTENSIONS ─────────────────────────────
 const _origCarregarAcuracia = carregarAcuracia;
@@ -7550,392 +7456,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-// ── ZURICH ────────────────────────────────────────────────────────────────────
-
-const REGRAS_ZURICH = [
-  { id:'odonto', label:'Plano odontologico', priority:1,
-    match:(c)=>c.tipo==='odonto',
-    output:{ coligada:'927', credenciado:'FRIL', carteira:'Tatiane', objetoSugerido:'Plano odontologico', assuntoSugerido:'Sinistro negado' },
-    motivo:'Demanda de plano odontologico direciona sempre para FRIL, coligada 927, carteira da Tatiane.' },
-  { id:'venda_casada', label:'Venda casada', priority:2,
-    match:(c)=>c.tipo==='venda_casada',
-    output:{ coligada:'136', ramos:'71, 14, 18', credenciado:'Fabio Torres', colaborador:'Guilherme Luis' },
-    motivo:'Venda casada usa credenciado padrao Fabio Torres e colaborador Guilherme Luis, coligada 136.' },
-  { id:'vida', label:'Vida', priority:3,
-    match:(c)=>c.tipo==='vida',
-    output:{ coligada:'507', ramos:'82, 93, 77' },
-    motivo:'Casos de vida sempre coligada 507, ramos 82/93/77.' },
-  { id:'residencial', label:'Residencial', priority:4,
-    match:(c)=>c.tipo==='residencial',
-    output:{ coligada:'136', ramos:'71, 18, 14' },
-    motivo:'Casos residenciais sempre coligada 136, ramos 71/18/14.' },
-  { id:'consignatoria', label:'Acao consignatoria', priority:5,
-    match:(c)=>c.tipo==='consignatoria',
-    output:{ credenciado:'Fernandes Ribeiro Instaqui e Lopes Sociedade de Advogados' },
-    motivo:'Toda acao consignatoria vai para o credenciado Fernandes Ribeiro Instaqui e Lopes.' },
-  { id:'cabanellos', label:'Pretamista / Covid / Credito imobiliario', priority:6,
-    match:(c)=>['pretamista','covid','credito_imobiliario'].includes(c.tipo),
-    output:{ credenciado:'Cabanellos' },
-    motivo:'Pretamista, Covid e Credito imobiliario sempre vinculados ao credenciado Cabanellos.' },
-  { id:'guilherme_lista', label:'Lista vinculada a Guilherme Luis', priority:7,
-    match:(c)=>['cessao_margem','cancelamento_apolice','reajuste_premio','exibicao_documentos','resgate_previdencia','nao_aceitacao_risco','devolucao_premio','cpf_cnpj_nao_localizado','premio_encerrado_transferencia','assistencia_24h'].includes(c.tipo),
-    output:(c)=>({ colaborador:'Guilherme Luis', credenciado:'Conforme tabela de terceirizacao'+(c.regiao?' - regiao: '+c.regiao:' (informar regiao)') }),
-    motivo:'Cessao de margem, cancelamento de apolice, reajuste de premio, exibicao de documentos, resgate de previdencia, nao aceitacao de risco, devolucao de premio, CPF/CNPJ nao localizado, premio encerrado por transferencia e assistencia 24h vao para o colaborador Guilherme Luis, credenciado por regiao.' },
-  { id:'previdencia_sem_sinistro', label:'Previdencia sem sinistro', priority:8,
-    match:(c)=>c.tipo==='previdencia'&&c.envolveSinistro==='nao'&&!!c.gestorConfirma,
-    output:{ carteira:'Guilherme', credenciado:'Tortoro Madureira & Ragazzi Advogados' },
-    motivo:'Previdencia sem sinistro: carteira do Guilherme, credenciado Tortoro Madureira & Ragazzi.' },
-  { id:'previdencia_com_sinistro', label:'Previdencia com sinistro', priority:8,
-    match:(c)=>c.tipo==='previdencia'&&c.envolveSinistro==='sim'&&!!c.gestorConfirma,
-    output:{ carteira:'Tatiane', credenciado:'Queiroz Cavalcanti' },
-    motivo:'Previdencia com sinistro: carteira da Tatiane, credenciado Queiroz Cavalcanti.' },
-  { id:'sinistro_geral', label:'Discute sinistro', priority:9,
-    match:(c)=>c.tipo==='sinistro'||c.envolveSinistro==='sim',
-    output:(c)=>({ colaborador:'Tatiane Alkmim', credenciado:'Conforme regiao'+(c.regiao?' - '+c.regiao:' (informar regiao)') }),
-    motivo:'Casos que discutem sinistro sempre vinculados a advogada colaboradora Tatiane Alkmim, credenciado conforme regiao.' },
-];
-
-function zurichRotear(caso) {
-  const resultado = { coligada:null, ramos:null, credenciado:null, colaborador:null, carteira:null, objetoSugerido:null, assuntoSugerido:null };
-  const regrasAplicadas = [];
-  for (const regra of [...REGRAS_ZURICH].sort((a,b)=>a.priority-b.priority)) {
-    if (!regra.match(caso)) continue;
-    const saida = typeof regra.output==='function' ? regra.output(caso) : regra.output;
-    for (const campo of Object.keys(saida)) {
-      if (resultado[campo]===null||resultado[campo]===undefined) resultado[campo]=saida[campo];
-    }
-    regrasAplicadas.push({ id:regra.id, label:regra.label, motivo:regra.motivo });
-  }
-  let equipe=null, equipeMotivo=null;
-  if (caso.trabalhista && caso.envolveSinistro==='sim') {
-    equipe='Civel-Seguros';
-    equipeMotivo='Materia trabalhista + discute sinistro: equipe forcada para Civel-Seguros.';
-  }
-  return { resultado, regrasAplicadas, equipe, equipeMotivo };
-}
-
-function zurichValidar(caso, resultado) {
-  const alertas = [];
-  const txt = ((caso.objeto||'')+' '+(caso.assunto||'')).toLowerCase();
-  if (resultado.colaborador==='Tatiane Alkmim' && (caso.objeto||caso.assunto) && !txt.includes('sinistro'))
-    alertas.push('Colaboradora Tatiane Alkmim exige que Objeto ou Assunto contenham "sinistro". Ajuste antes de cadastrar.');
-  if (resultado.colaborador==='Guilherme Luis' && txt.includes('sinistro'))
-    alertas.push('Colaborador Guilherme Luis nao pode ter Objeto/Assunto relacionados a sinistro. Revise os campos.');
-  return alertas;
-}
-
-function zurichPrazo(horaISO) {
-  if (!horaISO) return null;
-  const rec = new Date(horaISO);
-  const limite = new Date(rec); limite.setHours(16,0,0,0);
-  const dataCad = new Date(rec);
-  const mesmoDia = rec <= limite;
-  if (!mesmoDia) dataCad.setDate(dataCad.getDate()+1);
-  return { dataCadastro: dataCad.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'}), mesmoDia };
-}
-
-function zurichProcessar(caso) {
-  const { resultado, regrasAplicadas, equipe, equipeMotivo } = zurichRotear(caso);
-  const alertasBloqueio = zurichValidar(caso, resultado);
-  const prazo = zurichPrazo(caso.horaRecebimento);
-  const pendenteValidacaoManual = caso.tipo==='previdencia' && !caso.gestorConfirma;
-  const podeCadastrar = !!caso.tipo && alertasBloqueio.length===0 && !pendenteValidacaoManual;
-  return { resultado, ramosFinal: resultado.ramos||caso.ramosManual||null, regrasAplicadas, equipe, equipeMotivo, alertasBloqueio, pendenteValidacaoManual, prazo, podeCadastrar };
-}
-
-function zurichCalcular() {
-  const caso = {
-    tipo: document.getElementById('z-tipo').value,
-    envolveSinistro: document.getElementById('z-sinistro').value,
-    regiao: document.getElementById('z-regiao').value.trim(),
-    trabalhista: document.getElementById('z-trabalhista').checked,
-    objeto: document.getElementById('z-objeto').value.trim(),
-    assunto: document.getElementById('z-assunto').value.trim(),
-    horaRecebimento: document.getElementById('z-hora').value,
-    gestorConfirma: document.getElementById('z-gestor').value,
-    ramosManual: document.getElementById('z-ramos-manual').value.trim(),
-  };
-
-  const proc = zurichProcessar(caso);
-  const { resultado, ramosFinal, regrasAplicadas, equipe, equipeMotivo, alertasBloqueio, pendenteValidacaoManual, prazo } = proc;
-
-  let html = '';
-
-  if (alertasBloqueio.length) {
-    alertasBloqueio.forEach(a => { html += `<div class="z-alert">${a}</div>`; });
-  }
-  if (pendenteValidacaoManual) {
-    html += `<div class="z-warn">Previdencia requer confirmacao do gestor antes do roteamento ser concluido. Selecione o gestor no campo acima.</div>`;
-  }
-
-  const campos = [
-    ['Coligada', resultado.coligada],
-    ['Ramos', ramosFinal],
-    ['Credenciado', resultado.credenciado],
-    ['Colaborador', resultado.colaborador],
-    ['Carteira', resultado.carteira],
-    ['Objeto sugerido', resultado.objetoSugerido],
-    ['Assunto sugerido', resultado.assuntoSugerido],
-  ];
-  html += '<div style="margin-top:8px">';
-  campos.forEach(([lbl, val]) => {
-    if (val) html += `<div class="z-info-row"><span class="z-info-label">${lbl}</span><span class="z-info-val">${val}</span></div>`;
-  });
-  if (equipe) {
-    html += `<div class="z-info-row"><span class="z-info-label">Equipe</span><span><span class="z-badge-orange">${equipe}</span></span></div>`;
-    if (equipeMotivo) html += `<div style="font-size:10px;color:var(--chumbo);padding:2px 0 6px 148px">${equipeMotivo}</div>`;
-  }
-  if (prazo) {
-    const extra = prazo.mesmoDia ? 'mesmo dia' : 'dia seguinte';
-    html += `<div class="z-info-row"><span class="z-info-label">Prazo de cadastro</span><span class="z-info-val">${prazo.dataCadastro} <span style="font-weight:400;color:var(--chumbo)">(${extra})</span></span></div>`;
-  }
-  html += '</div>';
-
-  if (regrasAplicadas.length) {
-    html += '<div class="z-section-title">Regras aplicadas</div>';
-    regrasAplicadas.forEach(r => {
-      html += `<span class="z-rule-chip">${r.label}</span>`;
-    });
-    html += '<div style="margin-top:8px">';
-    regrasAplicadas.forEach(r => {
-      html += `<div class="z-rule-motivo">${r.motivo}</div>`;
-    });
-    html += '</div>';
-  } else if (caso.tipo) {
-    html += '<div class="z-warn" style="margin-top:8px">Nenhuma regra especifica encontrada para este tipo de demanda. Verifique o roteamento manualmente.</div>';
-  }
-
-  document.getElementById('z-resultado').innerHTML = html;
-
-  // Pre-fill Benner
-  if (resultado.coligada) document.getElementById('zb-coligada').value = resultado.coligada;
-  if (resultado.objetoSugerido) document.getElementById('zb-objeto').value = resultado.objetoSugerido;
-  if (resultado.assuntoSugerido) document.getElementById('zb-assunto').value = resultado.assuntoSugerido;
-  document.getElementById('zb-departamento').value = 'JURIDICO';
-  document.getElementById('zb-categoria').value = 'Juridico Civil';
-  document.getElementById('zb-subcategoria').value = resultado.carteira || 'Zurich';
-  if (!document.getElementById('zb-danos').value) document.getElementById('zb-danos').value = 'Moral + Material';
-  if (!document.getElementById('zb-revisao').value) document.getElementById('zb-revisao').value = 'Nao Revisado';
-  if (!document.getElementById('zb-class-contingencia').value) document.getElementById('zb-class-contingencia').value = 'Contingencia Inicial';
-}
-
-function zurichCopiarBenner() {
-  const fields = [
-    ['Coligada', 'zb-coligada'],
-    ['Data inicio', 'zb-data-inicio'],
-    ['Departamento', 'zb-departamento'],
-    ['Categoria', 'zb-categoria'],
-    ['Subcategoria', 'zb-subcategoria'],
-    ['Tipo de acao', 'zb-tipo-acao'],
-    ['Objeto padrao', 'zb-objeto'],
-    ['Assunto', 'zb-assunto'],
-    ['Natureza', 'zb-natureza'],
-    ['Data de citacao', 'zb-data-citacao'],
-    ['Numero do processo', 'zb-num-processo'],
-    ['Adverso principal', 'zb-adverso'],
-    ['Risco', 'zb-risco'],
-    ['% Risco', 'zb-pct-risco'],
-    ['Banco/Empresa origem', 'zb-banco-origem'],
-    ['Banco incorporado', 'zb-banco-incorporado'],
-    ['Agencia/Departamento', 'zb-agencia'],
-    ['Canal de contratacao', 'zb-canal-contratacao'],
-    ['Tipo de captura', 'zb-tipo-captura'],
-    ['Causa raiz', 'zb-causa-raiz'],
-    ['Valor da causa', 'zb-valor-causa'],
-    ['Revisao', 'zb-revisao'],
-    ['Danos', 'zb-danos'],
-    ['Classificacao do processo', 'zb-class-processo'],
-    ['Classificacao da contingencia', 'zb-class-contingencia'],
-    ['Passo antigo', 'zb-passo-antigo'],
-    ['Segmento', 'zb-segmento'],
-    ['Tipo desdobramento', 'zb-tipo-desdobramento'],
-    ['Observacoes', 'zb-obs'],
-  ];
-  const procRel = document.querySelector('input[name="zb-proc-relevante"]:checked');
-  const urgente = document.querySelector('input[name="zb-urgente"]:checked');
-  let txt = 'FORMULARIO BENNER - ZURICH\n' + '='.repeat(40) + '\n';
-  fields.forEach(([lbl, id]) => {
-    const el = document.getElementById(id);
-    if (el && el.value.trim()) txt += `${lbl}: ${el.value.trim()}\n`;
-  });
-  if (procRel) txt += `Processo relevante: ${procRel.value}\n`;
-  if (urgente) txt += `Dossie urgente: ${urgente.value}\n`;
-  navigator.clipboard.writeText(txt).then(() => {
-    const msg = document.getElementById('zb-copy-msg');
-    msg.textContent = 'Copiado para a area de transferencia.';
-    setTimeout(() => { msg.textContent = ''; }, 3000);
-  }).catch(() => {
-    const msg = document.getElementById('zb-copy-msg');
-    msg.textContent = 'Nao foi possivel copiar. Copie manualmente.';
-  });
-}
-
-function zurichLimpar() {
-  ['zb-coligada','zb-data-inicio','zb-departamento','zb-categoria','zb-subcategoria',
-   'zb-tipo-acao','zb-objeto','zb-assunto','zb-natureza','zb-data-citacao','zb-num-processo',
-   'zb-adverso','zb-risco','zb-pct-risco','zb-banco-origem','zb-banco-incorporado',
-   'zb-agencia','zb-canal-contratacao','zb-tipo-captura','zb-causa-raiz','zb-valor-causa',
-   'zb-revisao','zb-danos','zb-class-processo','zb-class-contingencia','zb-passo-antigo',
-   'zb-segmento','zb-tipo-desdobramento','zb-obs'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.value = '';
-  });
-  ['z-tipo','z-sinistro','z-gestor'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.value = '';
-  });
-  ['z-regiao','z-objeto','z-assunto','z-ramos-manual'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.value = '';
-  });
-  document.getElementById('z-hora').value = '';
-  document.getElementById('z-trabalhista').checked = false;
-  document.getElementById('z-resultado').innerHTML = '<div class="z-result-placeholder">Preencha os dados e clique em Calcular Roteamento.</div>';
-  document.getElementById('zb-copy-msg').textContent = '';
-  // Limpa estado do upload
-  _zPdfBuffer = null;
-  const dz = document.getElementById('z-drop-zone');
-  if (dz) { document.getElementById('z-drop-label').textContent = 'Arraste um PDF aqui ou clique para selecionar'; dz.classList.remove('dz-over'); }
-  const pw = document.getElementById('z-progress-wrap'); if (pw) pw.style.display = 'none';
-  const da = document.getElementById('z-doc-alert'); if (da) da.style.display = 'none';
-  const fi = document.getElementById('z-file-input'); if (fi) fi.value = '';
-}
-
-// ── ANALISE DE DOCUMENTO NA ABA ZURICH ───────────────────────────────────────
-let _zPdfBuffer = null;
-
-function zDropFile(event) {
-  event.preventDefault();
-  document.getElementById('z-drop-zone').classList.remove('dz-over');
-  const f = event.dataTransfer.files[0];
-  if (f) zSelecionarArquivo(f);
-}
-
-function zSelecionarArquivo(file) {
-  if (!file || file.type !== 'application/pdf') {
-    zDocAlerta('err', 'Selecione um arquivo PDF valido.');
-    return;
-  }
-  document.getElementById('z-drop-label').textContent = file.name;
-  const reader = new FileReader();
-  reader.onload = e => { _zPdfBuffer = e.target.result; zAnalisarDocumento(); };
-  reader.readAsArrayBuffer(file);
-}
-
-function zDocAlerta(tipo, msg) {
-  const el = document.getElementById('z-doc-alert');
-  if (!el) return;
-  el.style.display = 'block';
-  el.style.background = tipo === 'err' ? 'var(--err-bg)' : 'var(--ok-bg, #f0fdf4)';
-  el.style.color = tipo === 'err' ? 'var(--err)' : 'var(--vok)';
-  el.style.border = '1px solid ' + (tipo === 'err' ? 'var(--err)' : 'var(--vok)');
-  el.textContent = msg;
-}
-
-function zSetProgress(pct, label) {
-  const pw = document.getElementById('z-progress-wrap');
-  if (pw) pw.style.display = 'block';
-  const bar = document.getElementById('z-progress-bar');
-  if (bar) bar.style.width = pct + '%';
-  const lbl = document.getElementById('z-progress-label');
-  if (lbl) lbl.textContent = label;
-}
-
-async function zAnalisarDocumento() {
-  if (!_zPdfBuffer) return;
-  const docAlert = document.getElementById('z-doc-alert');
-  if (docAlert) docAlert.style.display = 'none';
-
-  const instrucoes = `Analise este documento juridico e extraia as informacoes em JSON puro sem markdown nem texto adicional.
-Retorne SOMENTE este JSON preenchido, sem mais nenhum texto:
-{"tipo_demanda":"odonto|venda_casada|vida|residencial|consignatoria|pretamista|covid|credito_imobiliario|cessao_margem|cancelamento_apolice|reajuste_premio|exibicao_documentos|resgate_previdencia|nao_aceitacao_risco|devolucao_premio|cpf_cnpj_nao_localizado|premio_encerrado_transferencia|assistencia_24h|previdencia|sinistro|outro","envolve_sinistro":"sim ou nao","objeto":"titulo ou objeto da acao","assunto":"assunto principal","adverso_nome":"nome do autor ou reclamante","valor_causa":"valor em R$","num_processo":"numero completo do processo","data_citacao":"DD/MM/AAAA ou vazio","trabalhista":false,"regiao":"UF ou estado","obs":"resumo em uma frase"}
-Criterios de classificacao: indenizacao por sinistro negado = "sinistro"; plano odontologico = "odonto"; previdencia privada = "previdencia"; consignado/desconto em folha = "cessao_margem"; se nao identificar claramente use "outro".`;
-
-  try {
-    zSetProgress(15, 'Extraindo texto do PDF...');
-    const pdf = await pdfjsLib.getDocument({ data: _zPdfBuffer }).promise;
-    const MAX = Math.min(pdf.numPages, 20);
-    let texto = '';
-    for (let p = 1; p <= MAX; p++) {
-      const page = await pdf.getPage(p);
-      const content = await page.getTextContent();
-      let ultima = null;
-      content.items.forEach(item => {
-        if (ultima !== null && Math.abs(item.transform[5] - ultima) > 4) texto += '\n';
-        texto += item.str + ' ';
-        ultima = item.transform[5];
-      });
-      texto += '\n\n';
-    }
-    texto = texto.replace(/ {3,}/g, '  ').trim();
-
-    let data;
-    if (texto.length < 100) {
-      // PDF escaneado: envia como base64 diretamente para a IA
-      zSetProgress(40, 'PDF escaneado — enviando imagem para IA...');
-      const bytes = new Uint8Array(_zPdfBuffer);
-      let bin = '';
-      for (let i = 0; i < bytes.byteLength; i++) bin += String.fromCharCode(bytes[i]);
-      const pdf_b64 = btoa(bin);
-      data = await chamarAPI('extrair_pdf', { pdf_b64, instrucoes });
-    } else {
-      zSetProgress(40, 'Enviando texto para IA...');
-      // Pega primeiros 4000 chars + ultimos 1000 (captura cabecalho e final da peticao)
-      const trecho = texto.length > 5000
-        ? texto.substring(0, 4000) + '\n...\n' + texto.substring(texto.length - 1000)
-        : texto;
-      data = await chamarAPI('extrair_texto', { texto: trecho, instrucoes });
-    }
-
-    zSetProgress(80, 'Preenchendo campos...');
-
-    const rawText = (data.content?.[0]?.text || data.texto || data.result || '');
-    const jsonMatch = rawText.match(/\{[\s\S]*?\}/);
-    if (!jsonMatch) throw new Error('IA nao retornou JSON valido. Resposta: ' + rawText.substring(0, 150));
-    let campos = {};
-    try { campos = JSON.parse(jsonMatch[0]); } catch(e) { throw new Error('Erro ao interpretar JSON: ' + jsonMatch[0].substring(0, 150)); }
-
-    // Preenche assistente de roteamento
-    if (campos.tipo_demanda && campos.tipo_demanda !== 'outro') {
-      const sel = document.getElementById('z-tipo');
-      if (sel) sel.value = campos.tipo_demanda;
-    }
-    if (campos.envolve_sinistro) {
-      const sel = document.getElementById('z-sinistro');
-      if (sel) sel.value = campos.envolve_sinistro;
-    }
-    if (campos.objeto) { const el = document.getElementById('z-objeto'); if (el) el.value = campos.objeto; }
-    if (campos.assunto) { const el = document.getElementById('z-assunto'); if (el) el.value = campos.assunto; }
-    if (campos.regiao) { const el = document.getElementById('z-regiao'); if (el) el.value = campos.regiao; }
-    if (campos.trabalhista) { const el = document.getElementById('z-trabalhista'); if (el) el.checked = !!campos.trabalhista; }
-
-    // Preenche Benner diretamente com o que a IA extraiu
-    if (campos.adverso_nome) { const el = document.getElementById('zb-adverso'); if (el) el.value = campos.adverso_nome; }
-    if (campos.valor_causa) { const el = document.getElementById('zb-valor-causa'); if (el) el.value = campos.valor_causa; }
-    if (campos.num_processo) { const el = document.getElementById('zb-num-processo'); if (el) el.value = campos.num_processo; }
-    if (campos.data_citacao) { const el = document.getElementById('zb-data-citacao'); if (el) el.value = campos.data_citacao; }
-    if (campos.obs) { const el = document.getElementById('zb-obs'); if (el) el.value = campos.obs; }
-
-    // Define hora de recebimento como agora se nao preenchido
-    const zHora = document.getElementById('z-hora');
-    if (zHora && !zHora.value) {
-      const now = new Date();
-      zHora.value = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0') + 'T' + String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
-    }
-
-    zSetProgress(100, 'Concluido.');
-    zDocAlerta('ok', 'Documento analisado. Revise os campos e clique em Calcular Roteamento.');
-
-    // Aciona calculo automatico se tipo foi identificado
-    if (campos.tipo_demanda && campos.tipo_demanda !== 'outro') zurichCalcular();
-
-  } catch(err) {
-    zSetProgress(0, '');
-    document.getElementById('z-progress-wrap').style.display = 'none';
-    zDocAlerta('err', 'Erro ao analisar: ' + (err.message || err));
-    console.error('[Zurich] analise doc:', err);
-  }
-}
 
 // =====================================================================
 // MONITOR API
@@ -8072,6 +7592,29 @@ function monStatus(msg, erro) {
   el.style.color = erro ? 'var(--err)' : 'var(--chumbo)';
 }
 
+async function monRestaurarIDB() {
+  if (_monResult) return; // ja tem dados na memoria
+  try {
+    const saved = await fatIDB.get('monitor:ultimo_resultado');
+    if (!saved || !saved.resultado) return;
+    _monResult = saved.resultado;
+    const { cadastrados, naoCadastrados, semCorrespondencia } = _monResult;
+    const total = cadastrados.length + naoCadastrados.length + semCorrespondencia.length;
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    set('monKpiTotal', total.toLocaleString('pt-BR'));
+    set('monKpiCadastrados', cadastrados.length.toLocaleString('pt-BR'));
+    set('monKpiNao', naoCadastrados.length.toLocaleString('pt-BR'));
+    set('monKpiSemCorr', semCorrespondencia.length.toLocaleString('pt-BR'));
+    monRenderGrafico([...naoCadastrados, ...semCorrespondencia]);
+    const dt = new Date(saved.processadoEm);
+    const dtStr = dt.toLocaleDateString('pt-BR') + ' ' + dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    const arq = saved.errosFileName || 'desconhecido';
+    monStatus('Ultimo processamento: ' + dtStr + ' — Arquivo: ' + arq);
+  } catch(e) {
+    console.warn('[Monitor] IDB restore error:', e);
+  }
+}
+
 function monProcessar() {
   if (!_monErrosRaw) { monStatus('Importe a base de erros (.xlsx) primeiro.', true); return; }
   if (!_monSistema)  { monStatus('Importe a base do sistema (.csv) primeiro.', true); return; }
@@ -8134,6 +7677,18 @@ function monProcessar() {
   monRenderGrafico([...naoCadastrados, ...semCorrespondencia]);
 
   monStatus(`Processado: ${total} IDs | ${cadastrados.length} cadastrados | ${naoCadastrados.length} com erro | ${semCorrespondencia.length} sem correspondencia.`);
+
+  // 6. Persistir no IndexedDB para restauracao futura
+  try {
+    const errosFileName = document.getElementById('monInputErros')?.files?.[0]?.name || '';
+    const sistemaFileName = document.getElementById('monInputSistema')?.files?.[0]?.name || '';
+    fatIDB.set('monitor:ultimo_resultado', {
+      resultado: _monResult,
+      errosFileName,
+      sistemaFileName,
+      processadoEm: new Date().toISOString()
+    }).catch(e => console.warn('[Monitor] IDB save error:', e));
+  } catch(e) { console.warn('[Monitor] IDB save error:', e); }
 }
 
 function monRenderGrafico(erros) {
