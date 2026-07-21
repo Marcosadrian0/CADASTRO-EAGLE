@@ -7558,7 +7558,7 @@ async function monImportarMarcacoes(file) {
           // Atualiza referencia em memoria se Faturamento ja foi inicializado
           if (typeof fatCadastroConsolidado !== 'undefined') fatCadastroConsolidado = consolidado;
           // Refresca KPIs do Faturamento se a aba estiver ativa
-          if (typeof fatAtualizarKpis === 'function') fatAtualizarKpis();
+          if (typeof fatRenderCapturas === 'function') fatRenderCapturas();
         }
       } catch(e) { console.warn('[Monitor] Erro ao atualizar consolidado Faturamento:', e); }
     }
