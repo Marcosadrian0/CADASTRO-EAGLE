@@ -616,7 +616,7 @@ html.dark .z-info-row{border-color:var(--border-color)}
   <div id="monStatusBar" style="display:none;font-size:11px;padding:8px 14px;border-radius:8px;margin-bottom:16px;background:var(--off);border:1px solid var(--borda-l);color:var(--chumbo)"></div>
 
   <!-- KPI cards -->
-  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px" id="monKpiGrid">
     <div class="fat-kpi" style="cursor:pointer;border-color:#cbd5e1;background:#f8fafc" onclick="monAbrirModal('total')">
       <div class="fat-kpi-val" id="monKpiTotal" style="color:var(--chumbo)">—</div>
       <div class="fat-kpi-lbl">IDs processados</div>
@@ -636,6 +636,11 @@ html.dark .z-info-row{border-color:var(--border-color)}
       <div class="fat-kpi-val" id="monKpiSemCorr" style="color:#b45309">—</div>
       <div class="fat-kpi-lbl">Sem correspondencia</div>
       <div style="font-size:9px;color:#b45309;margin-top:4px;opacity:.8">clique para ver</div>
+    </div>
+    <div class="fat-kpi" id="monCardResolvidos" style="display:none;cursor:pointer;border-color:#a5b4fc;background:#f5f3ff" onclick="monAbrirModal('resolvidos')">
+      <div class="fat-kpi-val" id="monKpiResolvidos" style="color:#7c3aed">0</div>
+      <div class="fat-kpi-lbl">Resolvidos</div>
+      <div style="font-size:9px;color:#7c3aed;margin-top:4px;opacity:.8">clique para ver</div>
     </div>
   </div>
 
@@ -4281,7 +4286,7 @@ function mudarAba(aba) {
   if (aba === 'usuarios') carregarUsuarios();
   if (aba === 'faturamento') fatInit();
   if (aba === 'dashboard') dashRender();
-  if (aba === 'monitor') monRestaurarIDB();
+  if (aba === 'monitor') { monCarregarResolvidos().then(() => monRestaurarIDB()); }
 }
 
 // ── ABA ACURÁCIA ──────────────────────────────────────────────────────────────
@@ -7461,10 +7466,73 @@ document.addEventListener('DOMContentLoaded', () => {
 // MONITOR API
 // =====================================================================
 
-let _monErrosRaw = null;   // dados brutos do xlsx de erros
-let _monSistema  = null;   // dados brutos do csv do sistema
-let _monResult   = null;   // resultado processado
-let _monModalKey = null;   // chave do modal aberto
+let _monErrosRaw  = null;   // dados brutos do xlsx de erros
+let _monSistema   = null;   // dados brutos do csv do sistema
+let _monResult    = null;   // resultado processado
+let _monModalKey  = null;   // chave do modal aberto
+let _monResolvidos = new Set(); // IDs marcados como resolvidos (persistido no IDB)
+
+async function monCarregarResolvidos() {
+  try {
+    const saved = await fatIDB.get('monitor:resolvidos');
+    if (Array.isArray(saved)) _monResolvidos = new Set(saved);
+  } catch(e) { _monResolvidos = new Set(); }
+}
+
+async function monSalvarResolvidos() {
+  try {
+    await fatIDB.set('monitor:resolvidos', [..._monResolvidos]);
+  } catch(e) { console.warn('[Monitor] Falha ao salvar resolvidos:', e); }
+}
+
+function monMarcarResolvido(id) {
+  _monResolvidos.add(id);
+  monSalvarResolvidos();
+  monAtualizarKpis();
+  monRenderGrafico([
+    ..._monResult.naoCadastrados.filter(r => !_monResolvidos.has(r.id)),
+    ..._monResult.semCorrespondencia.filter(r => !_monResolvidos.has(r.id))
+  ]);
+  // Atualiza o modal sem fechar
+  if (_monModalKey === 'naocadastrados') {
+    const cat = document.getElementById('monFiltroCategoria').value;
+    const pendentes = _monResult.naoCadastrados.filter(r => !_monResolvidos.has(r.id));
+    const filtrados = cat ? pendentes.filter(r => r.categoria === cat) : pendentes;
+    monRenderModalNaoCadastrados(filtrados);
+  } else if (_monModalKey === 'resolvidos') {
+    monRenderModalResolvidos();
+  }
+}
+
+function monDesmarcarResolvido(id) {
+  _monResolvidos.delete(id);
+  monSalvarResolvidos();
+  monAtualizarKpis();
+  monRenderGrafico([
+    ..._monResult.naoCadastrados.filter(r => !_monResolvidos.has(r.id)),
+    ..._monResult.semCorrespondencia.filter(r => !_monResolvidos.has(r.id))
+  ]);
+  if (_monModalKey === 'resolvidos') monRenderModalResolvidos();
+}
+
+function monAtualizarKpis() {
+  if (!_monResult) return;
+  const { cadastrados, naoCadastrados, semCorrespondencia } = _monResult;
+  const pendentes = naoCadastrados.filter(r => !_monResolvidos.has(r.id));
+  const resolvidos = naoCadastrados.filter(r => _monResolvidos.has(r.id));
+  const total = cadastrados.length + naoCadastrados.length + semCorrespondencia.length;
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  set('monKpiTotal', total.toLocaleString('pt-BR'));
+  set('monKpiCadastrados', cadastrados.length.toLocaleString('pt-BR'));
+  set('monKpiNao', pendentes.length.toLocaleString('pt-BR'));
+  set('monKpiSemCorr', semCorrespondencia.length.toLocaleString('pt-BR'));
+  const kpiRes = document.getElementById('monKpiResolvidos');
+  if (kpiRes) kpiRes.textContent = resolvidos.length.toLocaleString('pt-BR');
+  const cardRes = document.getElementById('monCardResolvidos');
+  if (cardRes) cardRes.style.display = resolvidos.length ? '' : 'none';
+  const grid = document.getElementById('monKpiGrid');
+  if (grid) grid.style.gridTemplateColumns = resolvidos.length ? 'repeat(5,1fr)' : 'repeat(4,1fr)';
+}
 
 // --- Simplificacao de mensagens de erro ---
 function monSimplificarErro(msgs) {
@@ -7598,14 +7666,12 @@ async function monRestaurarIDB() {
     const saved = await fatIDB.get('monitor:ultimo_resultado');
     if (!saved || !saved.resultado) return;
     _monResult = saved.resultado;
-    const { cadastrados, naoCadastrados, semCorrespondencia } = _monResult;
-    const total = cadastrados.length + naoCadastrados.length + semCorrespondencia.length;
-    const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
-    set('monKpiTotal', total.toLocaleString('pt-BR'));
-    set('monKpiCadastrados', cadastrados.length.toLocaleString('pt-BR'));
-    set('monKpiNao', naoCadastrados.length.toLocaleString('pt-BR'));
-    set('monKpiSemCorr', semCorrespondencia.length.toLocaleString('pt-BR'));
-    monRenderGrafico([...naoCadastrados, ...semCorrespondencia]);
+    const { naoCadastrados, semCorrespondencia } = _monResult;
+    monAtualizarKpis();
+    monRenderGrafico([
+      ...naoCadastrados.filter(r => !_monResolvidos.has(r.id)),
+      ...semCorrespondencia.filter(r => !_monResolvidos.has(r.id))
+    ]);
     const dt = new Date(saved.processadoEm);
     const dtStr = dt.toLocaleDateString('pt-BR') + ' ' + dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     const arq = saved.errosFileName || 'desconhecido';
@@ -7665,16 +7731,14 @@ function monProcessar() {
 
   _monResult = { cadastrados, naoCadastrados, semCorrespondencia };
 
-  // 4. Atualizar KPIs
-  const total = cadastrados.length + naoCadastrados.length + semCorrespondencia.length;
-  const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
-  set('monKpiTotal', total.toLocaleString('pt-BR'));
-  set('monKpiCadastrados', cadastrados.length.toLocaleString('pt-BR'));
-  set('monKpiNao', naoCadastrados.length.toLocaleString('pt-BR'));
-  set('monKpiSemCorr', semCorrespondencia.length.toLocaleString('pt-BR'));
+  // 4. Atualizar KPIs (filtrando resolvidos)
+  monAtualizarKpis();
 
-  // 5. Grafico de categorias
-  monRenderGrafico([...naoCadastrados, ...semCorrespondencia]);
+  // 5. Grafico de categorias (excluindo resolvidos)
+  monRenderGrafico([
+    ...naoCadastrados.filter(r => !_monResolvidos.has(r.id)),
+    ...semCorrespondencia.filter(r => !_monResolvidos.has(r.id))
+  ]);
 
   monStatus(`Processado: ${total} IDs | ${cadastrados.length} cadastrados | ${naoCadastrados.length} com erro | ${semCorrespondencia.length} sem correspondencia.`);
 
@@ -7732,14 +7796,20 @@ function monAbrirModal(chave) {
     filtro.style.display = 'none';
     monRenderModalCadastrados();
   } else if (chave === 'naocadastrados') {
-    ttl.textContent = 'Nao cadastrados - com erro (' + _monResult.naoCadastrados.length + ')';
+    const pendentes = _monResult.naoCadastrados.filter(r => !_monResolvidos.has(r.id));
+    ttl.textContent = 'Nao cadastrados - com erro (' + pendentes.length + ')';
     filtro.style.display = '';
-    monPopularFiltro([..._monResult.naoCadastrados]);
-    monRenderModalNaoCadastrados(_monResult.naoCadastrados);
+    monPopularFiltro(pendentes);
+    monRenderModalNaoCadastrados(pendentes);
   } else if (chave === 'semcorrespondencia') {
     ttl.textContent = 'Sem correspondencia no sistema (' + _monResult.semCorrespondencia.length + ')';
     filtro.style.display = 'none';
     monRenderModalSemCorr();
+  } else if (chave === 'resolvidos') {
+    const resolvidos = _monResult.naoCadastrados.filter(r => _monResolvidos.has(r.id));
+    ttl.textContent = 'Resolvidos (' + resolvidos.length + ')';
+    filtro.style.display = 'none';
+    monRenderModalResolvidos();
   }
   modal.classList.add('open');
 }
@@ -7754,7 +7824,8 @@ function monPopularFiltro(rows) {
 function monAplicarFiltro() {
   if (!_monResult) return;
   const cat = document.getElementById('monFiltroCategoria').value;
-  const rows = cat ? _monResult.naoCadastrados.filter(r => r.categoria === cat) : _monResult.naoCadastrados;
+  const pendentes = _monResult.naoCadastrados.filter(r => !_monResolvidos.has(r.id));
+  const rows = cat ? pendentes.filter(r => r.categoria === cat) : pendentes;
   monRenderModalNaoCadastrados(rows);
 }
 
@@ -7790,7 +7861,7 @@ function monRenderModalNaoCadastrados(rows) {
   Object.entries(porCat).sort((a, b) => b[1].length - a[1].length).forEach(([cat, items]) => {
     html += `<div style="background:var(--off);border-bottom:1px solid var(--borda-l);padding:6px 10px;font-size:10px;font-weight:700;color:var(--chumbo);position:sticky;top:0;z-index:1">${cat} <span style="font-weight:400;opacity:.7">(${items.length})</span></div>`;
     items.forEach(r => {
-      html += `<div style="display:grid;grid-template-columns:140px 1fr auto;gap:8px;align-items:center;padding:7px 10px;border-bottom:1px solid var(--borda-l)">
+      html += `<div style="display:grid;grid-template-columns:140px 1fr auto auto;gap:8px;align-items:center;padding:7px 10px;border-bottom:1px solid var(--borda-l)">
         <div>
           <div style="font-size:9px;color:var(--chumbo);opacity:.6">ID</div>
           <div style="font-family:monospace;font-size:10px;font-weight:600">${r.id}</div>
@@ -7801,9 +7872,34 @@ function monRenderModalNaoCadastrados(rows) {
           <div style="font-size:10px;color:#dc2626;margin-top:2px">${r.resumo}</div>
         </div>
         <div style="font-size:10px;color:var(--chumbo);opacity:.7;white-space:nowrap">${r.dtEntrada || '-'}</div>
+        <button onclick="monMarcarResolvido('${r.id}')" title="Marcar como resolvido" style="padding:3px 8px;font-size:10px;font-weight:600;background:#7c3aed;color:#fff;border:none;border-radius:6px;cursor:pointer;white-space:nowrap">Resolvido</button>
       </div>`;
     });
   });
+  body.innerHTML = html;
+}
+
+function monRenderModalResolvidos() {
+  const body = document.getElementById('monModalBody');
+  const rows = _monResult.naoCadastrados.filter(r => _monResolvidos.has(r.id));
+  if (!rows.length) { body.innerHTML = '<p style="font-size:12px;color:var(--chumbo);padding:16px 0">Nenhum ID marcado como resolvido.</p>'; return; }
+  let html = `<p style="font-size:11px;color:#7c3aed;margin-bottom:12px;padding:8px 10px;background:#f5f3ff;border-radius:6px;border:1px solid #a5b4fc">Esses IDs foram marcados como resolvidos e serao ignorados ao processar novas bases. Clique em "Desfazer" para reativar.</p>
+    <table style="width:100%;border-collapse:collapse;font-size:11px">
+    <thead><tr style="border-bottom:2px solid var(--borda)">
+      <th style="text-align:left;padding:6px 10px;color:var(--chumbo)">ID</th>
+      <th style="text-align:left;padding:6px 10px;color:var(--chumbo)">Processo</th>
+      <th style="text-align:left;padding:6px 10px;color:var(--chumbo)">Erro</th>
+      <th style="padding:6px 10px"></th>
+    </tr></thead><tbody>`;
+  rows.forEach(r => {
+    html += `<tr style="border-bottom:1px solid var(--borda-l)">
+      <td style="padding:6px 10px;font-family:monospace;font-size:10px">${r.id}</td>
+      <td style="padding:6px 10px;font-family:monospace;font-size:10px">${r.npu || '-'}</td>
+      <td style="padding:6px 10px;font-size:10px;color:#7c3aed">${r.resumo}</td>
+      <td style="padding:6px 10px"><button onclick="monDesmarcarResolvido('${r.id}')" style="padding:3px 8px;font-size:10px;font-weight:600;background:#f1f5f9;color:#475569;border:1px solid #cbd5e1;border-radius:6px;cursor:pointer">Desfazer</button></td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
   body.innerHTML = html;
 }
 
@@ -7874,6 +7970,11 @@ function monExportar() {
     linhas = [['ID', 'Data', 'Categoria', 'Erro']];
     _monResult.semCorrespondencia.forEach(r => linhas.push([r.id, r.data, r.categoria, r.resumo]));
     nome = 'monitor_sem_correspondencia.xlsx';
+  } else if (_monModalKey === 'resolvidos') {
+    const rows = _monResult.naoCadastrados.filter(r => _monResolvidos.has(r.id));
+    linhas = [['ID', 'Processo (NPU)', 'Data entrada', 'Categoria', 'Erro (simplificado)']];
+    rows.forEach(r => linhas.push([r.id, r.npu, r.dtEntrada, r.categoria, r.resumo]));
+    nome = 'monitor_resolvidos.xlsx';
   } else {
     const all = [
       ..._monResult.cadastrados.map(r => [r.id, r.npu, r.pasta, 'Cadastrado', r.resumo]),
