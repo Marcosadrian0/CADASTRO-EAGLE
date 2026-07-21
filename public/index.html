@@ -610,6 +610,10 @@ html.dark .z-info-row{border-color:var(--border-color)}
         <input type="file" id="monInputSistema" accept=".csv" style="display:none" onchange="monCarregarSistema(this.files[0])">
       </label>
       <button onclick="monProcessar()" style="padding:8px 18px;background:var(--verde);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">Processar</button>
+      <label style="display:flex;align-items:center;gap:6px;padding:7px 14px;border:1.5px solid #a5b4fc;border-radius:8px;cursor:pointer;font-size:12px;color:#7c3aed;background:#f5f3ff;font-weight:600" title="Importe a planilha exportada com coluna pasta iilex para marcar IDs em massa como resolvidos">
+        Importar marcacoes (.xlsx)
+        <input type="file" id="monInputMarcacoes" accept=".xlsx,.xls" style="display:none" onchange="monImportarMarcacoes(this.files[0])">
+      </label>
     </div>
   </div>
 
@@ -7483,6 +7487,67 @@ async function monSalvarResolvidos() {
   try {
     await fatIDB.set('monitor:resolvidos', [..._monResolvidos]);
   } catch(e) { console.warn('[Monitor] Falha ao salvar resolvidos:', e); }
+}
+
+async function monImportarMarcacoes(file) {
+  if (!file) return;
+  if (typeof XLSX === 'undefined') { monStatus('Biblioteca XLSX nao disponivel.', true); return; }
+  monStatus('Lendo planilha de marcacoes...');
+  try {
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(buf, { type: 'array' });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+
+    // Detecta a coluna de pasta iiLex (case-insensitive, aceita variações)
+    const primeiraRow = rows[0] || {};
+    const colPasta = Object.keys(primeiraRow).find(k =>
+      k.toLowerCase().replace(/\s+/g,'').includes('pastaiilex') ||
+      k.toLowerCase().replace(/\s+/g,'').includes('pastaiiLex') ||
+      k.toLowerCase().includes('pasta')
+    );
+    const colId = Object.keys(primeiraRow).find(k =>
+      k.toUpperCase() === 'ID' || k.toLowerCase() === 'id'
+    );
+
+    if (!colId) { monStatus('Coluna ID nao encontrada na planilha.', true); return; }
+
+    let marcados = 0, ignorados = 0, semPasta = 0;
+    rows.forEach(row => {
+      const id = String(row[colId] || '').trim();
+      if (!id) return;
+      const pasta = colPasta ? String(row[colPasta] || '').trim() : '';
+      if (pasta && pasta !== '0') {
+        // Tem pasta iiLex: marcar como resolvido
+        if (!_monResolvidos.has(id)) { _monResolvidos.add(id); marcados++; }
+        else ignorados++;
+      } else {
+        semPasta++;
+      }
+    });
+
+    await monSalvarResolvidos();
+
+    // Atualizar UI se houver resultado carregado
+    if (_monResult) {
+      monAtualizarKpis();
+      monRenderGrafico([
+        ..._monResult.naoCadastrados.filter(r => !_monResolvidos.has(r.id)),
+        ..._monResult.semCorrespondencia.filter(r => !_monResolvidos.has(r.id))
+      ]);
+    }
+
+    const msg = `Importacao concluida: ${marcados} IDs marcados como resolvidos` +
+      (ignorados ? `, ${ignorados} ja estavam marcados` : '') +
+      (semPasta ? `, ${semPasta} sem pasta iiLex (mantidos como pendentes)` : '') + '.';
+    monStatus(msg);
+
+    // Limpa o input para permitir reimportar o mesmo arquivo
+    document.getElementById('monInputMarcacoes').value = '';
+  } catch(e) {
+    monStatus('Erro ao ler planilha: ' + e.message, true);
+    console.error('[Monitor] Importar marcacoes:', e);
+  }
 }
 
 function monMarcarResolvido(id) {
