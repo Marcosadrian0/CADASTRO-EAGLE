@@ -2648,6 +2648,28 @@ function extrairCampos(txt, seg) {
       if (reus.length > 0) break;
     }
   }
+
+  // Complemento C: secao POLO PASSIVO (formato portal TJMT e afins)
+  if (!ehAgravo) {
+    const mPolo = txt.match(/POLO\s+PASSIVO[:\s]+([\s\S]{10,800}?)(?:\n\n\n|\nPOLO\s+ATIVO|\nADVOGADO|\nDOS\s+FATOS|\nFATOS|\nRELATÓRIO)/i);
+    if (mPolo) {
+      const linhasPolo = mPolo[1].split('\n');
+      for (const linha of linhasPolo) {
+        const l = linha.trim().replace(/\s+/g,' ');
+        if (!l || l.length < 4) continue;
+        if (/^(?:POLO|ADV|OAB|Proc|Ref\.|Distribu)/i.test(l)) continue;
+        const mCnpjLinha = l.match(/(\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2})/);
+        const cnpjLinha = mCnpjLinha ? mCnpjLinha[1] : '';
+        let nomeLinha = l.replace(/,?\s*(?:CNPJ|CPF|C\.N\.P\.J).*$/i,'').replace(/(\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2})/,'').trim().replace(/,\s*$/,'');
+        if (nomeLinha.length < 3) continue;
+        if (/^[a-záéíóúâêôãõç]/.test(nomeLinha)) continue;
+        const jaExiste = reus.find(r => r.nome.toLowerCase().startsWith(nomeLinha.toLowerCase().substring(0,6)));
+        if (jaExiste) { if (cnpjLinha && !jaExiste.cnpj) jaExiste.cnpj = cnpjLinha; continue; }
+        reus.push({ nome: capitalizar(nomeLinha), cnpj: cnpjLinha });
+      }
+    }
+  }
+
   // Enriquecer réus com dados do bloco portal (Padrao 0) se disponivel
   // O bloco portal tem os nomes sem CNPJ; o scan por CNPJ tem CNPJ sem nome confiável
   // Estrategia: usar nomes do portal e associar CNPJs achados no texto
@@ -7098,7 +7120,31 @@ async function dashRender(mkOverride) {
       )}
     </div>
 
-    <!-- Linha 5 — Faturamento resumo -->
+    <!-- Linha 5 — Painel operacional: Monitor + Agibank -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+      ${(() => {
+        const mon = typeof _monResult !== 'undefined' && _monResult;
+        if (!mon) return dashCard('Monitor API', '<p style="font-size:11px;color:var(--chumbo);text-align:center;padding:20px 0">Carregue a planilha na aba Monitor para ver os dados.</p>', null);
+        const totalMon = (mon.cadastrados?.length||0) + (mon.naoCadastrados?.length||0) + (mon.semCorrespondencia?.length||0);
+        const resolv = typeof _monResolvidos !== 'undefined' ? _monResolvidos.size : 0;
+        const naoCad = mon.naoCadastrados?.length||0;
+        const pctCad = totalMon > 0 ? Math.round(((mon.cadastrados?.length||0)/totalMon)*100) : 0;
+        const corPct = pctCad >= 80 ? '#16a34a' : pctCad >= 60 ? '#d97706' : '#dc2626';
+        return dashCard('Monitor API',
+          '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:6px 0">'
+          + '<div style="text-align:center"><div style="font-size:22px;font-weight:700;color:var(--verde)">' + (mon.cadastrados?.length||0) + '</div><div style="font-size:9px;color:var(--chumbo);text-transform:uppercase;letter-spacing:.3px">Cadastrados</div></div>'
+          + '<div style="text-align:center"><div style="font-size:22px;font-weight:700;color:var(--err)">' + naoCad + '</div><div style="font-size:9px;color:var(--chumbo);text-transform:uppercase;letter-spacing:.3px">Pendentes</div></div>'
+          + '<div style="text-align:center"><div style="font-size:22px;font-weight:700;color:#2e7fc2">' + resolv + '</div><div style="font-size:9px;color:var(--chumbo);text-transform:uppercase;letter-spacing:.3px">Resolvidos</div></div>'
+          + '</div>'
+          + '<div style="margin-top:8px"><div style="display:flex;justify-content:space-between;font-size:9px;color:var(--chumbo);margin-bottom:3px"><span>Taxa de cadastro</span><span style="font-weight:700;color:' + corPct + '">' + pctCad + '%</span></div>'
+          + '<div style="height:5px;background:var(--borda-l);border-radius:99px;overflow:hidden"><div style="height:100%;width:' + pctCad + '%;background:' + corPct + ';border-radius:99px"></div></div></div>',
+          totalMon + ' processos analisados'
+        );
+      })()}
+      <div id="dashAgiCard">${dashCard('Agibank — historico', '<p style="font-size:11px;color:var(--chumbo);text-align:center;padding:20px 0">Carregando...</p>', null)}</div>
+    </div>
+
+    <!-- Linha 6 — Faturamento resumo -->
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
       ${dashCard('Faturamento Real — ' + mesLabel,
         `<div style="text-align:center;padding:12px 0">
@@ -7119,6 +7165,50 @@ async function dashRender(mkOverride) {
 
   // Listener do seletor de mês
   document.getElementById('dashMesSelect')?.addEventListener('change', e => dashRender(e.target.value));
+
+  // Carregar historico Agibank do IDB sbk_agi (mesmo origin, banco separado)
+  const agiCardEl = document.getElementById('dashAgiCard');
+  if (agiCardEl) {
+    (async () => {
+      try {
+        const agiDb = await new Promise((res, rej) => {
+          const r = indexedDB.open('sbk_agi', 1);
+          r.onupgradeneeded = e => e.target.result.createObjectStore('kv');
+          r.onsuccess = e => res(e.target.result);
+          r.onerror = () => rej();
+        });
+        const agiHist = await new Promise((res, rej) => {
+          const tx = agiDb.transaction('kv', 'readonly');
+          const req = tx.objectStore('kv').get('agibank:historico');
+          req.onsuccess = () => res(req.result || []);
+          req.onerror = () => rej();
+        });
+        if (!agiHist.length) {
+          agiCardEl.innerHTML = dashCard('Agibank — historico', '<p style="font-size:11px;color:var(--chumbo);text-align:center;padding:20px 0">Nenhum caso analisado. Acesse o ambiente Agibank para comecar.</p>', null);
+        } else {
+          const favoraveis = agiHist.filter(h => h.subsidios === 'Favoraveis' || (h.resultado||'').includes('DEFESA')).length;
+          const desfav = agiHist.length - favoraveis;
+          const mediaAcc = Math.round(agiHist.reduce((s,h) => s + (h.acuracia||0), 0) / agiHist.length);
+          const ultimos = agiHist.slice(0,3);
+          agiCardEl.innerHTML = dashCard('Agibank — ' + agiHist.length + ' casos',
+            '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:6px 0;margin-bottom:8px">'
+            + '<div style="text-align:center"><div style="font-size:22px;font-weight:700;color:var(--vok)">' + favoraveis + '</div><div style="font-size:9px;color:var(--chumbo);text-transform:uppercase;letter-spacing:.3px">Defesa</div></div>'
+            + '<div style="text-align:center"><div style="font-size:22px;font-weight:700;color:var(--err)">' + desfav + '</div><div style="font-size:9px;color:var(--chumbo);text-transform:uppercase;letter-spacing:.3px">Acordo</div></div>'
+            + '<div style="text-align:center"><div style="font-size:22px;font-weight:700;color:var(--ciano-med)">' + mediaAcc + '%</div><div style="font-size:9px;color:var(--chumbo);text-transform:uppercase;letter-spacing:.3px">Media auto</div></div>'
+            + '</div>'
+            + '<div style="font-size:9.5px;font-weight:700;color:var(--chumbo);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px">Ultimos casos</div>'
+            + ultimos.map(h => '<div style="display:flex;justify-content:space-between;font-size:10px;padding:3px 0;border-bottom:1px solid var(--borda-l)">'
+                + '<span style="color:var(--verde);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:55%">' + h.processo + '</span>'
+                + '<span style="color:' + ((h.subsidios==='Favoraveis'||(h.resultado||'').includes('DEFESA'))?'var(--vok)':'var(--err)') + ';font-weight:600;flex-shrink:0">' + (h.resultado||h.subsidios||'—') + '</span>'
+                + '</div>').join(''),
+            'Media de automatizacao: ' + mediaAcc + '%'
+          );
+        }
+      } catch(e) {
+        agiCardEl.innerHTML = dashCard('Agibank — historico', '<p style="font-size:11px;color:var(--chumbo);text-align:center;padding:20px 0">Historico indisponivel. Acesse o ambiente Agibank primeiro.</p>', null);
+      }
+    })();
+  }
 }
 
 // ── FEATURE 1: DARK MODE ─────────────────────────────────────────────────────
@@ -8227,11 +8317,11 @@ function monExportar() {
     nome = 'monitor_resolvidos.xlsx';
   } else {
     const all = [
-      ..._monResult.cadastrados.map(r => [r.id, r.npu, r.pasta, 'Cadastrado', r.resumo]),
-      ..._monResult.naoCadastrados.map(r => [r.id, r.npu, '', 'Nao cadastrado', r.resumo]),
-      ..._monResult.semCorrespondencia.map(r => [r.id, '', '', 'Sem correspondencia', r.resumo])
+      ..._monResult.cadastrados.map(r => [r.id, r.npu, r.pasta, r.dataCadastro || r.dtEntrada || '', 'Cadastrado', 'N/A', r.resumo]),
+      ..._monResult.naoCadastrados.map(r => [r.id, r.npu, '', r.dtEntrada || '', 'Nao cadastrado', _monResolvidos.has(r.id) ? 'Sim' : 'Nao', r.resumo]),
+      ..._monResult.semCorrespondencia.map(r => [r.id, '', '', r.data || '', 'Sem correspondencia', 'N/A', r.resumo])
     ];
-    linhas = [['ID', 'Processo (NPU)', 'Pasta iiLex', 'Status', 'Erro (simplificado)'], ...all];
+    linhas = [['ID', 'Processo (NPU)', 'Pasta iiLex', 'Data', 'Status', 'Resolvido', 'Erro (simplificado)'], ...all];
     nome = 'monitor_api_completo.xlsx';
   }
   const ws = XLSX.utils.aoa_to_sheet(linhas);
