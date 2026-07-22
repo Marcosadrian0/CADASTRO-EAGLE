@@ -520,7 +520,11 @@ html.dark .z-info-row{border-color:var(--border-color)}
     <div class="cards-sym"><span></span><span></span><span></span></div>
     <span class="brand-txt">SBK</span>
     <div class="brand-div"></div>
-    <span class="brand-sub">EAGLE — Cadastro de Processos</span>
+    <div style="display:flex;gap:3px;align-items:center;background:rgba(0,0,0,.18);border-radius:8px;padding:3px">
+      <span style="padding:3px 10px;border-radius:6px;font-size:11px;font-weight:600;color:#fff;background:rgba(255,255,255,.2)">Eagle</span>
+      <a href="/zurich.html" style="padding:3px 10px;border-radius:6px;font-size:11px;font-weight:600;color:rgba(255,255,255,.6);text-decoration:none;transition:all .12s" onmouseover="this.style.color='#fff';this.style.background='rgba(255,255,255,.12)'" onmouseout="this.style.color='rgba(255,255,255,.6)';this.style.background='transparent'">Zurich</a>
+      <a href="/agibank.html" style="padding:3px 10px;border-radius:6px;font-size:11px;font-weight:600;color:rgba(255,255,255,.6);text-decoration:none;transition:all .12s" onmouseover="this.style.color='#fff';this.style.background='rgba(255,255,255,.12)'" onmouseout="this.style.color='rgba(255,255,255,.6)';this.style.background='transparent'">Agibank</a>
+    </div>
   </div>
   <div class="top-actions">
     <button class="tbtn tbtn-ghost" onclick="limparFormulario()">
@@ -621,6 +625,21 @@ html.dark .z-info-row{border-color:var(--border-color)}
   </div>
 
   <div id="monStatusBar" style="display:none;font-size:11px;padding:8px 14px;border-radius:8px;margin-bottom:16px;background:var(--off);border:1px solid var(--borda-l);color:var(--chumbo)"></div>
+
+  <!-- Filtro de data -->
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:10px 14px;background:var(--surface);border:1px solid var(--borda-l);border-radius:10px;flex-wrap:wrap">
+    <span style="font-size:11px;font-weight:600;color:var(--chumbo);text-transform:uppercase;letter-spacing:.4px">Filtrar por data</span>
+    <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--chumbo)">
+      <label>De</label>
+      <input type="date" id="monDataDe" style="padding:4px 8px;border:1.5px solid var(--borda);border-radius:6px;font-family:inherit;font-size:11px;outline:none" onchange="monAplicarFiltroData()">
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--chumbo)">
+      <label>Ate</label>
+      <input type="date" id="monDataAte" style="padding:4px 8px;border:1.5px solid var(--borda);border-radius:6px;font-family:inherit;font-size:11px;outline:none" onchange="monAplicarFiltroData()">
+    </div>
+    <button onclick="monLimparFiltroData()" style="padding:4px 10px;border:1.5px solid var(--borda);border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;background:transparent;color:var(--chumbo)">Limpar filtro</button>
+    <span id="monFiltroDataInfo" style="font-size:10px;color:var(--chumbo);font-style:italic"></span>
+  </div>
 
   <!-- KPI cards -->
   <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px" id="monKpiGrid">
@@ -854,6 +873,13 @@ html.dark .z-info-row{border-color:var(--border-color)}
         <div class="fat-card-sub">SBK, outros cadastrantes e sem cadastro</div>
         <div id="fatChartStatus"><p style="font-size:11px;color:var(--chumbo)">Importe os dados para visualizar.</p></div>
       </div>
+    </div>
+
+    <!-- GRAFICO EVOLUCAO MENSAL -->
+    <div class="fat-card" style="margin-bottom:18px">
+      <div class="fat-card-ttl">Evolucao mensal de capturas</div>
+      <div class="fat-card-sub">Volume de processos por mes com base nas datas de cadastro importadas</div>
+      <div id="fatChartMensal" style="margin-top:10px"><p style="font-size:11px;color:var(--chumbo)">Importe os dados de captura para visualizar.</p></div>
     </div>
 
     <!-- ESPELHO -->
@@ -1208,6 +1234,16 @@ html.dark .z-info-row{border-color:var(--border-color)}
     <button id="btnEnviarFeedback" onclick="enviarFeedbackBanco()" style="width:100%;padding:9px;background:var(--vok);color:#fff;border:none;border-radius:var(--r);font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .15s">
       Enviar feedback ao banco
     </button>
+  </div>
+
+  <!-- Busca por processo -->
+  <div class="sb-block">
+    <div class="sb-label">Buscar processo</div>
+    <div style="display:flex;gap:5px">
+      <input type="text" id="sbBuscaProcesso" placeholder="0000000-00.0000.0.00.0000" style="flex:1;font-size:11px;padding:6px 8px;border:1.5px solid var(--borda);border-radius:var(--r);outline:none;font-family:inherit" onkeydown="if(event.key==='Enter')sbBuscarProcesso()">
+      <button onclick="sbBuscarProcesso()" style="padding:6px 10px;background:var(--verde);color:#fff;border:none;border-radius:var(--r);font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">Buscar</button>
+    </div>
+    <div id="sbBuscaResult" style="margin-top:6px;font-size:10px;color:var(--chumbo)"></div>
   </div>
 
   <!-- Histórico -->
@@ -1876,11 +1912,16 @@ async function analisarPDF() {
     const pdf = await pdfjsLib.getDocument({ data: pdfArrayBuffer }).promise;
     setStep(2);
 
-    // Limite de paginas: 50 para cobrir PDFs de portal com documentos anexados
-    // (agravo TJMT tem metadados na pag 17 e peticao original nas pags 20+)
-    const MAX_PAGES = Math.min(pdf.numPages, 50);
+    // Paginas: primeiras 35 + ultimas 15 para capturar clausulas no final do PDF
+    const total = pdf.numPages;
+    const prims = Math.min(total, 35);
+    const ultIni = total > 35 ? Math.max(36, total - 14) : null;
+    const pagSet = new Set();
+    for (let i = 1; i <= prims; i++) pagSet.add(i);
+    if (ultIni) for (let i = ultIni; i <= total; i++) pagSet.add(i);
+    const pagLista = [...pagSet].sort((a, b) => a - b);
     let texto = '';
-    for (let p = 1; p <= MAX_PAGES; p++) {
+    for (const p of pagLista) {
       const page = await pdf.getPage(p);
       const content = await page.getTextContent();
       let ultima = null;
@@ -3228,6 +3269,17 @@ function limparFormulario() {
 }
 
 function exportarCampos() {
+  // Alerta de duplicata: verifica NPU no historico local
+  const npuVal = (document.getElementById('f_npu').value || '').trim();
+  if (npuVal && typeof accHistorico !== 'undefined' && accHistorico.length) {
+    const norm = npuVal.replace(/[.\-]/g, '');
+    const dup = accHistorico.find(h => h.npu && h.npu.replace(/[.\-]/g, '') === norm);
+    if (dup) {
+      const dt = dup.data ? new Date(dup.data).toLocaleDateString('pt-BR') : '—';
+      const ok = confirm(`Atencao: o processo ${npuVal} ja foi exportado anteriormente (${dt}, operador: ${dup.operador || '—'}). Deseja continuar assim mesmo?`);
+      if (!ok) return;
+    }
+  }
   const reus = Array.from(document.querySelectorAll('.reu-row')).map(r => {
     const inputs = r.querySelectorAll('input');
     return inputs[0].value + (inputs[1] && inputs[1].value ? ' (' + inputs[1].value + ')' : '');
@@ -5524,6 +5576,39 @@ async function fatRenderCapturas() {
   if (el2) el2.innerHTML = htmlChart2;
 }
 
+function fatRenderChartMensal() {
+  const el = document.getElementById('fatChartMensal');
+  if (!el) return;
+  const allRows = [...fatState.captura.rows, ...fatState.dje.rows];
+  if (!allRows.length) { el.innerHTML = '<p style="font-size:11px;color:var(--chumbo)">Importe os dados de captura para visualizar.</p>'; return; }
+  const porMes = {};
+  allRows.forEach(r => {
+    const d = r.dataCadastro || r.data_cadastro || '';
+    const m = d.match(/(\d{4})[\/\-](\d{2})/);
+    if (!m) return;
+    const chave = `${m[1]}-${m[2]}`;
+    porMes[chave] = (porMes[chave] || 0) + 1;
+  });
+  const entradas = Object.entries(porMes).sort((a, b) => a[0].localeCompare(b[0]));
+  if (!entradas.length) { el.innerHTML = '<p style="font-size:11px;color:var(--chumbo)">Datas nao encontradas nos dados importados.</p>'; return; }
+  const max = Math.max(...entradas.map(e => e[1]));
+  const cores = ['var(--ciano)', 'var(--verde)', '#2A7C79', '#6366f1', '#0891b2'];
+  let html = '';
+  entradas.forEach(([mes, qtd], i) => {
+    const [ano, mm] = mes.split('-');
+    const meses = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+    const label = `${meses[parseInt(mm, 10) - 1]}/${ano.slice(2)}`;
+    const pct = Math.round(qtd / max * 100);
+    const cor = cores[i % cores.length];
+    html += `<div class="fat-chart-bar-row">
+      <span class="fat-chart-label" style="width:60px" title="${label}">${label}</span>
+      <div class="fat-chart-track"><div class="fat-chart-fill" style="width:${pct}%;background:${cor}"></div></div>
+      <span class="fat-chart-val">${qtd}</span>
+    </div>`;
+  });
+  el.innerHTML = html;
+}
+
 function fatRenderChips() {
   const list = fatLoadCadastrantes();
   const el = document.getElementById('fatChipsCadastrantes');
@@ -5552,6 +5637,7 @@ function fatAddCadastrante() {
 function fatRenderAll() {
   fatRenderCadastro();
   fatRenderCapturas();
+  fatRenderChartMensal();
   fatRenderChips();
   fatRenderEspelho();
 }
@@ -7209,6 +7295,33 @@ function mostrarBadgesConfianca() {
 let _npuBuscaTimer = null;
 let _npuHistDados = null;
 
+async function sbBuscarProcesso() {
+  const val = (document.getElementById('sbBuscaProcesso').value || '').trim();
+  const resEl = document.getElementById('sbBuscaResult');
+  if (!val) { resEl.textContent = 'Digite o numero do processo.'; return; }
+  if (!sessaoToken) { resEl.textContent = 'Faca login primeiro.'; return; }
+  resEl.textContent = 'Buscando...';
+  try {
+    const r = await fetch('/api/buscar-npu?npu=' + encodeURIComponent(val) + '&token=' + encodeURIComponent(sessaoToken));
+    if (!r.ok) { resEl.textContent = 'Erro ao consultar.'; return; }
+    const data = await r.json();
+    if (data.found && data.campos) {
+      const dt = data.data_upload ? new Date(data.data_upload).toLocaleDateString('pt-BR') : '—';
+      resEl.innerHTML = `<span style="color:var(--vok);font-weight:600">Encontrado</span> (${dt})<br>
+        <button onclick="sbAplicarProcesso()" style="margin-top:4px;padding:3px 8px;background:var(--verde);color:#fff;border:none;border-radius:4px;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit">Preencher formulario</button>`;
+      window._sbBuscaDados = data;
+    } else {
+      resEl.innerHTML = '<span style="color:var(--err)">Processo nao encontrado no historico.</span>';
+    }
+  } catch(e) { resEl.textContent = 'Erro: ' + e.message; }
+}
+function sbAplicarProcesso() {
+  if (window._sbBuscaDados && window._sbBuscaDados.campos) {
+    preencherFormulario(window._sbBuscaDados.campos);
+    document.getElementById('sbBuscaResult').textContent = 'Formulario preenchido.';
+  }
+}
+
 function agendarBuscaNPU(valor, immediate) {
   clearTimeout(_npuBuscaTimer);
   const v = (valor || '').trim();
@@ -7922,6 +8035,40 @@ function monPopularFiltro(rows) {
   const cats = [...new Set(rows.map(r => r.categoria))].sort();
   sel.innerHTML = '<option value="">Todas as categorias (' + rows.length + ')</option>' +
     cats.map(c => `<option value="${c}">${c}</option>`).join('');
+}
+
+function monAplicarFiltroData() {
+  if (!_monResult) return;
+  const de = document.getElementById('monDataDe').value;
+  const ate = document.getElementById('monDataAte').value;
+  const info = document.getElementById('monFiltroDataInfo');
+  if (!de && !ate) { monAtualizarKpis(); info.textContent = ''; return; }
+  const filtrar = rows => rows.filter(r => {
+    const d = r.data || r.dataCadastro || r.data_upload || '';
+    if (!d) return true;
+    const dt = d.slice(0, 10);
+    if (de && dt < de) return false;
+    if (ate && dt > ate) return false;
+    return true;
+  });
+  const cad = filtrar(_monResult.cadastrados);
+  const nao = filtrar(_monResult.naoCadastrados).filter(r => !_monResolvidos.has(r.id));
+  const sem = filtrar(_monResult.semCorrespondencia);
+  const res = filtrar(_monResult.naoCadastrados.filter(r => _monResolvidos.has(r.id)));
+  const total = cad.length + nao.length + sem.length;
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  set('monKpiTotal', total.toLocaleString('pt-BR'));
+  set('monKpiCadastrados', cad.length.toLocaleString('pt-BR'));
+  set('monKpiNao', nao.length.toLocaleString('pt-BR'));
+  set('monKpiSemCorr', sem.length.toLocaleString('pt-BR'));
+  set('monKpiResolvidos', res.length.toLocaleString('pt-BR'));
+  info.textContent = `${total} registros no periodo filtrado`;
+}
+function monLimparFiltroData() {
+  document.getElementById('monDataDe').value = '';
+  document.getElementById('monDataAte').value = '';
+  document.getElementById('monFiltroDataInfo').textContent = '';
+  monAtualizarKpis();
 }
 
 function monAplicarFiltro() {

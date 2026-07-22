@@ -18,8 +18,6 @@
   --auto-bg:#EDF6F5;--auto-b:#2A7C79;
   --r:8px;--rlg:12px;
   --bg:#F0F3F7;--surface:#fff;--text:#1a2421;--border-color:#D8DDE3;
-  /* Agibank official */
-  --agi-blue:#003087;--agi-navy:#001f5b;--agi-light:#e8edf8;
 }
 html.dark{
   --bg:#0f1117;--surface:#1a1d27;--border-color:#2d3147;--text:#e2e8f0;
@@ -32,7 +30,6 @@ html.dark{
   --chumbo:#94a3b8;
 }}
 body{font-family:'Plus Jakarta Sans',Calibri,sans-serif;font-weight:300;background:var(--bg);color:var(--text);font-size:13px;line-height:1.6;min-height:100vh;overflow:hidden}
-html.dark .scard{background:var(--surface);border-color:var(--border-color)}
 
 /* TOPBAR */
 .topbar{background:var(--verde);height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;z-index:200;box-shadow:0 2px 8px rgba(0,0,0,.25);flex-shrink:0}
@@ -45,106 +42,121 @@ html.dark .scard{background:var(--surface);border-color:var(--border-color)}
 .brand-txt{color:#fff;font-size:14px;font-weight:600}
 .brand-div{width:1px;height:18px;background:rgba(255,255,255,.2);margin:0 6px}
 .brand-sub{color:rgba(255,255,255,.55);font-size:11px}
+.env-switcher{display:flex;gap:4px;align-items:center;background:rgba(0,0,0,.2);border-radius:8px;padding:3px}
+.env-btn{padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;border:none;color:rgba(255,255,255,.65);background:transparent;transition:all .15s;text-decoration:none;display:inline-block}
+.env-btn:hover{color:#fff;background:rgba(255,255,255,.15)}
+.env-btn.ativo{color:#fff;background:rgba(255,255,255,.22)}
 .brand-badge{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.7);font-size:9px;font-weight:600;padding:2px 8px;border-radius:99px;letter-spacing:.5px}
 .top-actions{display:flex;gap:8px;align-items:center}
-.tbtn{padding:5px 12px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);color:#fff}
+.tbtn{padding:5px 12px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);color:#fff;transition:background .12s}
 .tbtn:hover{background:rgba(255,255,255,.2)}
 #btnDark{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;padding:5px 9px;border-radius:6px;cursor:pointer;font-size:13px}
 
-/* MAIN LAYOUT */
+/* LAYOUT */
 .main{display:flex;height:calc(100vh - 54px);overflow:hidden}
 
-/* LEFT: CHAT */
-.col-chat{width:400px;flex-shrink:0;display:flex;flex-direction:column;border-right:1px solid var(--borda);background:var(--surface)}
-.chat-header{padding:12px 16px;border-bottom:1px solid var(--borda-l);background:var(--off);flex-shrink:0}
-.chat-causa{font-size:11px;font-weight:700;color:var(--verde);text-transform:uppercase;letter-spacing:.5px}
-.chat-produto{font-size:10px;color:var(--chumbo)}
-.chat-msgs{flex:1;overflow-y:auto;padding:14px 14px 8px;display:flex;flex-direction:column;gap:10px}
-.chat-input-wrap{padding:10px 14px;border-top:1px solid var(--borda-l);flex-shrink:0;background:var(--surface)}
+/* LEFT SIDEBAR */
+.col-left{width:340px;flex-shrink:0;display:flex;flex-direction:column;border-right:1px solid var(--borda);background:var(--surface);overflow-y:auto}
+.col-left-inner{padding:16px;display:flex;flex-direction:column;gap:12px}
 
-/* Mensagens */
-.msg{display:flex;gap:8px;max-width:100%}
-.msg.bot{align-items:flex-start}
-.msg.user{flex-direction:row-reverse}
-.msg-avatar{width:28px;height:28px;border-radius:50%;background:var(--verde);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:11px;font-weight:700;color:#fff}
-.msg-bubble{padding:9px 12px;border-radius:12px;font-size:11px;line-height:1.5;max-width:calc(100% - 40px)}
-.msg.bot .msg-bubble{background:var(--off);border:1px solid var(--borda-l);color:var(--text);border-radius:4px 12px 12px 12px}
-.msg.user .msg-bubble{background:var(--verde);color:#fff;border-radius:12px 4px 12px 12px}
-.msg-bubble.alerta{background:var(--amb-bg);border-color:var(--amb-b);color:var(--amb)}
-.msg-bubble.ok{background:var(--vok-bg);border-color:var(--vok-b);color:var(--vok)}
-.msg-bubble.sugestao{background:var(--auto-bg);border:1px solid var(--auto-b)}
-.ev-box{background:rgba(0,0,0,.04);border-radius:6px;padding:6px 8px;margin-top:6px;font-size:10px;color:var(--chumbo);border-left:3px solid var(--auto-b)}
-
-/* Quick replies */
-.qr-wrap{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
-.qr-btn{padding:5px 14px;border-radius:99px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;border:1.5px solid;transition:all .12s}
-.qr-sim{background:var(--vok-bg);color:var(--vok);border-color:var(--vok-b)}
-.qr-sim:hover,.qr-sim.ativo{background:var(--vok);color:#fff}
-.qr-nao{background:var(--err-bg);color:var(--err);border-color:var(--err-b)}
-.qr-nao:hover,.qr-nao.ativo{background:var(--err);color:#fff}
-.qr-pend{background:var(--amb-bg);color:var(--amb);border-color:var(--amb-b)}
-.qr-pend:hover,.qr-pend.ativo{background:var(--amb);color:#fff}
-.qr-confirm{background:var(--verde);color:#fff;border-color:var(--verde)}
-.qr-confirm:hover{background:var(--ciano-med)}
-
-/* Drop zone chat */
-.drop-chat{border:1.5px dashed var(--borda);border-radius:var(--r);padding:14px 16px;background:var(--off);cursor:pointer;text-align:center;font-size:11px;color:var(--chumbo);transition:all .15s;position:relative}
-.drop-chat:hover,.drop-chat.drag{border-color:var(--ciano-med);background:var(--auto-bg)}
-.drop-chat.ok{border-color:var(--vok-b);background:var(--vok-bg)}
-.drop-chat input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+/* Upload */
+.drop-zone{border:1.5px dashed var(--borda);border-radius:var(--r);padding:18px 14px;text-align:center;cursor:pointer;transition:all .15s;background:var(--off);position:relative}
+.drop-zone:hover,.drop-zone.drag{border-color:var(--ciano-med);background:var(--auto-bg)}
+.drop-zone.ok{border-color:var(--vok-b);background:var(--vok-bg)}
+.drop-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.drop-txt{font-size:11px;color:var(--chumbo)}
+.drop-hint{font-size:9px;color:#9aA0a6;margin-top:3px}
 .file-pill{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;background:var(--surface);border:1px solid var(--borda);border-radius:99px;font-size:10px;color:var(--chumbo);margin:2px}
 .file-rm{background:none;border:none;cursor:pointer;color:var(--err);font-size:11px;padding:0 1px;line-height:1}
-.btn-iniciar{width:100%;padding:9px;background:var(--verde);color:#fff;border:none;border-radius:var(--r);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;margin-top:8px}
-.btn-iniciar:disabled{opacity:.4;cursor:not-allowed}
-.btn-iniciar:not(:disabled):hover{background:var(--ciano-med)}
-.progress-bar{height:4px;background:var(--borda-l);border-radius:99px;overflow:hidden;margin-top:6px}
-.progress-fill{height:100%;background:linear-gradient(90deg,var(--ciano-med),var(--ciano));border-radius:99px;transition:width .3s ease}
+.btn-analisar{width:100%;padding:9px;background:var(--verde);color:#fff;border:none;border-radius:var(--r);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer}
+.btn-analisar:disabled{opacity:.35;cursor:not-allowed}
+.btn-analisar:not(:disabled):hover{background:var(--ciano-med)}
+.prog-bar{height:3px;background:var(--borda-l);border-radius:99px;overflow:hidden}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--ciano-med),var(--ciano));border-radius:99px;transition:width .3s}
+.prog-txt{font-size:9px;color:var(--chumbo);text-align:center;margin-top:3px}
 
-/* RIGHT: PREVIEW */
-.col-preview{flex:1;overflow-y:auto;background:#e8eaed;display:flex;flex-direction:column}
-.preview-toolbar{padding:10px 18px;background:var(--surface);border-bottom:1px solid var(--borda);display:flex;align-items:center;gap:10px;flex-shrink:0}
-.preview-title{font-size:12px;font-weight:600;color:var(--verde);flex:1}
-.btn-export{padding:6px 16px;background:var(--verde);color:#fff;border:none;border-radius:6px;font-family:inherit;font-size:11px;font-weight:600;cursor:pointer}
-.btn-export:disabled{opacity:.4;cursor:not-allowed}
-.btn-export:not(:disabled):hover{background:var(--ciano-med)}
-.btn-copy-txt{padding:6px 14px;background:var(--off);border:1px solid var(--borda);border-radius:6px;font-family:inherit;font-size:11px;font-weight:600;cursor:pointer;color:var(--chumbo)}
-.btn-copy-txt:hover{background:var(--borda-l)}
-.laudo-wrap{padding:24px;display:flex;justify-content:center}
+/* Identificacao */
+.sec-label{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--chumbo);margin-bottom:6px}
+.id-row{display:flex;flex-direction:column;gap:2px;margin-bottom:6px}
+.id-lbl{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;color:var(--chumbo)}
+.id-val{font-size:11px;font-weight:600;color:var(--verde);border:1.5px solid var(--borda);border-radius:6px;padding:5px 8px;background:var(--surface);font-family:inherit;width:100%;outline:none}
+.id-val:focus{border-color:var(--ciano)}
+.id-val.auto{border-color:var(--auto-b);background:var(--auto-bg);border-left:3px solid var(--ciano)}
+.id-val.editado{border-color:var(--amb-b);background:var(--amb-bg)}
+.tag-auto{font-size:8px;font-weight:700;background:var(--auto-bg);color:var(--ciano-med);border:1px solid var(--auto-b);border-radius:99px;padding:1px 6px;margin-left:4px;vertical-align:middle}
+.tag-edit{font-size:8px;font-weight:700;background:var(--amb-bg);color:var(--amb);border:1px solid var(--amb-b);border-radius:99px;padding:1px 6px;margin-left:4px;vertical-align:middle}
 
-/* LAUDO OFICIAL AGIBANK */
-.laudo{width:720px;background:#fff;box-shadow:0 2px 20px rgba(0,0,0,.12);border-radius:4px;overflow:hidden;font-family:'Plus Jakarta Sans',Arial,sans-serif}
-.laudo-topbar{background:var(--agi-blue);height:14px}
-.laudo-head{background:var(--agi-navy);padding:20px 28px;display:flex;align-items:center;justify-content:space-between}
-.laudo-wordmark{font-size:22px;font-weight:700;color:#fff;letter-spacing:-1px}
-.laudo-wordmark span{color:#00bfff}
-.laudo-head-sub{font-size:10px;color:rgba(255,255,255,.6);text-align:right;line-height:1.4}
-.laudo-body{padding:0 28px 28px}
-.laudo-secao{margin-top:22px}
-.laudo-secao-titulo{font-size:10px;font-weight:700;color:#fff;background:var(--agi-navy);padding:5px 10px;border-radius:3px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:0}
-.laudo-table{width:100%;border-collapse:collapse;font-size:11px}
-.laudo-table tr{border-bottom:1px solid #e8edf8}
-.laudo-table td{padding:6px 10px;vertical-align:top}
-.laudo-table td:first-child{font-weight:600;color:var(--agi-navy);width:38%;background:#f5f7fb}
-.laudo-vazio{color:#aaa;font-style:italic}
-.laudo-ok{color:var(--vok);font-weight:600}
-.laudo-warn{color:var(--err);font-weight:600}
-.laudo-pend{color:var(--amb);font-weight:600}
+/* Contratos */
+.contrato-chip{display:inline-flex;align-items:center;padding:2px 8px;background:var(--off);border:1px solid var(--borda);border-radius:99px;font-size:10px;font-weight:600;color:var(--verde);margin:2px}
 
-/* Checklist no laudo */
-.cl-laudo{width:100%;border-collapse:collapse;font-size:10.5px}
-.cl-laudo th{background:#f5f7fb;color:var(--agi-navy);font-weight:700;padding:5px 8px;border-bottom:2px solid var(--agi-light);text-align:left}
-.cl-laudo td{padding:5px 8px;border-bottom:1px solid var(--agi-light);vertical-align:top}
-.cl-laudo td:first-child{font-size:10px;color:#888;text-align:center;width:28px}
-.cl-laudo .badge{padding:1px 7px;border-radius:99px;font-size:9px;font-weight:700}
-.badge-sim{background:#d1fae5;color:#065f46}
-.badge-nao{background:#fee2e2;color:#991b1b}
-.badge-pend{background:#fef3c7;color:#92400e}
-.badge-vazio{background:#f1f5f9;color:#94a3b8}
+/* RIGHT: PAINEL */
+.col-right{flex:1;display:flex;flex-direction:column;overflow:hidden}
 
-/* Evidencias */
-.ev-laudo{background:#f8f9fb;border:1px solid #e2e8f0;border-radius:4px;padding:6px 8px;margin-bottom:6px;font-size:10px}
-.ev-laudo-nome{font-weight:700;color:var(--agi-navy);margin-bottom:2px}
-.ev-laudo-tipo{color:#94a3b8;font-size:9px}
+/* Accuracy strip */
+.acc-strip{padding:10px 20px;background:var(--surface);border-bottom:1px solid var(--borda-l);display:flex;align-items:center;gap:16px;flex-shrink:0}
+.acc-kpi{text-align:center;min-width:80px}
+.acc-kpi-n{font-size:20px;font-weight:700;line-height:1.1}
+.acc-kpi-l{font-size:9px;color:var(--chumbo);text-transform:uppercase;letter-spacing:.4px;margin-top:2px}
+.acc-div{width:1px;height:36px;background:var(--borda-l)}
+.acc-bar-wrap{flex:1;max-width:300px}
+.acc-bar-lbl{font-size:9px;color:var(--chumbo);margin-bottom:4px;display:flex;justify-content:space-between}
+.acc-bar{height:6px;background:var(--off);border-radius:99px;overflow:hidden}
+.acc-bar-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--ciano-med),var(--ciano));transition:width .5s ease}
+.acc-strip-actions{margin-left:auto;display:flex;gap:8px}
+.btn-sm{padding:5px 12px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit}
+.btn-sm-ghost{background:transparent;border:1.5px solid var(--borda);color:var(--chumbo)}
+.btn-sm-ghost:hover{border-color:var(--ciano);color:var(--ciano)}
+.btn-sm-primary{background:var(--verde);color:#fff;border:none}
+.btn-sm-primary:hover{background:var(--ciano-med)}
+.btn-sm-primary:disabled{opacity:.35;cursor:not-allowed}
+
+/* Checklist panel */
+.cl-panel{flex:1;overflow-y:auto;padding:16px 20px}
+.cl-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--chumbo);text-align:center;gap:10px}
+.cl-placeholder svg{opacity:.2}
+.cl-placeholder-txt{font-size:13px}
+.cl-placeholder-sub{font-size:11px;opacity:.7}
+
+/* Tabela checklist */
+.cl-table{width:100%;border-collapse:collapse;font-size:12px}
+.cl-table th{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--chumbo);padding:6px 10px;border-bottom:2px solid var(--borda);text-align:left;background:var(--surface);position:sticky;top:0;z-index:10}
+.cl-table td{padding:9px 10px;border-bottom:1px solid var(--borda-l);vertical-align:middle}
+.cl-table tr:hover td{background:var(--off)}
+.cl-table tr.alterado td{background:#fffbeb}
+html.dark .cl-table tr.alterado td{background:rgba(146,64,14,.1)}
+.cl-num{font-size:10px;color:var(--chumbo);text-align:center;width:28px;font-weight:600}
+.cl-pergunta{font-size:11px;color:var(--text);max-width:320px;line-height:1.4}
+.cl-ev{font-size:10px;color:var(--chumbo);max-width:240px;line-height:1.35}
+.cl-fonte{font-size:9.5px;color:#9aA0a6;font-style:italic;margin-top:2px}
+
+/* Badge resposta (clicavel) */
+.resp-badge{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:99px;font-size:10px;font-weight:700;cursor:pointer;border:1.5px solid;transition:all .12s;user-select:none;white-space:nowrap}
+.resp-badge:hover{filter:brightness(.93)}
+.resp-sim{background:var(--vok-bg);color:var(--vok);border-color:var(--vok-b)}
+.resp-nao{background:var(--err-bg);color:var(--err);border-color:var(--err-b)}
+.resp-pend{background:var(--amb-bg);color:var(--amb);border-color:var(--amb-b)}
+.resp-vazio{background:var(--off);color:var(--chumbo);border-color:var(--borda)}
+.resp-badge .chevron{font-size:8px;opacity:.6}
+
+/* Tags de status */
+.tag{display:inline-block;font-size:8px;font-weight:700;padding:1px 6px;border-radius:99px;letter-spacing:.3px}
+.tag-a{background:var(--auto-bg);color:var(--ciano-med);border:1px solid var(--auto-b)}
+.tag-m{background:var(--off);color:var(--chumbo);border:1px solid var(--borda)}
+.tag-alt{background:var(--amb-bg);color:var(--amb);border:1px solid var(--amb-b)}
+.tag-sr{background:#f1f5f9;color:#64748b;border:1px solid #cbd5e1}
+
+/* Evidencia editavel */
+.ev-input{width:100%;padding:4px 7px;border:1.5px solid transparent;border-radius:5px;font-size:10px;font-family:inherit;font-weight:300;color:var(--chumbo);background:transparent;resize:none;outline:none;line-height:1.35;transition:border-color .12s}
+.ev-input:hover,.ev-input:focus{border-color:var(--borda);background:var(--surface)}
+.ev-input:focus{border-color:var(--ciano)}
+
+/* Resultado */
+.resultado-card{background:var(--surface);border:1px solid var(--borda-l);border-radius:var(--rlg);padding:16px 20px;margin-bottom:20px}
+.resultado-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.res-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--chumbo);margin-bottom:4px}
+.res-select{width:100%;padding:6px 10px;border:1.5px solid var(--borda);border-radius:6px;font-family:inherit;font-size:12px;outline:none;background:var(--surface);color:var(--text)}
+.res-select:focus{border-color:var(--ciano)}
+.res-select-full{grid-column:span 2}
 </style>
 </head>
 <body>
@@ -155,7 +167,12 @@ html.dark .scard{background:var(--surface);border-color:var(--border-color)}
     <div class="cards-sym"><span></span><span></span><span></span></div>
     <div class="brand-txt">SBK</div>
     <div class="brand-div"></div>
-    <div class="brand-sub">Agibank — Fraude Emprestimo Consignado</div>
+    <div class="env-switcher">
+      <a href="/index.html" class="env-btn">Eagle</a>
+      <a href="/zurich.html" class="env-btn">Zurich</a>
+      <a href="/agibank.html" class="env-btn ativo">Agibank</a>
+    </div>
+    <div class="brand-div" style="margin-left:10px"></div>
     <div class="brand-badge">MOTOR DE REGRAS</div>
   </div>
   <div class="top-actions">
@@ -166,106 +183,174 @@ html.dark .scard{background:var(--surface);border-color:var(--border-color)}
 
 <div class="main">
 
-  <!-- COLUNA CHAT -->
-  <div class="col-chat">
-    <div class="chat-header">
-      <div class="chat-causa">Alegacao de Fraude</div>
-      <div class="chat-produto">Emprestimo Consignado Agibank</div>
-    </div>
-    <div class="chat-msgs" id="chatMsgs"></div>
-    <div class="chat-input-wrap" id="chatInputWrap">
-      <div class="drop-chat" id="dropChat" ondragover="dzOver(event)" ondragleave="dzLeave()" ondrop="dzDrop(event)">
-        <div>Arraste os PDFs do processo aqui ou clique para selecionar</div>
-        <div style="font-size:9px;margin-top:3px;opacity:.6">Peticao, HISCON, Dossie AppSmith, Extrato, Salesforce, outros</div>
-        <input type="file" accept=".pdf,.txt,.png,.jpg,.jpeg" multiple onchange="addFiles(this.files)">
+  <!-- COLUNA ESQUERDA -->
+  <div class="col-left">
+    <div class="col-left-inner">
+
+      <!-- Upload -->
+      <div>
+        <div class="sec-label">Documentos do processo</div>
+        <div class="drop-zone" id="dropZone" ondragover="dzOver(event)" ondragleave="dzLeave()" ondrop="dzDrop(event)">
+          <div class="drop-txt">Arraste os PDFs aqui ou clique para selecionar</div>
+          <div class="drop-hint">Peticao, HISCON, Dossie AppSmith, Extrato, Salesforce, outros</div>
+          <input type="file" accept=".pdf,.txt,.png,.jpg,.jpeg" multiple onchange="addFiles(this.files)">
+        </div>
+        <div id="filesList" style="margin-top:6px;display:flex;flex-wrap:wrap;gap:2px"></div>
+        <div id="progWrap" style="display:none;margin-top:8px">
+          <div class="prog-bar"><div class="prog-fill" id="progFill" style="width:0"></div></div>
+          <div class="prog-txt" id="progTxt">Processando...</div>
+        </div>
+        <button class="btn-analisar" id="btnAnalisar" disabled onclick="analisar()" style="margin-top:8px">Analisar documentos</button>
       </div>
-      <div id="filesList" style="margin-top:6px;display:flex;flex-wrap:wrap;gap:2px"></div>
-      <div class="progress-bar" id="progBar" style="display:none"><div class="progress-fill" id="progFill" style="width:0"></div></div>
-      <div id="progMsg" style="font-size:9px;color:var(--chumbo);margin-top:3px;text-align:center"></div>
-      <button class="btn-iniciar" id="btnIniciar" disabled onclick="iniciarChecklist()">Concluir anexos e iniciar checklist</button>
+
+      <!-- Identificacao -->
+      <div id="idPanel" style="display:none">
+        <div class="sec-label">Identificacao do caso</div>
+        <div class="id-row">
+          <div class="id-lbl">Numero do processo <span id="tagProcesso" class="tag-auto" style="display:none">AUTO</span></div>
+          <input class="id-val" type="text" id="idProcesso" placeholder="Nao identificado" oninput="marcarEditado('idProcesso','tagProcesso')">
+        </div>
+        <div class="id-row">
+          <div class="id-lbl">Autor(a) <span id="tagAutor" class="tag-auto" style="display:none">AUTO</span></div>
+          <input class="id-val" type="text" id="idAutor" placeholder="Nao identificado" oninput="marcarEditado('idAutor','tagAutor')">
+        </div>
+        <div class="id-row">
+          <div class="id-lbl">CPF <span id="tagCpf" class="tag-auto" style="display:none">AUTO</span></div>
+          <input class="id-val" type="text" id="idCpf" placeholder="Nao identificado" oninput="marcarEditado('idCpf','tagCpf')">
+        </div>
+        <div class="id-row">
+          <div class="id-lbl">Endereco <span id="tagEndereco" class="tag-auto" style="display:none">AUTO</span></div>
+          <input class="id-val" type="text" id="idEndereco" placeholder="Nao identificado" oninput="marcarEditado('idEndereco','tagEndereco')">
+        </div>
+        <div class="id-row">
+          <div class="id-lbl">Contratos detectados</div>
+          <div id="idContratos" style="margin-top:2px"><span style="font-size:10px;color:var(--chumbo)">Nenhum</span></div>
+        </div>
+        <div class="id-row">
+          <div class="id-lbl">Sistemas identificados</div>
+          <div id="idSistemas" style="margin-top:2px"><span style="font-size:10px;color:var(--chumbo)">Nenhum</span></div>
+        </div>
+        <div class="id-row">
+          <div class="id-lbl">Data da analise</div>
+          <div id="idData" style="font-size:11px;font-weight:600;color:var(--verde)"></div>
+        </div>
+      </div>
+
+      <!-- Resultado (aparece apos checklist) -->
+      <div id="resPanel" style="display:none">
+        <div class="sec-label">Resultado final</div>
+        <div class="id-row">
+          <div class="id-lbl">Subsidios</div>
+          <select class="res-select" id="resSubsidios" onchange="atualizarOpcoes()">
+            <option value="">Selecione...</option>
+            <option value="Favoraveis">Favoraveis ao Agibank (DEFESA)</option>
+            <option value="Desfavoraveis">Desfavoraveis ao Agibank (ACORDO)</option>
+          </select>
+        </div>
+        <div class="id-row">
+          <div class="id-lbl">Resultado</div>
+          <select class="res-select" id="resResultado">
+            <option value="">Selecione subsidios primeiro...</option>
+          </select>
+        </div>
+      </div>
+
     </div>
   </div>
 
-  <!-- COLUNA PREVIEW LAUDO -->
-  <div class="col-preview">
-    <div class="preview-toolbar">
-      <div class="preview-title">Pre-visualizacao do Laudo</div>
-      <button class="btn-copy-txt" onclick="copiarTexto()">Copiar texto</button>
-      <button class="btn-export" id="btnExport" disabled onclick="exportarLaudo()">Exportar PDF</button>
-    </div>
-    <div class="laudo-wrap">
-      <div class="laudo" id="laudo">
+  <!-- COLUNA DIREITA: PAINEL -->
+  <div class="col-right">
 
-        <div class="laudo-topbar"></div>
-        <div class="laudo-head">
-          <div class="laudo-wordmark">agi<span>bank</span></div>
-          <div class="laudo-head-sub">Parecer de Analise Juridica<br>Alegacao de Fraude — Emprestimo Consignado</div>
+    <!-- Accuracy strip -->
+    <div class="acc-strip" id="accStrip" style="display:none">
+      <div class="acc-kpi">
+        <div class="acc-kpi-n" id="accTotal" style="color:var(--chumbo)">13</div>
+        <div class="acc-kpi-l">Itens</div>
+      </div>
+      <div class="acc-div"></div>
+      <div class="acc-kpi">
+        <div class="acc-kpi-n" id="accAuto" style="color:var(--ciano-med)">0</div>
+        <div class="acc-kpi-l">Automaticos</div>
+      </div>
+      <div class="acc-kpi">
+        <div class="acc-kpi-n" id="accSemRegra" style="color:#64748b">0</div>
+        <div class="acc-kpi-l">Sem regra</div>
+      </div>
+      <div class="acc-kpi">
+        <div class="acc-kpi-n" id="accAlterados" style="color:var(--amb)">0</div>
+        <div class="acc-kpi-l">Alterados</div>
+      </div>
+      <div class="acc-div"></div>
+      <div class="acc-bar-wrap">
+        <div class="acc-bar-lbl">
+          <span>Automatizacao</span>
+          <span id="accPct" style="font-weight:700;color:var(--ciano-med)">0%</span>
         </div>
-        <div class="laudo-body">
+        <div class="acc-bar"><div class="acc-bar-fill" id="accBarFill" style="width:0"></div></div>
+      </div>
+      <div class="acc-strip-actions">
+        <button class="btn-sm btn-sm-ghost" onclick="copiarResumo()">Copiar resumo</button>
+        <button class="btn-sm btn-sm-primary" id="btnExportar" onclick="window.print()">Exportar PDF</button>
+      </div>
+    </div>
 
-          <!-- Secao 1 -->
-          <div class="laudo-secao">
-            <div class="laudo-secao-titulo">1. Identificacao do Caso</div>
-            <table class="laudo-table">
-              <tr><td>Processo</td><td id="lProcesso"><span class="laudo-vazio">—</span></td></tr>
-              <tr><td>Autor(a)</td><td id="lAutor"><span class="laudo-vazio">—</span></td></tr>
-              <tr><td>CPF</td><td id="lCpf"><span class="laudo-vazio">—</span></td></tr>
-              <tr><td>Endereco</td><td id="lEndereco"><span class="laudo-vazio">—</span></td></tr>
-              <tr><td>Causa Raiz</td><td>Alegacao de Fraude</td></tr>
-              <tr><td>Produto</td><td>Emprestimo Consignado</td></tr>
-              <tr><td>Data da Analise</td><td id="lData"><span class="laudo-vazio">—</span></td></tr>
-            </table>
+    <!-- Checklist panel -->
+    <div class="cl-panel" id="clPanel">
+      <div class="cl-placeholder" id="clPlaceholder">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        <div class="cl-placeholder-txt">Importe os documentos e clique em Analisar</div>
+        <div class="cl-placeholder-sub">Os 13 itens do checklist serao preenchidos automaticamente.<br>Clique em qualquer badge para alterar a resposta.</div>
+      </div>
+
+      <div id="clTableWrap" style="display:none">
+        <!-- Resultado section -->
+        <div id="resSection" style="display:none;margin-bottom:20px">
+          <div class="resultado-card">
+            <div style="font-size:11px;font-weight:700;color:var(--verde);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">Resultado Final</div>
+            <div class="resultado-grid">
+              <div>
+                <div class="res-lbl">Subsidios</div>
+                <select class="res-select" id="resSubsidios2" onchange="sincronizarSubsidios(this.value)">
+                  <option value="">Selecione...</option>
+                  <option value="Favoraveis">Favoraveis ao Agibank (DEFESA)</option>
+                  <option value="Desfavoraveis">Desfavoraveis ao Agibank (ACORDO)</option>
+                </select>
+              </div>
+              <div>
+                <div class="res-lbl">Resultado</div>
+                <select class="res-select" id="resResultado2">
+                  <option value="">Selecione subsidios primeiro...</option>
+                </select>
+              </div>
+              <div style="grid-column:span 2">
+                <div class="res-lbl">Justificativa automatica</div>
+                <div id="resJustificativa" style="font-size:11px;color:var(--chumbo);padding:6px 8px;background:var(--off);border-radius:6px;line-height:1.5"></div>
+              </div>
+            </div>
           </div>
+        </div>
 
-          <!-- Secao 2 -->
-          <div class="laudo-secao">
-            <div class="laudo-secao-titulo">2. Contrato(s) Vinculado(s)</div>
-            <table class="laudo-table">
-              <tbody id="lContratos">
-                <tr><td colspan="2"><span class="laudo-vazio">Nenhum contrato detectado</span></td></tr>
-              </tbody>
-            </table>
-          </div>
+        <table class="cl-table">
+          <thead>
+            <tr>
+              <th style="text-align:center">#</th>
+              <th>Pergunta</th>
+              <th style="min-width:100px">Resposta</th>
+              <th>Evidencia e fonte</th>
+              <th style="min-width:72px">Status</th>
+            </tr>
+          </thead>
+          <tbody id="clBody"></tbody>
+        </table>
 
-          <!-- Secao 4 -->
-          <div class="laudo-secao">
-            <div class="laudo-secao-titulo">4. Checklist de Analise</div>
-            <table class="cl-laudo">
-              <thead><tr><th>#</th><th>Pergunta</th><th>Resposta</th><th>Evidencia</th></tr></thead>
-              <tbody id="lChecklist"></tbody>
-            </table>
-          </div>
-
-          <!-- Secao 5 -->
-          <div class="laudo-secao">
-            <div class="laudo-secao-titulo">5. Sistemas Consultados</div>
-            <table class="laudo-table">
-              <tbody id="lSistemas">
-                <tr><td colspan="2"><span class="laudo-vazio">Nenhum sistema identificado</span></td></tr>
-              </tbody>
-            </table>
-          </div>
-
-          <!-- Secao 6 -->
-          <div class="laudo-secao">
-            <div class="laudo-secao-titulo">6. Resultado Final</div>
-            <table class="laudo-table">
-              <tr><td>Subsidios Favoraveis</td><td id="lSubsidios"><span class="laudo-vazio">—</span></td></tr>
-              <tr><td>Estrategia</td><td id="lEstrategia"><span class="laudo-vazio">—</span></td></tr>
-              <tr><td>Resultado</td><td id="lResultado"><span class="laudo-vazio">—</span></td></tr>
-              <tr><td>Justificativa</td><td id="lJustificativa"><span class="laudo-vazio">—</span></td></tr>
-            </table>
-          </div>
-
-          <!-- Secao 7 -->
-          <div class="laudo-secao">
-            <div class="laudo-secao-titulo">7. Evidencias — Arquivos Anexados</div>
-            <div id="lEvidencias" style="padding:8px 0"><span class="laudo-vazio" style="font-size:11px;padding:6px 0;display:block">Nenhum arquivo anexado</span></div>
-          </div>
-
+        <div style="margin-top:14px;padding:10px 12px;background:var(--off);border-radius:var(--r);font-size:10px;color:var(--chumbo);line-height:1.5">
+          Clique no badge colorido para alterar a resposta. Edite a evidencia diretamente na celula. Itens marcados com
+          <span class="tag tag-alt">ALTERADO</span> foram modificados em relacao a sugestao automatica.
+          Itens <span class="tag tag-sr">SEM REGRA</span> exigem julgamento manual.
         </div>
       </div>
     </div>
+
   </div>
 
 </div>
@@ -273,229 +358,123 @@ html.dark .scard{background:var(--surface);border-color:var(--border-color)}
 <script>
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-// ── Estado global ─────────────────────────────────────────────────────────────
-let arquivos = [];        // { file, nome, tipo_detectado, texto }
-let dadosExtraidos = {    // preenchido pelo motor de extracao
-  processo: null, autor: null, cpf: null, endereco: null, contratos: []
-};
-let sistemas = [];        // ['AppSmith', 'HISCON/INSS', ...]
-let checklist = new Array(14).fill(null).map((_,i)=>i===0?null:{id:i,resposta:null,evidencia:'',fonte:''});
-let faseAtual = 'upload'; // 'upload' | 'checklist_N' | 'resultado'
-let itemAtual = 0;
-let textoGlobal = '';     // concatenado de todos os arquivos
+// Estado global
+let arquivos = [];
+let dadosExtraidos = { processo: null, autor: null, cpf: null, endereco: null, contratos: [] };
+let sistemas = [];
+let textoGlobal = '';
+let checklist = {}; // id -> { resp, ev, fonte, respAuto, semRegra, alterado }
 
-// ── Dark mode ─────────────────────────────────────────────────────────────────
+// Dark mode
 (function(){
-  const s=localStorage.getItem('agi_theme');
-  if(s==='dark') document.documentElement.classList.add('dark');
-  else if(!s&&window.matchMedia('(prefers-color-scheme:dark)').matches) document.documentElement.classList.add('dark');
+  const s = localStorage.getItem('agi_theme');
+  if (s === 'dark') document.documentElement.classList.add('dark');
+  else if (!s && window.matchMedia('(prefers-color-scheme:dark)').matches) document.documentElement.classList.add('dark');
 })();
 function toggleDark(){
-  const h=document.documentElement;
-  h.classList.toggle('dark');
-  localStorage.setItem('agi_theme',h.classList.contains('dark')?'dark':'light');
+  document.documentElement.classList.toggle('dark');
+  localStorage.setItem('agi_theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
 }
 
-// ── Drop zone ─────────────────────────────────────────────────────────────────
-function dzOver(e){e.preventDefault();document.getElementById('dropChat').classList.add('drag')}
-function dzLeave(){document.getElementById('dropChat').classList.remove('drag')}
-function dzDrop(e){e.preventDefault();dzLeave();addFiles(e.dataTransfer.files)}
+// Drop zone
+function dzOver(e){ e.preventDefault(); document.getElementById('dropZone').classList.add('drag'); }
+function dzLeave(){ document.getElementById('dropZone').classList.remove('drag'); }
+function dzDrop(e){ e.preventDefault(); dzLeave(); addFiles(e.dataTransfer.files); }
 function addFiles(files){
-  [...files].forEach(f=>{if(!arquivos.find(a=>a.nome===f.name)) arquivos.push({file:f,nome:f.name,tipo_detectado:detectarSistema(f.name),texto:null})});
+  [...files].forEach(f => { if (!arquivos.find(a => a.nome === f.name)) arquivos.push({ file: f, nome: f.name, tipo: detectarSistema(f.name), texto: null }); });
   renderFiles();
-  document.getElementById('btnIniciar').disabled=arquivos.length===0;
-  document.getElementById('dropChat').classList.toggle('ok',arquivos.length>0);
+  document.getElementById('btnAnalisar').disabled = arquivos.length === 0;
+  document.getElementById('dropZone').classList.toggle('ok', arquivos.length > 0);
 }
 function removerArquivo(nome){
-  arquivos=arquivos.filter(a=>a.nome!==nome);
+  arquivos = arquivos.filter(a => a.nome !== nome);
   renderFiles();
-  document.getElementById('btnIniciar').disabled=arquivos.length===0;
-  document.getElementById('dropChat').classList.toggle('ok',arquivos.length>0);
+  document.getElementById('btnAnalisar').disabled = arquivos.length === 0;
+  document.getElementById('dropZone').classList.toggle('ok', arquivos.length > 0);
 }
 function renderFiles(){
-  document.getElementById('filesList').innerHTML=arquivos.map(a=>`
-    <span class="file-pill">
-      ${a.tipo_detectado?`<strong>${a.tipo_detectado}:</strong>&nbsp;`:''}${a.nome}
-      <button class="file-rm" onclick="removerArquivo('${a.nome.replace(/'/g,"\\'")}')">&#10005;</button>
-    </span>`).join('');
+  document.getElementById('filesList').innerHTML = arquivos.map(a =>
+    `<span class="file-pill">${a.tipo ? `<strong>${a.tipo}:</strong>&nbsp;` : ''}${a.nome}<button class="file-rm" onclick="removerArquivo('${a.nome.replace(/'/g,"\\'")}')">&#10005;</button></span>`
+  ).join('');
 }
 
-// ── Deteccao de sistema por nome de arquivo ───────────────────────────────────
+// Deteccao de sistema
 const SISTEMA_REGRAS = [
   {r:/appsmith/i,s:'AppSmith'},{r:/salesforce/i,s:'Salesforce'},{r:/ged/i,s:'GED'},
   {r:/conductor/i,s:'Conductor'},{r:/fraud/i,s:'Fraud Prevention'},{r:/matera/i,s:'Matera'},
   {r:/recupera/i,s:'Recupera'},{r:/biometria|unico/i,s:'Unico Biometria'},
   {r:/extrato/i,s:'Extrato Bancario'},{r:/hiscon|inss/i,s:'HISCON/INSS'},
 ];
-function detectarSistema(nome){
-  const r=SISTEMA_REGRAS.find(x=>x.r.test(nome));
-  return r?r.s:null;
-}
+function detectarSistema(nome){ const r = SISTEMA_REGRAS.find(x => x.r.test(nome)); return r ? r.s : null; }
 
-// ── Extracao de texto PDF ─────────────────────────────────────────────────────
+// Extracao de texto PDF - primeiras 30 + ultimas 15 paginas
 async function extrairTexto(arq){
-  const f=arq.file;
-  try{
-    if(f.type==='text/plain') return await f.text();
-    if(!f.name.toLowerCase().endsWith('.pdf')) return `[Imagem: ${f.name}]`;
-    const buf=await f.arrayBuffer();
-    const pdf=await pdfjsLib.getDocument({data:buf}).promise;
-    let txt='';
-    for(let i=1;i<=Math.min(pdf.numPages,40);i++){
-      const p=await pdf.getPage(i);
-      const c=await p.getTextContent();
-      txt+=c.items.map(it=>it.str).join(' ')+'\n';
+  const f = arq.file;
+  try {
+    if (f.type === 'text/plain') return await f.text();
+    if (!f.name.toLowerCase().endsWith('.pdf')) return `[Imagem: ${f.name}]`;
+    const buf = await f.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+    const total = pdf.numPages;
+    // Captura primeiras 30 + ultimas 15 paginas (sem duplicar)
+    const prims = Math.min(total, 30);
+    const ultimas = total > 30 ? Math.max(31, total - 14) : null;
+    const paginas = new Set();
+    for (let i = 1; i <= prims; i++) paginas.add(i);
+    if (ultimas) for (let i = ultimas; i <= total; i++) paginas.add(i);
+    const ordemPags = [...paginas].sort((a, b) => a - b);
+    let txt = '';
+    for (const p of ordemPags) {
+      const page = await pdf.getPage(p);
+      const c = await page.getTextContent();
+      txt += c.items.map(it => it.str).join(' ') + '\n';
     }
-    // Limpeza basica
-    txt=txt.replace(/ ,/g,',').replace(/ \./g,'.').replace(/ {2,}/g,' ');
-    return txt.trim();
-  }catch(e){return `[Erro: ${e.message}]`;}
+    return txt.replace(/ {2,}/g, ' ').replace(/ ,/g, ',').replace(/ \./g, '.').trim();
+  } catch(e) { return `[Erro: ${e.message}]`; }
 }
 
-// ── Motor de extracao documental (regex, sem IA) ──────────────────────────────
-function limparTexto(t){ return t.replace(/ ,/g,',').replace(/ \./g,'.').replace(/ {2,}/g,' '); }
-
+// Motor de extracao
 function extrairCampos(textos){
-  const all=textos.join('\n');
-  textoGlobal=all;
+  const all = textos.join('\n');
+  textoGlobal = all;
 
-  // Numero do processo
-  const mProc=all.match(/\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}/);
-  dadosExtraidos.processo=mProc?mProc[0]:null;
+  // Processo
+  const mProc = all.match(/\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}/);
+  dadosExtraidos.processo = mProc ? mProc[0] : null;
 
-  // Nome + CPF (extracao pareada com exclusao)
-  dadosExtraidos.autor=null; dadosExtraidos.cpf=null;
-  const EXCL=/(OUTORGADO|ADVOGAD[OA]|PROCURADOR)/i;
-  const padroes=[
+  // Autor + CPF
+  dadosExtraidos.autor = null; dadosExtraidos.cpf = null;
+  const EXCL = /(OUTORGADO|ADVOGAD[OA]|PROCURADOR|ILILHA|TESTEMU)/i;
+  const padroes = [
     /([A-ZÀ-Ü][A-ZÀ-Ü\.\s]{6,70}?),\s*brasileir[ao][^]{0,240}?CPF\s*(?:n[ºo°.]*)?:?\s*(\d{3}\.\d{3}\.\d{3}-\d{2})/gi,
     /([A-ZÀ-Ü][A-ZÀ-Ü\.\s]{6,70}?)\s*\((\d{3}\.\d{3}\.\d{3}-\d{2})\)/g,
   ];
-  for(const re of padroes){
+  for (const re of padroes) {
     let m;
-    while((m=re.exec(all))!==null){
-      const antes=all.slice(Math.max(0,m.index-60),m.index);
-      if(!EXCL.test(antes)){
-        dadosExtraidos.autor=m[1].replace(/\s+/g,' ').trim();
-        dadosExtraidos.cpf=m[2];
+    while ((m = re.exec(all)) !== null) {
+      const antes = all.slice(Math.max(0, m.index - 60), m.index);
+      if (!EXCL.test(antes)) {
+        dadosExtraidos.autor = m[1].replace(/\s+/g, ' ').trim();
+        dadosExtraidos.cpf = m[2];
         break;
       }
     }
-    if(dadosExtraidos.cpf) break;
+    if (dadosExtraidos.cpf) break;
   }
 
   // Endereco
-  const mEnd=all.match(/(Rua|Avenida|Av\.)[^\n]{5,140}?CEP[\s:]*\d{2}\.?\d{3}-?\d{3}/i);
-  dadosExtraidos.endereco=mEnd?mEnd[0].replace(/\s+/g,' ').trim():null;
+  const mEnd = all.match(/(Rua|Avenida|Av\.)[^\n]{5,140}?CEP[\s:]*\d{2}\.?\d{3}-?\d{3}/i);
+  dadosExtraidos.endereco = mEnd ? mEnd[0].replace(/\s+/g, ' ').trim() : null;
 
   // Contratos (10 digitos comecando em 1)
-  const mCon=[...new Set((all.match(/\b1\d{9}\b/g)||[]))];
-  dadosExtraidos.contratos=mCon;
+  dadosExtraidos.contratos = [...new Set((all.match(/\b1\d{9}\b/g) || []))];
 
   // Sistemas
-  sistemas=[...new Set(arquivos.map(a=>a.tipo_detectado).filter(Boolean))];
+  sistemas = [...new Set(arquivos.map(a => a.tipo).filter(Boolean))];
 }
 
-// ── Motor de sugestao do checklist (regras, sem IA) ──────────────────────────
-function sugerirItem(id){
-  const t=textoGlobal.toLowerCase();
-  const tOrig=textoGlobal;
-  const cpf=dadosExtraidos.cpf;
-
-  if(id===1){
-    const ok=t.includes('boletim de ocorrencia')||t.includes('boletim de ocorrência');
-    if(ok){const src=encontrarFonte('boletim de ocorrencia'); return {resp:'Sim',ev:`Expressao "Boletim de Ocorrencia" localizada no documento.`,fonte:src};}
-    return {resp:'Nao',ev:'Nenhuma mencao a Boletim de Ocorrencia em nenhum dos arquivos.',fonte:'todos os arquivos'};
-  }
-  if(id===2){
-    const achado=/(analfabeto|analfabeta|interditado|interditada|interdicao|interdição|doenca grave|doença grave)/i.test(tOrig);
-    if(achado) return {resp:'Nao',ev:'Alegacao encontrada no texto, mas a regra exige prova documental concreta (laudo, atestado, procuracao publica). Revise se ha documento nos autos que confirme a alegacao.',fonte:encontrarFonte('analfabeto|interditado|doenca grave'),sugestao_manual:true};
-    return {resp:'Nao',ev:'Nenhuma alegacao de analfabetismo, interdicao ou doenca grave localizada.',fonte:'todos os arquivos'};
-  }
-  if(id===3){
-    return {resp:null,ev:'Exige comparacao visual entre a foto da biometria facial (dossie AppSmith) e o documento oficial do autor. Julgamento visual — sem regra automatica.',fonte:null,sem_regra:true};
-  }
-  if(id===4){
-    if(cpf){
-      const ocorrs=arquivos.filter(a=>a.texto&&a.texto.includes(cpf));
-      if(ocorrs.length>=2) return {resp:'Sim',ev:`CPF ${cpf} localizado em ${ocorrs.length} arquivos distintos: ${ocorrs.map(a=>a.nome).join(', ')}.`,fonte:ocorrs.map(a=>a.nome).join(', ')};
-    }
-    return {resp:null,ev:'CPF nao encontrado em multiplos arquivos para confirmar conferencia dos dados.',fonte:null};
-  }
-  if(id===5){
-    const ok=/(banco\s*121|agib|sicoob|banco cooperativo sicoob|\b121\b|\b756\b)/i.test(tOrig);
-    if(ok){const src=encontrarFonte('121|756|sicoob|agib'); return {resp:'Sim',ev:'Referencia ao Agibank (codigo 121) ou parceiro Sicoob localizada nos documentos.',fonte:src};}
-    return {resp:null,ev:'Nenhuma referencia ao Agibank ou parceiro oficial localizada.',fonte:null};
-  }
-  if(id===6){
-    return {resp:'Pendente',ev:'Requer consulta direta ao Benner/sistema de cadastro. Nao disponivel nos documentos anexados.',fonte:null,sem_regra:true};
-  }
-  if(id===7){
-    const temSalesforce=sistemas.includes('Salesforce');
-    const menção=/(salesforce|consumidor\.gov|ouvidoria|reclamação|reclamacao)/i.test(tOrig);
-    if(temSalesforce||menção){const src=encontrarFonte('salesforce|consumidor|ouvidoria'); return {resp:'Sim',ev:'Registro de atendimento/reclamacao localizado nos arquivos.',fonte:src};}
-    return {resp:'Nao',ev:'Nenhum print de Salesforce, Consumidor.gov ou Ouvidoria localizado no pacote de documentos.',fonte:'todos os arquivos'};
-  }
-  if(id===8){
-    const temComp=/(comprovante\s*de\s*resid|fatura\s*(de\s*)?(luz|agua|energia)|conta\s*(de\s*)?(luz|agua|energia))/i.test(tOrig);
-    if(temComp){
-      const anoRecente=/(202[5-9]|2030)/i.test(tOrig);
-      if(anoRecente) return {resp:'Sim',ev:'Comprovante de endereco com data recente (2025/2026) localizado.',fonte:encontrarFonte('comprovante|fatura')};
-      return {resp:'Pendente',ev:'Comprovante de endereco encontrado mas data de emissao nao confirmada automaticamente.',fonte:encontrarFonte('comprovante|fatura')};
-    }
-    return {resp:'Pendente',ev:'Nenhum comprovante de endereco identificado no pacote.',fonte:'todos os arquivos'};
-  }
-  if(id===9){
-    const ok=/(spc|serasa|negativação|negativacao)/i.test(tOrig);
-    if(ok){const src=encontrarFonte('spc|serasa'); return {resp:'Sim',ev:'Mencao a SPC/Serasa/negativacao localizada na peticao.',fonte:src};}
-    return {resp:'Nao',ev:'Nenhuma mencao a SPC, Serasa ou negativacao nos documentos.',fonte:'todos os arquivos'};
-  }
-  if(id===10){
-    const janelaPos=janelaPosCredito(tOrig,300);
-    if(janelaPos){
-      const temTransf=/(pix|ted|doc|transferencia|transferência)/i.test(janelaPos);
-      const temProprio=/(compra|saque|cartao|débito|debito)/i.test(janelaPos);
-      if(temTransf) return {resp:'Pendente',ev:'Transferencia (PIX/TED/DOC) detectada apos o credito do emprestimo. Verifique o destinatario manualmente.',fonte:encontrarFonte('extrato|liberacao')};
-      if(temProprio) return {resp:'Nao',ev:'Movimentacao em nome do proprio titular detectada apos o credito (compra/saque/cartao). Sem indicativo de transferencia a terceiros.',fonte:encontrarFonte('extrato|liberacao')};
-    }
-    return {resp:null,ev:'Nao foi possivel localizar o lancamento de liberacao de credito no extrato para analisar a janela de movimentacao.',fonte:null};
-  }
-  if(id===11){
-    const n=dadosExtraidos.contratos.length;
-    if(n>1) return {resp:'Nao',ev:`${n} contratos detectados: ${dadosExtraidos.contratos.join(', ')}. Cliente ja possuia outros contratos.`,fonte:'documentos do processo'};
-    if(n===1) return {resp:'Pendente',ev:`1 contrato detectado (${dadosExtraidos.contratos[0]}). Confirme no HISCON completo se havia contratos anteriores.`,fonte:'documentos do processo'};
-    return {resp:null,ev:'Nenhum numero de contrato detectado automaticamente.',fonte:null};
-  }
-  if(id===12){
-    const ok=/(liberacao\s*de\s*credito|credito\s*emprestimo|crédito\s*empréstimo)/i.test(tOrig);
-    if(ok){const src=encontrarFonte('liberacao|extrato'); return {resp:'Sim',ev:'Lancamento de liberacao de credito localizado no extrato bancario.',fonte:src};}
-    return {resp:null,ev:'Lancamento de liberacao de credito nao localizado no extrato.',fonte:null};
-  }
-  if(id===13){
-    const janelaPos=janelaPosCredito(tOrig,300);
-    if(janelaPos){
-      const tem=/(compra|saque|cartao|pix|ted|debito|débito|pagamento)/i.test(janelaPos);
-      if(tem) return {resp:'Sim',ev:'Movimentacao detectada nos dias seguintes ao credito do emprestimo.',fonte:encontrarFonte('extrato|liberacao')};
-    }
-    return {resp:null,ev:'Nao foi possivel analisar a janela pos-credito no extrato.',fonte:null};
-  }
-  return {resp:null,ev:'',fonte:null};
-}
-
-function encontrarFonte(pattern){
-  const re=new RegExp(pattern,'i');
-  const arq=arquivos.find(a=>a.texto&&re.test(a.texto));
-  return arq?arq.nome:'documentos do processo';
-}
-
-function janelaPosCredito(txt,janela){
-  const re=/(liberacao\s*de\s*credito|credito\s*emprestimo)/i;
-  const m=re.exec(txt);
-  if(!m) return null;
-  return txt.slice(m.index+m[0].length,m.index+m[0].length+janela);
-}
-
-// ── Chat ──────────────────────────────────────────────────────────────────────
-const PERGUNTAS=[null,
+// Motor de sugestao
+const PERGUNTAS = [null,
   'O autor apresenta Boletim de Ocorrencia?',
   'O autor apresenta evidencias de que e analfabeto, interditado ou portador de doenca grave?',
   'A biometria esta legivel e confere com os documentos apresentados?',
@@ -506,330 +485,334 @@ const PERGUNTAS=[null,
   'O comprovante de endereco esta atualizado?',
   'Alegada irregularidade na inscricao ao SPC?',
   'O valor liberado foi transferido para terceiros em data proxima ao recebimento?',
-  'Foi a primeira transacao do cliente ou ele ja possuia outros contratos com o Agi?',
+  'Foi a primeira transacao do cliente ou ja possuia outros contratos com o Agi?',
   'O valor do emprestimo foi recebido na conta Agibank?',
-  'Houve transacoes ou uso do valor com o emprestimo apos o recebimento?',
+  'Houve transacoes ou uso do valor apos o recebimento do emprestimo?',
 ];
 
-function botMsg(html,classe){
-  const msgs=document.getElementById('chatMsgs');
-  const div=document.createElement('div');
-  div.className='msg bot';
-  div.innerHTML=`<div class="msg-avatar">SBK</div><div class="msg-bubble${classe?' '+classe:''}">${html}</div>`;
-  msgs.appendChild(div);
-  msgs.scrollTop=msgs.scrollHeight;
+function sugerirItem(id){
+  const t = textoGlobal.toLowerCase();
+  const tO = textoGlobal;
+  const cpf = dadosExtraidos.cpf;
+
+  if (id === 1) {
+    const ok = t.includes('boletim de ocorrencia') || t.includes('boletim de ocorrência');
+    return ok
+      ? { resp: 'Sim', ev: 'Expressao "Boletim de Ocorrencia" localizada nos documentos.', fonte: encontrarFonte('boletim') }
+      : { resp: 'Nao', ev: 'Nenhuma mencao a Boletim de Ocorrencia nos arquivos.', fonte: 'todos os arquivos' };
+  }
+  if (id === 2) {
+    const achado = /(analfabeto|analfabeta|interditado|interditada|doenca grave|doença grave)/i.test(tO);
+    return { resp: 'Nao', ev: achado
+      ? 'Alegacao encontrada, mas exige prova documental concreta (laudo, atestado, procuracao publica). Verifique se ha documento nos autos.'
+      : 'Nenhuma alegacao de analfabetismo, interdicao ou doenca grave localizada.', fonte: 'todos os arquivos' };
+  }
+  if (id === 3) return { resp: null, ev: 'Exige comparacao visual entre a foto da biometria (dossie AppSmith) e o documento oficial. Julgamento visual — sem regra automatica.', fonte: null, semRegra: true };
+  if (id === 4) {
+    if (cpf) {
+      const ocorrs = arquivos.filter(a => a.texto && a.texto.includes(cpf));
+      if (ocorrs.length >= 2) return { resp: 'Sim', ev: `CPF ${cpf} localizado em ${ocorrs.length} arquivos: ${ocorrs.map(a => a.nome).join(', ')}.`, fonte: ocorrs.map(a => a.nome).join(', ') };
+    }
+    return { resp: null, ev: 'CPF nao encontrado em multiplos arquivos para confirmar conferencia dos dados.', fonte: null };
+  }
+  if (id === 5) {
+    const ok = /(banco\s*121|agib|sicoob|banco cooperativo sicoob|\b121\b|\b756\b)/i.test(tO);
+    return ok
+      ? { resp: 'Sim', ev: 'Referencia ao Agibank (codigo 121) ou parceiro Sicoob localizada.', fonte: encontrarFonte('121|756|sicoob|agib') }
+      : { resp: null, ev: 'Nenhuma referencia ao Agibank ou parceiro oficial localizada.', fonte: null };
+  }
+  if (id === 6) return { resp: 'Pendente', ev: 'Requer consulta direta ao Benner/sistema de cadastro. Nao disponivel nos documentos.', fonte: null, semRegra: true };
+  if (id === 7) {
+    const temSF = sistemas.includes('Salesforce');
+    const men = /(salesforce|consumidor\.gov|ouvidoria|reclamação|reclamacao)/i.test(tO);
+    return (temSF || men)
+      ? { resp: 'Sim', ev: 'Registro de atendimento/reclamacao localizado nos arquivos.', fonte: encontrarFonte('salesforce|consumidor|ouvidoria') }
+      : { resp: 'Nao', ev: 'Nenhum print de Salesforce, Consumidor.gov ou Ouvidoria localizado.', fonte: 'todos os arquivos' };
+  }
+  if (id === 8) {
+    const temComp = /(comprovante\s*de\s*resid|fatura\s*(de\s*)?(luz|agua|energia)|conta\s*(de\s*)?(luz|agua|energia))/i.test(tO);
+    if (temComp) {
+      const recente = /(202[5-9]|2030)/i.test(tO);
+      return recente
+        ? { resp: 'Sim', ev: 'Comprovante de endereco com data recente (2025+) localizado.', fonte: encontrarFonte('comprovante|fatura') }
+        : { resp: 'Pendente', ev: 'Comprovante de endereco encontrado mas data nao confirmada automaticamente.', fonte: encontrarFonte('comprovante|fatura') };
+    }
+    return { resp: 'Pendente', ev: 'Nenhum comprovante de endereco identificado no pacote.', fonte: 'todos os arquivos' };
+  }
+  if (id === 9) {
+    const ok = /(spc|serasa|negativação|negativacao)/i.test(tO);
+    return ok
+      ? { resp: 'Sim', ev: 'Mencao a SPC/Serasa/negativacao localizada na peticao.', fonte: encontrarFonte('spc|serasa') }
+      : { resp: 'Nao', ev: 'Nenhuma mencao a SPC, Serasa ou negativacao nos documentos.', fonte: 'todos os arquivos' };
+  }
+  if (id === 10) {
+    const jan = janelaPosCredito(tO, 300);
+    if (jan) {
+      const temTransf = /(pix|ted|doc|transferencia|transferência)/i.test(jan);
+      const temProp = /(compra|saque|cartao|débito|debito)/i.test(jan);
+      if (temTransf) return { resp: 'Pendente', ev: 'Transferencia (PIX/TED/DOC) detectada apos o credito. Verifique o destinatario.', fonte: encontrarFonte('extrato|liberacao') };
+      if (temProp) return { resp: 'Nao', ev: 'Movimentacao do proprio titular detectada apos o credito. Sem transferencia a terceiros aparente.', fonte: encontrarFonte('extrato|liberacao') };
+    }
+    return { resp: null, ev: 'Nao foi possivel localizar o lancamento de liberacao de credito no extrato.', fonte: null };
+  }
+  if (id === 11) {
+    const n = dadosExtraidos.contratos.length;
+    if (n > 1) return { resp: 'Nao', ev: `${n} contratos detectados: ${dadosExtraidos.contratos.join(', ')}. Cliente ja possuia outros contratos.`, fonte: 'documentos do processo' };
+    if (n === 1) return { resp: 'Pendente', ev: `1 contrato detectado (${dadosExtraidos.contratos[0]}). Confirme no HISCON completo se havia contratos anteriores.`, fonte: 'documentos do processo' };
+    return { resp: null, ev: 'Nenhum numero de contrato detectado automaticamente.', fonte: null };
+  }
+  if (id === 12) {
+    const ok = /(liberacao\s*de\s*credito|credito\s*emprestimo|crédito\s*empréstimo)/i.test(tO);
+    return ok
+      ? { resp: 'Sim', ev: 'Lancamento de liberacao de credito localizado no extrato bancario.', fonte: encontrarFonte('liberacao|extrato') }
+      : { resp: null, ev: 'Lancamento de liberacao de credito nao localizado no extrato.', fonte: null };
+  }
+  if (id === 13) {
+    const jan = janelaPosCredito(tO, 300);
+    if (jan && /(compra|saque|cartao|pix|ted|debito|débito|pagamento)/i.test(jan)) {
+      return { resp: 'Sim', ev: 'Movimentacao detectada nos dias seguintes ao credito do emprestimo.', fonte: encontrarFonte('extrato|liberacao') };
+    }
+    return { resp: null, ev: 'Nao foi possivel analisar a janela pos-credito no extrato.', fonte: null };
+  }
+  return { resp: null, ev: '', fonte: null };
 }
-function userMsg(texto){
-  const msgs=document.getElementById('chatMsgs');
-  const div=document.createElement('div');
-  div.className='msg user';
-  div.innerHTML=`<div class="msg-bubble">${texto}</div>`;
-  msgs.appendChild(div);
-  msgs.scrollTop=msgs.scrollHeight;
-}
-function clearQR(){document.querySelectorAll('.qr-wrap').forEach(e=>e.remove())}
 
-function adicionarQR(opcoes){
-  const msgs=document.getElementById('chatMsgs');
-  const div=document.createElement('div');
-  div.className='qr-wrap';
-  div.style.paddingLeft='36px';
-  div.innerHTML=opcoes.map(o=>`<button class="qr-btn ${o.cls}" onclick="${o.fn}">${o.txt}</button>`).join('');
-  msgs.appendChild(div);
-  msgs.scrollTop=msgs.scrollHeight;
+function encontrarFonte(pattern){
+  const re = new RegExp(pattern, 'i');
+  const a = arquivos.find(x => x.texto && re.test(x.texto));
+  return a ? a.nome : 'documentos do processo';
+}
+function janelaPosCredito(txt, janela){
+  const re = /(liberacao\s*de\s*credito|credito\s*emprestimo)/i;
+  const m = re.exec(txt);
+  return m ? txt.slice(m.index + m[0].length, m.index + m[0].length + janela) : null;
 }
 
-// ── Iniciar checklist ─────────────────────────────────────────────────────────
-async function iniciarChecklist(){
-  document.getElementById('chatInputWrap').style.display='none';
-  document.getElementById('progBar').style.display='block';
+// Analise principal
+async function analisar(){
+  document.getElementById('btnAnalisar').disabled = true;
+  document.getElementById('progWrap').style.display = 'block';
+  document.getElementById('clPlaceholder').style.display = 'none';
 
-  botMsg('Processando os documentos... aguarde.');
-
-  let idx=0;
-  const textos=[];
-  for(const arq of arquivos){
+  let idx = 0;
+  const textos = [];
+  for (const arq of arquivos) {
     idx++;
-    document.getElementById('progFill').style.width=Math.round((idx/arquivos.length)*100)+'%';
-    document.getElementById('progMsg').textContent=`Lendo: ${arq.nome}`;
-    arq.texto=await extrairTexto(arq);
+    document.getElementById('progFill').style.width = Math.round(idx / arquivos.length * 80) + '%';
+    document.getElementById('progTxt').textContent = `Lendo ${arq.nome}...`;
+    arq.texto = await extrairTexto(arq);
     textos.push(`=== ${arq.nome} ===\n${arq.texto}`);
-    reportarExtracao(arq);
   }
 
+  document.getElementById('progFill').style.width = '90%';
+  document.getElementById('progTxt').textContent = 'Rodando motor de regras...';
   extrairCampos(textos);
-  atualizarLaudoCampos();
-  atualizarLaudoEvidencias();
-  atualizarLaudoSistemas();
 
-  document.getElementById('progBar').style.display='none';
-  document.getElementById('progMsg').textContent='';
-
-  // Resumo da extracao
-  let resumo=[];
-  if(dadosExtraidos.processo) resumo.push(`Processo: <strong>${dadosExtraidos.processo}</strong>`);
-  if(dadosExtraidos.autor) resumo.push(`Autor(a): <strong>${dadosExtraidos.autor}</strong>`);
-  if(dadosExtraidos.cpf) resumo.push(`CPF: <strong>${dadosExtraidos.cpf}</strong>`);
-  if(dadosExtraidos.contratos.length) resumo.push(`Contratos detectados: <strong>${dadosExtraidos.contratos.join(', ')}</strong>`);
-  if(sistemas.length) resumo.push(`Sistemas identificados: <strong>${sistemas.join(', ')}</strong>`);
-
-  if(resumo.length){
-    botMsg('Extracao concluida. Campos identificados automaticamente:<br><br>'+resumo.join('<br>'));
+  // Roda todos os 13 sugestores
+  for (let id = 1; id <= 13; id++) {
+    const s = sugerirItem(id);
+    checklist[id] = { resp: s.resp, ev: s.ev || '', fonte: s.fonte || '', respAuto: s.resp, semRegra: !!s.semRegra, alterado: false };
   }
 
-  // Atualiza data da analise
-  document.getElementById('lData').textContent=new Date().toLocaleDateString('pt-BR');
+  document.getElementById('progFill').style.width = '100%';
+  document.getElementById('progTxt').textContent = 'Concluido.';
+  setTimeout(() => { document.getElementById('progWrap').style.display = 'none'; }, 800);
 
-  faseAtual='checklist';
-  itemAtual=1;
-  perguntarItem(1);
+  // Preenche painel de identificacao
+  preencherIdPanel();
+  // Renderiza tabela
+  renderChecklist();
+  // Mostra accuracy strip
+  document.getElementById('accStrip').style.display = 'flex';
+  atualizarAccuracy();
+
+  document.getElementById('btnAnalisar').disabled = false;
 }
 
-function reportarExtracao(arq){
-  let html=`<strong>${arq.nome}</strong>`;
-  if(arq.tipo_detectado) html+=` <span style="font-size:9px;background:var(--auto-bg);color:var(--ciano-med);padding:1px 6px;border-radius:99px">${arq.tipo_detectado}</span>`;
-  if(arq.texto&&arq.texto.length>10) html+=`<br><span style="font-size:9px;color:var(--chumbo)">${arq.texto.length} caracteres extraidos</span>`;
-  else html+=`<br><span style="font-size:9px;color:var(--err)">Nenhum texto extraido</span>`;
-  botMsg(html);
-}
-
-// ── Perguntar item ────────────────────────────────────────────────────────────
-function perguntarItem(id){
-  if(id>13){ perguntarSubsidios(); return; }
-  itemAtual=id;
-  const sug=sugerirItem(id);
-  const pergunta=PERGUNTAS[id];
-
-  let html=`<strong>Item ${id}/13:</strong> ${pergunta}`;
-
-  if(sug.sem_regra){
-    html+=`<br><br><span style="font-size:10px;color:var(--chumbo)"><em>Sem regra automatica — decisao fica com voce.</em></span>`;
-    if(sug.ev) html+=`<div class="ev-box">${sug.ev}</div>`;
-    botMsg(html);
-    const opts=montarOpcoes(id);
-    adicionarQR(opts);
-  } else if(sug.resp){
-    html+=`<br><br><span style="font-size:10px;font-weight:600">Sugestao automatica: <strong>${sug.resp}</strong></span>`;
-    if(sug.ev) html+=`<div class="ev-box"><strong>Evidencia:</strong> ${sug.ev}${sug.fonte?`<br><strong>Fonte:</strong> ${sug.fonte}`:''}</div>`;
-    if(sug.sugestao_manual) html+=`<span style="font-size:10px;color:var(--amb)">Atencao: a sugestao e Nao mesmo com alegacao encontrada. Verifique se ha prova documental concreta para mudar para Sim.</span>`;
-    botMsg(html,'sugestao');
-    const opts=[
-      {txt:'Confirmar',cls:'qr-btn qr-confirm',fn:`confirmarSugestao(${id},'${sug.resp}','${escJs(sug.ev)}','${escJs(sug.fonte||'')}')`},
-      ...montarOpcoes(id,true),
-    ];
-    adicionarQR(opts);
-  } else {
-    html+=`<br><br><span style="font-size:10px;color:var(--chumbo)"><em>Nenhuma evidencia automatica — escolha abaixo.</em></span>`;
-    botMsg(html);
-    adicionarQR(montarOpcoes(id));
-  }
-}
-
-function montarOpcoes(id,alternativo){
-  const label=alternativo?'Alterar para:':'';
-  const pre=label?`<span style="font-size:10px;color:var(--chumbo)">${label}</span>`:'';
-  const opts=[];
-  opts.push({txt:'Sim',cls:'qr-btn qr-sim',fn:`responderItem(${id},'Sim')`});
-  opts.push({txt:'Nao',cls:'qr-btn qr-nao',fn:`responderItem(${id},'Nao')`});
-  // Pendente disponivel apenas para itens que suportam
-  if([3,6,8,10,11,13].includes(id)) opts.push({txt:'Pendente',cls:'qr-btn qr-pend',fn:`responderItem(${id},'Pendente')`});
-  return opts;
-}
-
-function escJs(s){ return String(s||'').replace(/'/g,"\\'").replace(/\n/g,' '); }
-
-function confirmarSugestao(id,resp,ev,fonte){
-  clearQR();
-  registrarResposta(id,resp,ev,fonte);
-  userMsg(`Confirmado: <strong>${resp}</strong>`);
-  checarRegrasNegocio(id,resp);
-  setTimeout(()=>perguntarItem(id+1),400);
-}
-
-function responderItem(id,resp){
-  clearQR();
-  const sug=sugerirItem(id);
-  const ev=sug.ev||'';
-  const fonte=sug.fonte||'';
-  registrarResposta(id,resp,ev,fonte);
-  userMsg(`<strong>${resp}</strong>`);
-  checarRegrasNegocio(id,resp);
-  setTimeout(()=>perguntarItem(id+1),400);
-}
-
-function registrarResposta(id,resp,ev,fonte){
-  checklist[id]={id,resposta:resp,evidencia:ev,fonte};
-  atualizarLaudoChecklist(id);
-}
-
-function checarRegrasNegocio(id,resp){
-  if(id===1&&resp==='Sim'){
-    botMsg('<strong>Alerta:</strong> Boletim de Ocorrencia presente nos autos. Analise com atencao redobrada.','alerta');
-  }
-  if(id===2&&resp==='Sim'){
-    botMsg('<strong>Regra de negocio:</strong> Item 2 = Sim. Se o resultado final for ACORDO, a causa raiz deve ser alterada para "Vicio de Consentimento" no Benner.','alerta');
-  }
-}
-
-// ── Pergunta final: Subsidios ─────────────────────────────────────────────────
-function perguntarSubsidios(){
-  botMsg('Checklist concluido. Os subsidios para este caso sao <strong>favoraveis</strong> ao Agibank?');
-  adicionarQR([
-    {txt:'Sim — Subsidios Favoraveis (DEFESA)',cls:'qr-btn qr-sim',fn:"definirSubsidios(true)"},
-    {txt:'Nao — Subsidios Desfavoraveis (ACORDO)',cls:'qr-btn qr-nao',fn:"definirSubsidios(false)"},
-  ]);
-}
-
-function definirSubsidios(favoravel){
-  clearQR();
-  userMsg(favoravel?'Sim — Subsidios Favoraveis':'Nao — Subsidios Desfavoraveis');
-  const estrategia=favoravel?'DEFESA':'ACORDO';
-  const opcoes=favoravel
-    ?['SUBSIDIO FAVORAVEL - CONTRATACAO REGULAR','SUBSIDIO FAVORAVEL - GOLPE','SUBSIDIO FAVORAVEL - CARTAO CONSIGNADO COM COMPRAS','SUBSIDIO FAVORAVEL - OPERACAO REGULAR']
-    :['SUBSIDIO DESFAVORAVEL - FRAUDE','SUBSIDIO DESFAVORAVEL - ANALFABETO / INTERDITADO / DOENCA GRAVE','SUBSIDIO DESFAVORAVEL - SEM SUBSIDIOS','SUBSIDIO DESFAVORAVEL - CARTAO CONSIGNADO SEM COMPRAS','SUBSIDIO DESFAVORAVEL - DESCONTOS DUPLICADOS'];
-
-  botMsg(`Estrategia definida: <strong>${estrategia}</strong>. Selecione o resultado:`);
-  adicionarQR(opcoes.map(o=>({txt:o,cls:'qr-btn '+(favoravel?'qr-sim':'qr-nao'),fn:`selecionarResultado('${escJs(o)}','${estrategia}',${favoravel})`})));
-}
-
-function selecionarResultado(resultado,estrategia,favoravel){
-  clearQR();
-  userMsg(resultado);
-  // Preenche laudo
-  document.getElementById('lSubsidios').innerHTML=favoravel?'<span class="laudo-ok">Sim</span>':'<span class="laudo-warn">Nao</span>';
-  document.getElementById('lEstrategia').innerHTML=`<span class="${favoravel?'laudo-ok':'laudo-warn'}">${estrategia}</span>`;
-  document.getElementById('lResultado').textContent=resultado;
-  document.getElementById('lJustificativa').textContent=gerarJustificativa(favoravel);
-
-  document.getElementById('btnExport').disabled=false;
-  botMsg(`Laudo concluido. <strong>${resultado}</strong><br><br>Clique em "Exportar PDF" no painel direito para gerar o documento.`,'ok');
-}
-
-function gerarJustificativa(favoravel){
-  const sim=checklist.slice(1).filter(x=>x&&x.resposta==='Sim').length;
-  const nao=checklist.slice(1).filter(x=>x&&x.resposta==='Nao').length;
-  const pend=checklist.slice(1).filter(x=>x&&x.resposta==='Pendente').length;
-  if(favoravel) return `Documentacao analisada indica contratacao regular: ${sim} itens confirmados positivamente, ${nao} nao confirmados e ${pend} pendentes. A biometria e os dados cadastrais apresentam consistencia com os registros do Agibank.`;
-  return `Analise indica inconsistencias: ${nao} itens nao confirmados e ${pend} pendentes de verificacao, o que nao sustenta a tese de contratacao fraudulenta pelos subsidios disponiveis.`;
-}
-
-// ── Atualizacao do laudo (preview ao vivo) ────────────────────────────────────
-function atualizarLaudoCampos(){
-  const d=dadosExtraidos;
-  const set=(id,val)=>{
-    const el=document.getElementById(id);
-    if(!el) return;
-    el.innerHTML=val?val:'<span class="laudo-vazio">nao confirmado — preencher manualmente</span>';
+function preencherIdPanel(){
+  const d = dadosExtraidos;
+  const set = (id, val, tagId) => {
+    const el = document.getElementById(id);
+    el.value = val || '';
+    const t = document.getElementById(tagId);
+    if (val) { el.classList.add('auto'); t.style.display = 'inline'; }
+    else { el.classList.remove('auto'); t.style.display = 'none'; }
   };
-  set('lProcesso',d.processo);
-  set('lAutor',d.autor);
-  set('lCpf',d.cpf);
-  set('lEndereco',d.endereco);
-  set('lData',new Date().toLocaleDateString('pt-BR'));
+  set('idProcesso', d.processo, 'tagProcesso');
+  set('idAutor', d.autor, 'tagAutor');
+  set('idCpf', d.cpf, 'tagCpf');
+  set('idEndereco', d.endereco, 'tagEndereco');
 
   // Contratos
-  const tbody=document.getElementById('lContratos');
-  if(d.contratos.length){
-    tbody.innerHTML=d.contratos.map((c,i)=>`<tr><td>Contrato ${i+1}</td><td>${c}</td></tr>`).join('');
+  const ct = document.getElementById('idContratos');
+  ct.innerHTML = d.contratos.length
+    ? d.contratos.map(c => `<span class="contrato-chip">${c}</span>`).join('')
+    : '<span style="font-size:10px;color:var(--chumbo)">Nenhum detectado</span>';
+
+  // Sistemas
+  const si = document.getElementById('idSistemas');
+  si.innerHTML = sistemas.length
+    ? sistemas.map(s => `<span class="contrato-chip">${s}</span>`).join('')
+    : '<span style="font-size:10px;color:var(--chumbo)">Nenhum identificado</span>';
+
+  document.getElementById('idData').textContent = new Date().toLocaleDateString('pt-BR');
+  document.getElementById('idPanel').style.display = 'block';
+  document.getElementById('resPanel').style.display = 'block';
+}
+
+function marcarEditado(inputId, tagId){
+  const el = document.getElementById(inputId);
+  el.classList.remove('auto');
+  el.classList.add('editado');
+  const t = document.getElementById(tagId);
+  if (t) { t.className = 'tag tag-edit'; t.textContent = 'EDIT'; t.style.display = 'inline'; }
+}
+
+// Render checklist
+function renderChecklist(){
+  document.getElementById('clTableWrap').style.display = 'block';
+  document.getElementById('resSection').style.display = 'block';
+  const tbody = document.getElementById('clBody');
+  tbody.innerHTML = '';
+  for (let id = 1; id <= 13; id++) {
+    const item = checklist[id];
+    const tr = document.createElement('tr');
+    tr.id = `clRow-${id}`;
+    if (item.alterado) tr.classList.add('alterado');
+    tr.innerHTML = buildRow(id, item);
+    tbody.appendChild(tr);
   }
 }
 
-function atualizarLaudoChecklist(id){
-  const item=checklist[id];
-  if(!item) return;
-  let tr=document.getElementById('lCl-'+id);
-  if(!tr){
-    tr=document.createElement('tr');
-    tr.id='lCl-'+id;
-    document.getElementById('lChecklist').appendChild(tr);
+function buildRow(id, item){
+  const badgeCls = item.resp === 'Sim' ? 'resp-sim' : item.resp === 'Nao' ? 'resp-nao' : item.resp === 'Pendente' ? 'resp-pend' : 'resp-vazio';
+  const badgeTxt = item.resp || 'Clique';
+  const tag = item.semRegra ? '<span class="tag tag-sr">SEM REGRA</span>'
+    : item.alterado ? '<span class="tag tag-alt">ALTERADO</span>'
+    : item.respAuto ? '<span class="tag tag-a">AUTO</span>'
+    : '<span class="tag tag-m">MANUAL</span>';
+  return `
+    <td class="cl-num">${id}</td>
+    <td class="cl-pergunta">${PERGUNTAS[id]}</td>
+    <td>
+      <div class="resp-badge ${badgeCls}" onclick="ciclarResposta(${id})" title="Clique para alterar">
+        ${badgeTxt} <span class="chevron">&#9660;</span>
+      </div>
+    </td>
+    <td>
+      <textarea class="ev-input" rows="2" onchange="atualizarEvidencia(${id},this.value)" title="Edite a evidencia">${item.ev}</textarea>
+      ${item.fonte ? `<div class="cl-fonte">Fonte: ${item.fonte}</div>` : ''}
+    </td>
+    <td style="white-space:nowrap">${tag}</td>
+  `;
+}
+
+function ciclarResposta(id){
+  const item = checklist[id];
+  const ordem = ['Sim', 'Nao', 'Pendente', null];
+  const idx = ordem.indexOf(item.resp);
+  item.resp = ordem[(idx + 1) % ordem.length];
+  item.alterado = item.resp !== item.respAuto;
+  const tr = document.getElementById(`clRow-${id}`);
+  if (item.alterado) tr.classList.add('alterado'); else tr.classList.remove('alterado');
+  tr.innerHTML = buildRow(id, item);
+  atualizarAccuracy();
+}
+
+function atualizarEvidencia(id, val){
+  checklist[id].ev = val;
+}
+
+// Accuracy KPIs
+function atualizarAccuracy(){
+  const items = Object.values(checklist);
+  const auto = items.filter(x => !x.semRegra && x.respAuto && !x.alterado).length;
+  const semRegra = items.filter(x => x.semRegra).length;
+  const alterados = items.filter(x => x.alterado).length;
+  const pct = Math.round(auto / 13 * 100);
+
+  document.getElementById('accAuto').textContent = auto;
+  document.getElementById('accSemRegra').textContent = semRegra;
+  document.getElementById('accAlterados').textContent = alterados;
+  document.getElementById('accPct').textContent = pct + '%';
+  document.getElementById('accBarFill').style.width = pct + '%';
+
+  // Atualiza justificativa
+  const sim = items.filter(x => x.resp === 'Sim').length;
+  const nao = items.filter(x => x.resp === 'Nao').length;
+  const pend = items.filter(x => x.resp === 'Pendente').length;
+  document.getElementById('resJustificativa').textContent =
+    `Checklist: ${sim} itens Sim, ${nao} Nao, ${pend} Pendente. Automatizacao: ${pct}% (${auto}/13 itens por regra). ${alterados > 0 ? `Analista alterou ${alterados} sugestao(oes).` : ''}`;
+}
+
+// Resultado
+function sincronizarSubsidios(val){
+  document.getElementById('resSubsidios').value = val;
+  atualizarOpcoes();
+}
+function atualizarOpcoes(){
+  const val = document.getElementById('resSubsidios').value || document.getElementById('resSubsidios2').value;
+  document.getElementById('resSubsidios').value = val;
+  document.getElementById('resSubsidios2').value = val;
+  const favoravel = val === 'Favoraveis';
+  const opcoes = favoravel
+    ? ['SUBSIDIO FAVORAVEL - CONTRATACAO REGULAR','SUBSIDIO FAVORAVEL - GOLPE','SUBSIDIO FAVORAVEL - CARTAO CONSIGNADO COM COMPRAS','SUBSIDIO FAVORAVEL - OPERACAO REGULAR']
+    : ['SUBSIDIO DESFAVORAVEL - FRAUDE','SUBSIDIO DESFAVORAVEL - ANALFABETO / INTERDITADO / DOENCA GRAVE','SUBSIDIO DESFAVORAVEL - SEM SUBSIDIOS','SUBSIDIO DESFAVORAVEL - CARTAO CONSIGNADO SEM COMPRAS','SUBSIDIO DESFAVORAVEL - DESCONTOS DUPLICADOS'];
+  const optHtml = '<option value="">Selecione...</option>' + opcoes.map(o => `<option value="${o}">${o}</option>`).join('');
+  document.getElementById('resResultado').innerHTML = optHtml;
+  document.getElementById('resResultado2').innerHTML = optHtml;
+}
+
+// Copiar resumo
+function copiarResumo(){
+  const d = dadosExtraidos;
+  let txt = 'ANALISE DE FRAUDE — AGIBANK\nAlegacao de Fraude em Emprestimo Consignado\n' + '='.repeat(50) + '\n\n';
+  txt += `IDENTIFICACAO\nProcesso: ${document.getElementById('idProcesso').value || '—'}\n`;
+  txt += `Autor(a): ${document.getElementById('idAutor').value || '—'}\n`;
+  txt += `CPF: ${document.getElementById('idCpf').value || '—'}\n`;
+  txt += `Data: ${document.getElementById('idData').textContent}\n\n`;
+  txt += `CONTRATOS: ${d.contratos.join(', ') || 'Nenhum'}\n`;
+  txt += `SISTEMAS: ${sistemas.join(', ') || 'Nenhum'}\n\n`;
+  txt += 'CHECKLIST\n';
+  for (let id = 1; id <= 13; id++) {
+    const item = checklist[id];
+    if (!item) continue;
+    txt += `${id}. ${PERGUNTAS[id]}\n   Resposta: ${item.resp || '—'}\n   Evidencia: ${item.ev || '—'}\n`;
+    if (item.alterado) txt += '   [ALTERADO pelo analista]\n';
+    txt += '\n';
   }
-  const bCls=item.resposta==='Sim'?'badge-sim':item.resposta==='Nao'?'badge-nao':'badge-pend';
-  tr.innerHTML=`
-    <td style="text-align:center;color:#888;font-size:10px">${id}</td>
-    <td style="font-size:10.5px">${PERGUNTAS[id]}</td>
-    <td><span class="badge ${bCls}">${item.resposta||'—'}</span></td>
-    <td style="font-size:9.5px;color:var(--chumbo);max-width:160px">${item.evidencia||''}</td>`;
+  const sub = document.getElementById('resSubsidios').value;
+  const res = document.getElementById('resResultado').value;
+  if (sub || res) txt += `RESULTADO\nSubsidios: ${sub || '—'}\nResultado: ${res || '—'}\n`;
+  navigator.clipboard.writeText(txt).catch(() => {});
+  const btn = document.querySelector('.btn-sm-ghost');
+  if (btn) { btn.textContent = 'Copiado!'; setTimeout(() => { btn.textContent = 'Copiar resumo'; }, 2000); }
 }
 
-function atualizarLaudoSistemas(){
-  const tbody=document.getElementById('lSistemas');
-  if(sistemas.length){
-    tbody.innerHTML=sistemas.map(s=>`<tr><td>Sistema</td><td>${s}</td></tr>`).join('');
-  }
-}
-
-function atualizarLaudoEvidencias(){
-  const div=document.getElementById('lEvidencias');
-  if(!arquivos.length){div.innerHTML='<span class="laudo-vazio" style="font-size:11px">Nenhum arquivo</span>';return;}
-  div.innerHTML=arquivos.map(a=>`
-    <div class="ev-laudo">
-      <div class="ev-laudo-nome">${a.nome}</div>
-      <div class="ev-laudo-tipo">${a.tipo_detectado||'Documento sem classificacao automatica'}</div>
-    </div>`).join('');
-}
-
-// ── Exportar / copiar ─────────────────────────────────────────────────────────
-function exportarLaudo(){
-  const el=document.getElementById('laudo');
-  const original=document.body.style.overflow;
-  window.print();
-  document.body.style.overflow=original;
-}
-
-function copiarTexto(){
-  const d=dadosExtraidos;
-  let txt='PARECER DE ANALISE JURIDICA — AGIBANK\nAlegacao de Fraude — Emprestimo Consignado\n'+'='.repeat(55)+'\n\n';
-  txt+=`1. IDENTIFICACAO\nProcesso: ${d.processo||'—'}\nAutor(a): ${d.autor||'—'}\nCPF: ${d.cpf||'—'}\nEndereco: ${d.endereco||'—'}\nData: ${new Date().toLocaleDateString('pt-BR')}\n\n`;
-  txt+=`2. CONTRATOS\n${d.contratos.length?d.contratos.join(', '):'Nenhum detectado'}\n\n`;
-  txt+=`4. CHECKLIST\n`;
-  for(let i=1;i<=13;i++){
-    const item=checklist[i];
-    txt+=`${i}. ${PERGUNTAS[i]}\n   Resposta: ${item?.resposta||'—'}\n`;
-    if(item?.evidencia) txt+=`   Evidencia: ${item.evidencia}\n`;
-    txt+='\n';
-  }
-  txt+=`6. RESULTADO\nSubsidios Favoraveis: ${document.getElementById('lSubsidios').textContent}\n`;
-  txt+=`Estrategia: ${document.getElementById('lEstrategia').textContent}\n`;
-  txt+=`Resultado: ${document.getElementById('lResultado').textContent}\n`;
-  txt+=`Justificativa: ${document.getElementById('lJustificativa').textContent}\n`;
-  navigator.clipboard.writeText(txt).catch(()=>{});
-}
-
-// ── Reiniciar ─────────────────────────────────────────────────────────────────
+// Reiniciar
 function reiniciar(){
-  arquivos=[];
-  dadosExtraidos={processo:null,autor:null,cpf:null,endereco:null,contratos:[]};
-  sistemas=[];
-  checklist=new Array(14).fill(null).map((_,i)=>i===0?null:{id:i,resposta:null,evidencia:'',fonte:''});
-  textoGlobal='';
-  faseAtual='upload';
-  itemAtual=0;
-  document.getElementById('chatMsgs').innerHTML='';
-  document.getElementById('chatInputWrap').style.display='';
-  document.getElementById('filesList').innerHTML='';
-  document.getElementById('btnIniciar').disabled=true;
-  document.getElementById('dropChat').classList.remove('ok','drag');
-  document.getElementById('btnExport').disabled=true;
-  // Reset laudo
-  ['lProcesso','lAutor','lCpf','lEndereco','lData'].forEach(id=>{document.getElementById(id).innerHTML='<span class="laudo-vazio">—</span>';});
-  document.getElementById('lContratos').innerHTML='<tr><td colspan="2"><span class="laudo-vazio">Nenhum contrato detectado</span></td></tr>';
-  document.getElementById('lChecklist').innerHTML='';
-  document.getElementById('lSistemas').innerHTML='<tr><td colspan="2"><span class="laudo-vazio">Nenhum sistema identificado</span></td></tr>';
-  document.getElementById('lEvidencias').innerHTML='<span class="laudo-vazio" style="font-size:11px;padding:6px 0;display:block">Nenhum arquivo anexado</span>';
-  ['lSubsidios','lEstrategia','lResultado','lJustificativa'].forEach(id=>{document.getElementById(id).innerHTML='<span class="laudo-vazio">—</span>';});
-  botBemVindo();
+  arquivos = [];
+  dadosExtraidos = { processo: null, autor: null, cpf: null, endereco: null, contratos: [] };
+  sistemas = [];
+  textoGlobal = '';
+  checklist = {};
+  document.getElementById('filesList').innerHTML = '';
+  document.getElementById('btnAnalisar').disabled = true;
+  document.getElementById('dropZone').classList.remove('ok', 'drag');
+  document.getElementById('progWrap').style.display = 'none';
+  document.getElementById('idPanel').style.display = 'none';
+  document.getElementById('resPanel').style.display = 'none';
+  document.getElementById('accStrip').style.display = 'none';
+  document.getElementById('clTableWrap').style.display = 'none';
+  document.getElementById('clPlaceholder').style.display = 'flex';
+  document.getElementById('resSubsidios').value = '';
+  document.getElementById('resResultado').innerHTML = '<option value="">Selecione subsidios primeiro...</option>';
 }
 
-// ── Boas vindas ───────────────────────────────────────────────────────────────
-function botBemVindo(){
-  botMsg('Ola! Vou ajudar na analise do processo de alegacao de fraude em emprestimo consignado Agibank.<br><br>Importe os documentos disponiveis abaixo — peticao inicial, HISCON/INSS, dossie AppSmith, extrato bancario, prints de Salesforce e outros. Nao e necessario ter todos.<br><br><em>Os campos estruturados (processo, CPF, contratos) serao extraidos automaticamente por regex, sem IA.</em>');
-}
-botBemVindo();
-
-// ── Print CSS ────────────────────────────────────────────────────────────────
-const printStyle=document.createElement('style');
-printStyle.textContent=`@media print{body{overflow:auto!important}.topbar,.main>.col-chat,.preview-toolbar{display:none!important}.col-preview{height:auto;overflow:visible}.laudo-wrap{padding:0}.laudo{box-shadow:none;border-radius:0;width:100%}}`;
-document.head.appendChild(printStyle);
+// Print CSS
+const ps = document.createElement('style');
+ps.textContent = `@media print{body{overflow:auto!important}.topbar,.col-left,.acc-strip-actions,.btn-sm,.ev-input:not(:focus){print-color-adjust:exact}.col-left{display:none!important}.acc-strip-actions{display:none!important}.main{display:block;height:auto;overflow:visible}.col-right{height:auto;overflow:visible}.cl-panel{overflow:visible}}`;
+document.head.appendChild(ps);
 </script>
 </body>
 </html>
