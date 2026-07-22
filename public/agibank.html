@@ -9,164 +9,142 @@
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --verde:#023631; --ciano:#00e5ff; --ciano-med:#2A7C79; --verde-prof:#012824;
-  --chumbo:#4A545E; --off:#ECEFF3; --branco:#fff;
-  --borda:#D8DDE3; --borda-l:#EEF1F5;
-  --vok:#1A7F4B; --vok-bg:#EAF5EE; --vok-b:#b8dfc7;
-  --err:#C0392B; --err-bg:#FEF0EF; --err-b:#f5c6c4;
-  --amb:#92400E; --amb-bg:#FFF8ED; --amb-b:#F4D080;
-  --auto-bg:#EDF6F5; --auto-b:#2A7C79;
-  --info-bg:#EFF6FF; --info-b:#93C5FD; --info:#1D4ED8;
-  --r:8px; --rlg:12px;
-  --shadow:0 1px 4px rgba(2,54,49,.07);
-  --shadow-md:0 2px 12px rgba(2,54,49,.10);
-  --bg:#F0F3F7; --surface:#fff; --text:#1a2421; --border-color:#D8DDE3;
+  --verde:#023631;--ciano:#00e5ff;--ciano-med:#2A7C79;
+  --chumbo:#4A545E;--off:#ECEFF3;--branco:#fff;
+  --borda:#D8DDE3;--borda-l:#EEF1F5;
+  --vok:#1A7F4B;--vok-bg:#EAF5EE;--vok-b:#b8dfc7;
+  --err:#C0392B;--err-bg:#FEF0EF;--err-b:#f5c6c4;
+  --amb:#92400E;--amb-bg:#FFF8ED;--amb-b:#F4D080;
+  --auto-bg:#EDF6F5;--auto-b:#2A7C79;
+  --r:8px;--rlg:12px;
+  --bg:#F0F3F7;--surface:#fff;--text:#1a2421;--border-color:#D8DDE3;
+  /* Agibank official */
+  --agi-blue:#003087;--agi-navy:#001f5b;--agi-light:#e8edf8;
 }
 html.dark{
-  --bg:#0f1117; --surface:#1a1d27; --border-color:#2d3147; --text:#e2e8f0;
-  --branco:#1a1d27; --off:#1e2130; --borda:#2d3147; --borda-l:#2d3147;
-  --chumbo:#94a3b8; --verde:#00e5ff;
+  --bg:#0f1117;--surface:#1a1d27;--border-color:#2d3147;--text:#e2e8f0;
+  --branco:#1a1d27;--off:#1e2130;--borda:#2d3147;--borda-l:#2d3147;
+  --chumbo:#94a3b8;
 }
-@media(prefers-color-scheme:dark){
-  html:not(.light){
-    --bg:#0f1117; --surface:#1a1d27; --border-color:#2d3147; --text:#e2e8f0;
-    --branco:#1a1d27; --off:#1e2130; --borda:#2d3147; --borda-l:#2d3147;
-    --chumbo:#94a3b8; --verde:#00e5ff;
-  }
-}
-body{font-family:'Plus Jakarta Sans',Calibri,sans-serif;font-weight:300;background:var(--bg);color:var(--text);font-size:13px;line-height:1.6;min-height:100vh}
-html.dark input[type=text],html.dark select,html.dark textarea{background:var(--surface);color:var(--text);border-color:var(--border-color)}
+@media(prefers-color-scheme:dark){html:not(.light){
+  --bg:#0f1117;--surface:#1a1d27;--border-color:#2d3147;--text:#e2e8f0;
+  --branco:#1a1d27;--off:#1e2130;--borda:#2d3147;--borda-l:#2d3147;
+  --chumbo:#94a3b8;
+}}
+body{font-family:'Plus Jakarta Sans',Calibri,sans-serif;font-weight:300;background:var(--bg);color:var(--text);font-size:13px;line-height:1.6;min-height:100vh;overflow:hidden}
 html.dark .scard{background:var(--surface);border-color:var(--border-color)}
-html.dark .scard-head{background:var(--off);border-color:var(--border-color)}
-html.dark .drop-zone{background:var(--off);border-color:var(--border-color)}
-html.dark .cl-item{background:var(--surface);border-color:var(--border-color)}
-html.dark .cl-ev{background:var(--off);border-color:var(--border-color)}
 
 /* TOPBAR */
-.topbar{background:var(--verde);height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 28px;position:sticky;top:0;z-index:200;box-shadow:0 2px 12px rgba(0,0,0,.25)}
-.brand{display:flex;align-items:center;gap:12px}
+.topbar{background:var(--verde);height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;z-index:200;box-shadow:0 2px 8px rgba(0,0,0,.25);flex-shrink:0}
+.brand{display:flex;align-items:center;gap:10px}
 .cards-sym{display:flex;flex-direction:column;gap:3px}
 .cards-sym span{display:block;background:#fff;border-radius:2px;height:4px}
 .cards-sym span:nth-child(1){width:20px;opacity:.9}
 .cards-sym span:nth-child(2){width:13px;opacity:.55}
 .cards-sym span:nth-child(3){width:16px;opacity:.72}
-.brand-txt{color:#fff;font-size:15px;font-weight:600;letter-spacing:.2px}
-.brand-div{width:1px;height:18px;background:rgba(255,255,255,.2);margin:0 4px}
-.brand-sub{color:rgba(255,255,255,.5);font-size:11px;font-weight:300}
-.top-actions{display:flex;align-items:center;gap:8px}
-.tbtn{padding:6px 14px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px;transition:all .15s;border:none}
-.tbtn-ghost{background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.2)}
-.tbtn-ghost:hover{background:rgba(255,255,255,.2)}
-#btnDarkMode{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;padding:6px 10px;border-radius:6px;cursor:pointer;font-size:14px;line-height:1;display:flex;align-items:center;gap:5px}
-#btnDarkMode:hover{background:rgba(255,255,255,.2)}
+.brand-txt{color:#fff;font-size:14px;font-weight:600}
+.brand-div{width:1px;height:18px;background:rgba(255,255,255,.2);margin:0 6px}
+.brand-sub{color:rgba(255,255,255,.55);font-size:11px}
+.brand-badge{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.7);font-size:9px;font-weight:600;padding:2px 8px;border-radius:99px;letter-spacing:.5px}
+.top-actions{display:flex;gap:8px;align-items:center}
+.tbtn{padding:5px 12px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);color:#fff}
+.tbtn:hover{background:rgba(255,255,255,.2)}
+#btnDark{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;padding:5px 9px;border-radius:6px;cursor:pointer;font-size:13px}
 
-/* LAYOUT */
-.agi-wrap{padding:28px 32px;max-width:1400px;margin:0 auto}
+/* MAIN LAYOUT */
+.main{display:flex;height:calc(100vh - 54px);overflow:hidden}
 
-/* Cards */
-.scard{background:var(--branco);border:1px solid var(--borda-l);border-radius:var(--rlg);margin-bottom:14px;box-shadow:var(--shadow)}
-.scard-head{display:flex;align-items:center;gap:10px;padding:11px 16px;border-bottom:1px solid var(--borda-l);background:#FAFCFC;border-radius:var(--rlg) var(--rlg) 0 0}
-.scard-ico{width:26px;height:26px;background:linear-gradient(135deg,var(--auto-bg),#d4ece9);border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.scard-ttl{font-size:12px;font-weight:600;color:var(--verde)}
-.scard-sub{font-size:10px;color:var(--chumbo);margin-left:auto}
-.scard-body{padding:14px 16px}
+/* LEFT: CHAT */
+.col-chat{width:400px;flex-shrink:0;display:flex;flex-direction:column;border-right:1px solid var(--borda);background:var(--surface)}
+.chat-header{padding:12px 16px;border-bottom:1px solid var(--borda-l);background:var(--off);flex-shrink:0}
+.chat-causa{font-size:11px;font-weight:700;color:var(--verde);text-transform:uppercase;letter-spacing:.5px}
+.chat-produto{font-size:10px;color:var(--chumbo)}
+.chat-msgs{flex:1;overflow-y:auto;padding:14px 14px 8px;display:flex;flex-direction:column;gap:10px}
+.chat-input-wrap{padding:10px 14px;border-top:1px solid var(--borda-l);flex-shrink:0;background:var(--surface)}
 
-/* Uploads */
-.docs-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-@media(max-width:900px){.docs-grid{grid-template-columns:1fr 1fr}}
-@media(max-width:600px){.docs-grid{grid-template-columns:1fr}}
+/* Mensagens */
+.msg{display:flex;gap:8px;max-width:100%}
+.msg.bot{align-items:flex-start}
+.msg.user{flex-direction:row-reverse}
+.msg-avatar{width:28px;height:28px;border-radius:50%;background:var(--verde);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:11px;font-weight:700;color:#fff}
+.msg-bubble{padding:9px 12px;border-radius:12px;font-size:11px;line-height:1.5;max-width:calc(100% - 40px)}
+.msg.bot .msg-bubble{background:var(--off);border:1px solid var(--borda-l);color:var(--text);border-radius:4px 12px 12px 12px}
+.msg.user .msg-bubble{background:var(--verde);color:#fff;border-radius:12px 4px 12px 12px}
+.msg-bubble.alerta{background:var(--amb-bg);border-color:var(--amb-b);color:var(--amb)}
+.msg-bubble.ok{background:var(--vok-bg);border-color:var(--vok-b);color:var(--vok)}
+.msg-bubble.sugestao{background:var(--auto-bg);border:1px solid var(--auto-b)}
+.ev-box{background:rgba(0,0,0,.04);border-radius:6px;padding:6px 8px;margin-top:6px;font-size:10px;color:var(--chumbo);border-left:3px solid var(--auto-b)}
 
-.drop-zone{border:1.5px dashed var(--borda);border-radius:var(--r);padding:10px 12px;background:var(--off);cursor:pointer;transition:all .15s;position:relative;min-height:64px;display:flex;flex-direction:column;gap:4px}
-.drop-zone:hover,.drop-zone.drag{border-color:var(--ciano-med);background:var(--auto-bg)}
-.drop-zone.ok{border-color:var(--vok-b);background:var(--vok-bg)}
-.dz-lbl{font-size:10px;font-weight:600;color:var(--chumbo);text-transform:uppercase;letter-spacing:.4px;display:flex;align-items:center;gap:5px}
-.dz-sub{font-size:10px;color:var(--chumbo);opacity:.7}
-.dz-files{display:flex;flex-direction:column;gap:2px;margin-top:4px}
-.dz-file{font-size:10px;color:var(--vok);display:flex;align-items:center;gap:4px;font-weight:600}
-.dz-remove{background:none;border:none;cursor:pointer;color:var(--err);font-size:12px;line-height:1;padding:0 2px}
-.dz-input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+/* Quick replies */
+.qr-wrap{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.qr-btn{padding:5px 14px;border-radius:99px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;border:1.5px solid;transition:all .12s}
+.qr-sim{background:var(--vok-bg);color:var(--vok);border-color:var(--vok-b)}
+.qr-sim:hover,.qr-sim.ativo{background:var(--vok);color:#fff}
+.qr-nao{background:var(--err-bg);color:var(--err);border-color:var(--err-b)}
+.qr-nao:hover,.qr-nao.ativo{background:var(--err);color:#fff}
+.qr-pend{background:var(--amb-bg);color:var(--amb);border-color:var(--amb-b)}
+.qr-pend:hover,.qr-pend.ativo{background:var(--amb);color:#fff}
+.qr-confirm{background:var(--verde);color:#fff;border-color:var(--verde)}
+.qr-confirm:hover{background:var(--ciano-med)}
 
-/* Process input */
-.proc-input{display:flex;gap:10px;align-items:center;margin-bottom:14px}
-.proc-input input{flex:1;padding:9px 12px;border:1.5px solid var(--borda);border-radius:var(--r);font-family:inherit;font-size:12px;background:var(--branco);color:var(--text);font-weight:600}
-.proc-input input:focus{outline:none;border-color:var(--ciano-med)}
+/* Drop zone chat */
+.drop-chat{border:1.5px dashed var(--borda);border-radius:var(--r);padding:14px 16px;background:var(--off);cursor:pointer;text-align:center;font-size:11px;color:var(--chumbo);transition:all .15s;position:relative}
+.drop-chat:hover,.drop-chat.drag{border-color:var(--ciano-med);background:var(--auto-bg)}
+.drop-chat.ok{border-color:var(--vok-b);background:var(--vok-bg)}
+.drop-chat input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.file-pill{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;background:var(--surface);border:1px solid var(--borda);border-radius:99px;font-size:10px;color:var(--chumbo);margin:2px}
+.file-rm{background:none;border:none;cursor:pointer;color:var(--err);font-size:11px;padding:0 1px;line-height:1}
+.btn-iniciar{width:100%;padding:9px;background:var(--verde);color:#fff;border:none;border-radius:var(--r);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;margin-top:8px}
+.btn-iniciar:disabled{opacity:.4;cursor:not-allowed}
+.btn-iniciar:not(:disabled):hover{background:var(--ciano-med)}
+.progress-bar{height:4px;background:var(--borda-l);border-radius:99px;overflow:hidden;margin-top:6px}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--ciano-med),var(--ciano));border-radius:99px;transition:width .3s ease}
 
-/* Btn principal */
-.btn-analisar{padding:10px 28px;background:var(--verde);color:#fff;border:none;border-radius:var(--r);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;transition:all .15s;width:100%;justify-content:center}
-.btn-analisar:hover:not(:disabled){background:var(--ciano-med)}
-.btn-analisar:disabled{opacity:.5;cursor:not-allowed}
+/* RIGHT: PREVIEW */
+.col-preview{flex:1;overflow-y:auto;background:#e8eaed;display:flex;flex-direction:column}
+.preview-toolbar{padding:10px 18px;background:var(--surface);border-bottom:1px solid var(--borda);display:flex;align-items:center;gap:10px;flex-shrink:0}
+.preview-title{font-size:12px;font-weight:600;color:var(--verde);flex:1}
+.btn-export{padding:6px 16px;background:var(--verde);color:#fff;border:none;border-radius:6px;font-family:inherit;font-size:11px;font-weight:600;cursor:pointer}
+.btn-export:disabled{opacity:.4;cursor:not-allowed}
+.btn-export:not(:disabled):hover{background:var(--ciano-med)}
+.btn-copy-txt{padding:6px 14px;background:var(--off);border:1px solid var(--borda);border-radius:6px;font-family:inherit;font-size:11px;font-weight:600;cursor:pointer;color:var(--chumbo)}
+.btn-copy-txt:hover{background:var(--borda-l)}
+.laudo-wrap{padding:24px;display:flex;justify-content:center}
 
-/* Progress */
-.progress-wrap{margin:10px 0;display:none}
-.progress-bar{height:5px;background:var(--borda-l);border-radius:99px;overflow:hidden}
-.progress-fill{height:100%;background:linear-gradient(90deg,var(--ciano-med),var(--ciano));border-radius:99px;width:0;transition:width .4s ease}
-.progress-msg{font-size:11px;color:var(--chumbo);margin-top:5px;text-align:center}
+/* LAUDO OFICIAL AGIBANK */
+.laudo{width:720px;background:#fff;box-shadow:0 2px 20px rgba(0,0,0,.12);border-radius:4px;overflow:hidden;font-family:'Plus Jakarta Sans',Arial,sans-serif}
+.laudo-topbar{background:var(--agi-blue);height:14px}
+.laudo-head{background:var(--agi-navy);padding:20px 28px;display:flex;align-items:center;justify-content:space-between}
+.laudo-wordmark{font-size:22px;font-weight:700;color:#fff;letter-spacing:-1px}
+.laudo-wordmark span{color:#00bfff}
+.laudo-head-sub{font-size:10px;color:rgba(255,255,255,.6);text-align:right;line-height:1.4}
+.laudo-body{padding:0 28px 28px}
+.laudo-secao{margin-top:22px}
+.laudo-secao-titulo{font-size:10px;font-weight:700;color:#fff;background:var(--agi-navy);padding:5px 10px;border-radius:3px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:0}
+.laudo-table{width:100%;border-collapse:collapse;font-size:11px}
+.laudo-table tr{border-bottom:1px solid #e8edf8}
+.laudo-table td{padding:6px 10px;vertical-align:top}
+.laudo-table td:first-child{font-weight:600;color:var(--agi-navy);width:38%;background:#f5f7fb}
+.laudo-vazio{color:#aaa;font-style:italic}
+.laudo-ok{color:var(--vok);font-weight:600}
+.laudo-warn{color:var(--err);font-weight:600}
+.laudo-pend{color:var(--amb);font-weight:600}
 
-/* Checklist */
-.cl-grid{display:flex;flex-direction:column;gap:8px}
-.cl-item{border:1px solid var(--borda-l);border-radius:var(--r);overflow:hidden;background:var(--branco)}
-.cl-item.sim{border-left:3px solid var(--vok)}
-.cl-item.nao{border-left:3px solid var(--err)}
-.cl-item.pendente{border-left:3px solid var(--amb)}
-.cl-header{display:flex;align-items:flex-start;gap:10px;padding:10px 14px;cursor:pointer}
-.cl-num{width:22px;height:22px;border-radius:50%;background:var(--off);color:var(--chumbo);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
-.cl-item.sim .cl-num{background:var(--vok-bg);color:var(--vok)}
-.cl-item.nao .cl-num{background:var(--err-bg);color:var(--err)}
-.cl-item.pendente .cl-num{background:var(--amb-bg);color:var(--amb)}
-.cl-pergunta{flex:1;font-size:11px;font-weight:600;color:var(--text)}
-.cl-badge{padding:2px 9px;border-radius:99px;font-size:10px;font-weight:700;flex-shrink:0;align-self:flex-start;margin-top:2px}
-.badge-sim{background:var(--vok-bg);color:var(--vok);border:1px solid var(--vok-b)}
-.badge-nao{background:var(--err-bg);color:var(--err);border:1px solid var(--err-b)}
-.badge-pendente{background:var(--amb-bg);color:var(--amb);border:1px solid var(--amb-b)}
-.cl-body{padding:0 14px 12px 46px;display:none}
-.cl-item.open .cl-body{display:block}
-.cl-ev{background:var(--off);border:1px solid var(--borda-l);border-radius:6px;padding:8px 10px;margin-top:6px;font-size:10px}
-.cl-ev-lbl{font-weight:600;color:var(--chumbo);font-size:9px;text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px}
-.cl-ev-txt{color:var(--text);line-height:1.5;white-space:pre-wrap;word-break:break-word}
-.cl-obs{font-size:10px;color:var(--amb);margin-top:5px;padding:5px 8px;background:var(--amb-bg);border-radius:4px;border:1px solid var(--amb-b)}
-.cl-chevron{font-size:10px;color:var(--chumbo);flex-shrink:0;transition:transform .2s;margin-top:4px}
-.cl-item.open .cl-chevron{transform:rotate(180deg)}
+/* Checklist no laudo */
+.cl-laudo{width:100%;border-collapse:collapse;font-size:10.5px}
+.cl-laudo th{background:#f5f7fb;color:var(--agi-navy);font-weight:700;padding:5px 8px;border-bottom:2px solid var(--agi-light);text-align:left}
+.cl-laudo td{padding:5px 8px;border-bottom:1px solid var(--agi-light);vertical-align:top}
+.cl-laudo td:first-child{font-size:10px;color:#888;text-align:center;width:28px}
+.cl-laudo .badge{padding:1px 7px;border-radius:99px;font-size:9px;font-weight:700}
+.badge-sim{background:#d1fae5;color:#065f46}
+.badge-nao{background:#fee2e2;color:#991b1b}
+.badge-pend{background:#fef3c7;color:#92400e}
+.badge-vazio{background:#f1f5f9;color:#94a3b8}
 
-/* Resultado final */
-.resultado-box{border-radius:var(--rlg);padding:20px 24px;margin-bottom:14px;border:2px solid}
-.resultado-defesa{background:#EAF5EE;border-color:var(--vok)}
-.resultado-acordo{background:var(--err-bg);border-color:var(--err)}
-.resultado-titulo{font-size:16px;font-weight:700;margin-bottom:6px}
-.resultado-defesa .resultado-titulo{color:var(--vok)}
-.resultado-acordo .resultado-titulo{color:var(--err)}
-.resultado-subtitulo{font-size:12px;font-weight:600;margin-bottom:10px}
-.resultado-opcao{font-size:11px;padding:5px 10px;border-radius:6px;margin-bottom:4px;font-weight:600}
-.resultado-defesa .resultado-opcao{background:#d1fae5;color:#065f46}
-.resultado-acordo .resultado-opcao{background:#fee2e2;color:#991b1b}
-.resultado-obs{font-size:11px;color:var(--chumbo);margin-top:10px;padding:8px 10px;background:rgba(0,0,0,.04);border-radius:6px;line-height:1.5}
-
-/* Resumo contadores */
-.cl-resumo{display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap}
-.cl-count{padding:4px 14px;border-radius:99px;font-size:11px;font-weight:600}
-.cl-count.sim{background:var(--vok-bg);color:var(--vok);border:1px solid var(--vok-b)}
-.cl-count.nao{background:var(--err-bg);color:var(--err);border:1px solid var(--err-b)}
-.cl-count.pendente{background:var(--amb-bg);color:var(--amb);border:1px solid var(--amb-b)}
-
-/* Alerta BO */
-.alerta-bo{background:#FFF8ED;border:1px solid #F4D080;border-radius:8px;padding:10px 14px;font-size:11px;color:#92400E;margin-bottom:12px;display:none;font-weight:600}
-
-/* Regra vicio consentimento */
-.alerta-vicio{background:#EFF6FF;border:1px solid #93C5FD;border-radius:8px;padding:10px 14px;font-size:11px;color:#1D4ED8;margin-bottom:12px;display:none;font-weight:600}
-
-/* Btn copy */
-.btn-copy{padding:7px 16px;background:var(--off);border:1px solid var(--borda);border-radius:var(--r);font-family:inherit;font-size:11px;font-weight:600;cursor:pointer;color:var(--chumbo);display:flex;align-items:center;gap:6px}
-.btn-copy:hover{background:var(--borda-l)}
-
-/* Status bar */
-.status-bar{padding:8px 14px;border-radius:8px;font-size:11px;border:1px solid var(--borda-l);background:var(--off);color:var(--chumbo);margin-bottom:12px;display:none}
-.status-bar.erro{background:var(--err-bg);border-color:var(--err-b);color:var(--err)}
-
-/* Tooltip hint */
-.hint{font-size:9px;color:var(--chumbo);opacity:.7;margin-top:3px}
-
-/* Limpar btn */
-.btn-limpar{background:none;border:1px solid var(--borda);border-radius:var(--r);padding:6px 12px;font-family:inherit;font-size:11px;color:var(--chumbo);cursor:pointer}
-.btn-limpar:hover{background:var(--off)}
+/* Evidencias */
+.ev-laudo{background:#f8f9fb;border:1px solid #e2e8f0;border-radius:4px;padding:6px 8px;margin-bottom:6px;font-size:10px}
+.ev-laudo-nome{font-weight:700;color:var(--agi-navy);margin-bottom:2px}
+.ev-laudo-tipo{color:#94a3b8;font-size:9px}
 </style>
 </head>
 <body>
@@ -174,132 +152,120 @@ html.dark .cl-ev{background:var(--off);border-color:var(--border-color)}
 <!-- TOPBAR -->
 <div class="topbar">
   <div class="brand">
-    <div class="cards-sym">
-      <span></span><span></span><span></span>
-    </div>
+    <div class="cards-sym"><span></span><span></span><span></span></div>
     <div class="brand-txt">SBK</div>
     <div class="brand-div"></div>
-    <div class="brand-sub">Agibank — Analise de Fraude</div>
+    <div class="brand-sub">Agibank — Fraude Emprestimo Consignado</div>
+    <div class="brand-badge">MOTOR DE REGRAS</div>
   </div>
   <div class="top-actions">
-    <button class="tbtn tbtn-ghost" onclick="window.close()">Fechar</button>
-    <button id="btnDarkMode" onclick="toggleDark()">&#9790;</button>
+    <button class="tbtn" onclick="reiniciar()">Novo caso</button>
+    <button id="btnDark" onclick="toggleDark()">&#9790;</button>
   </div>
 </div>
 
-<div class="agi-wrap">
+<div class="main">
 
-  <!-- NUMERO DO PROCESSO -->
-  <div class="scard">
-    <div class="scard-head">
-      <div class="scard-ico">
-        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="12" height="12" rx="2"/><path d="M5 8h6M5 5h6M5 11h4"/></svg>
-      </div>
-      <div class="scard-ttl">Dados do Processo</div>
+  <!-- COLUNA CHAT -->
+  <div class="col-chat">
+    <div class="chat-header">
+      <div class="chat-causa">Alegacao de Fraude</div>
+      <div class="chat-produto">Emprestimo Consignado Agibank</div>
     </div>
-    <div class="scard-body">
-      <div class="proc-input">
-        <input type="text" id="inputProcesso" placeholder="Numero do processo (ex: 0802157-07.2026.8.18.0039)" maxlength="60">
-        <button class="btn-limpar" onclick="limparTudo()">Limpar tudo</button>
+    <div class="chat-msgs" id="chatMsgs"></div>
+    <div class="chat-input-wrap" id="chatInputWrap">
+      <div class="drop-chat" id="dropChat" ondragover="dzOver(event)" ondragleave="dzLeave()" ondrop="dzDrop(event)">
+        <div>Arraste os PDFs do processo aqui ou clique para selecionar</div>
+        <div style="font-size:9px;margin-top:3px;opacity:.6">Peticao, HISCON, Dossie AppSmith, Extrato, Salesforce, outros</div>
+        <input type="file" accept=".pdf,.txt,.png,.jpg,.jpeg" multiple onchange="addFiles(this.files)">
       </div>
-      <div class="hint">Opcional — usado apenas para identificar o relatorio gerado.</div>
-    </div>
-  </div>
-
-  <!-- UPLOAD DE DOCUMENTOS -->
-  <div class="scard">
-    <div class="scard-head">
-      <div class="scard-ico">
-        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12V4a1 1 0 011-1h5l3 3v6a1 1 0 01-1 1H4a1 1 0 01-1-1z"/><path d="M9 3v3h3"/></svg>
-      </div>
-      <div class="scard-ttl">Documentos do Processo</div>
-      <div class="scard-sub">Importe os documentos disponíveis — nao e obrigatorio ter todos</div>
-    </div>
-    <div class="scard-body">
-      <div class="docs-grid">
-
-        <div class="drop-zone" id="dz-peticao" ondragover="dzDrag(event,'peticao')" ondragleave="dzLeave('peticao')" ondrop="dzDrop(event,'peticao')">
-          <div class="dz-lbl">Peticao Inicial</div>
-          <div class="dz-sub">PDF da peticao judicial (PJe)</div>
-          <div class="dz-files" id="files-peticao"></div>
-          <input type="file" class="dz-input" accept=".pdf,.txt" multiple onchange="dzAdd(this.files,'peticao')">
-        </div>
-
-        <div class="drop-zone" id="dz-hiscon" ondragover="dzDrag(event,'hiscon')" ondragleave="dzLeave('hiscon')" ondrop="dzDrop(event,'hiscon')">
-          <div class="dz-lbl">HISCON / INSS</div>
-          <div class="dz-sub">Historico de Emprestimo Consignado</div>
-          <div class="dz-files" id="files-hiscon"></div>
-          <input type="file" class="dz-input" accept=".pdf,.txt" multiple onchange="dzAdd(this.files,'hiscon')">
-        </div>
-
-        <div class="drop-zone" id="dz-dossie" ondragover="dzDrag(event,'dossie')" ondragleave="dzLeave('dossie')" ondrop="dzDrop(event,'dossie')">
-          <div class="dz-lbl">Dossie AppSmith</div>
-          <div class="dz-sub">Canal de contratacao, biometria, assinatura</div>
-          <div class="dz-files" id="files-dossie"></div>
-          <input type="file" class="dz-input" accept=".pdf,.txt,.png,.jpg,.jpeg" multiple onchange="dzAdd(this.files,'dossie')">
-        </div>
-
-        <div class="drop-zone" id="dz-extrato" ondragover="dzDrag(event,'extrato')" ondragleave="dzLeave('extrato')" ondrop="dzDrop(event,'extrato')">
-          <div class="dz-lbl">Extrato Bancario Agi</div>
-          <div class="dz-sub">Conta corrente do cliente no Agibank</div>
-          <div class="dz-files" id="files-extrato"></div>
-          <input type="file" class="dz-input" accept=".pdf,.txt" multiple onchange="dzAdd(this.files,'extrato')">
-        </div>
-
-        <div class="drop-zone" id="dz-salesforce" ondragover="dzDrag(event,'salesforce')" ondragleave="dzLeave('salesforce')" ondrop="dzDrop(event,'salesforce')">
-          <div class="dz-lbl">Salesforce / Consumidor.gov</div>
-          <div class="dz-sub">Print de atendimento ou reclamacao</div>
-          <div class="dz-files" id="files-salesforce"></div>
-          <input type="file" class="dz-input" accept=".pdf,.txt,.png,.jpg,.jpeg" multiple onchange="dzAdd(this.files,'salesforce')">
-        </div>
-
-        <div class="drop-zone" id="dz-outros" ondragover="dzDrag(event,'outros')" ondragleave="dzLeave('outros')" ondrop="dzDrop(event,'outros')">
-          <div class="dz-lbl">Outros Documentos</div>
-          <div class="dz-sub">Docs pessoais, comprovante de endereco, BO</div>
-          <div class="dz-files" id="files-outros"></div>
-          <input type="file" class="dz-input" accept=".pdf,.txt,.png,.jpg,.jpeg" multiple onchange="dzAdd(this.files,'outros')">
-        </div>
-
-      </div>
-
-      <div style="margin-top:14px">
-        <div class="progress-wrap" id="progressWrap">
-          <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
-          <div class="progress-msg" id="progressMsg">Aguardando...</div>
-        </div>
-        <div class="status-bar" id="statusBar"></div>
-        <button class="btn-analisar" id="btnAnalisar" onclick="analisar()">Analisar Documentos</button>
-      </div>
+      <div id="filesList" style="margin-top:6px;display:flex;flex-wrap:wrap;gap:2px"></div>
+      <div class="progress-bar" id="progBar" style="display:none"><div class="progress-fill" id="progFill" style="width:0"></div></div>
+      <div id="progMsg" style="font-size:9px;color:var(--chumbo);margin-top:3px;text-align:center"></div>
+      <button class="btn-iniciar" id="btnIniciar" disabled onclick="iniciarChecklist()">Concluir anexos e iniciar checklist</button>
     </div>
   </div>
 
-  <!-- RESULTADO -->
-  <div id="resultadoSection" style="display:none">
+  <!-- COLUNA PREVIEW LAUDO -->
+  <div class="col-preview">
+    <div class="preview-toolbar">
+      <div class="preview-title">Pre-visualizacao do Laudo</div>
+      <button class="btn-copy-txt" onclick="copiarTexto()">Copiar texto</button>
+      <button class="btn-export" id="btnExport" disabled onclick="exportarLaudo()">Exportar PDF</button>
+    </div>
+    <div class="laudo-wrap">
+      <div class="laudo" id="laudo">
 
-    <!-- Alertas -->
-    <div class="alerta-bo" id="alertaBO">Atencao: Boletim de Ocorrencia presente nos autos. Analise com atencao redobrada.</div>
-    <div class="alerta-vicio" id="alertaVicio">Atencao: Resposta 2 = Sim com prova concreta + resultado ACORDO. A causa raiz deve ser alterada para "Vicio de Consentimento" no Benner.</div>
-
-    <!-- Resultado final -->
-    <div id="resultadoFinal"></div>
-
-    <!-- Checklist -->
-    <div class="scard">
-      <div class="scard-head">
-        <div class="scard-ico">
-          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8l2 2 4-4"/><rect x="2" y="2" width="12" height="12" rx="2"/></svg>
+        <div class="laudo-topbar"></div>
+        <div class="laudo-head">
+          <div class="laudo-wordmark">agi<span>bank</span></div>
+          <div class="laudo-head-sub">Parecer de Analise Juridica<br>Alegacao de Fraude — Emprestimo Consignado</div>
         </div>
-        <div class="scard-ttl">Checklist — Alegacao de Fraude em Emprestimo Consignado</div>
-        <div style="margin-left:auto;display:flex;gap:8px">
-          <button class="btn-copy" onclick="copiarRelatorio()">Copiar relatorio</button>
+        <div class="laudo-body">
+
+          <!-- Secao 1 -->
+          <div class="laudo-secao">
+            <div class="laudo-secao-titulo">1. Identificacao do Caso</div>
+            <table class="laudo-table">
+              <tr><td>Processo</td><td id="lProcesso"><span class="laudo-vazio">—</span></td></tr>
+              <tr><td>Autor(a)</td><td id="lAutor"><span class="laudo-vazio">—</span></td></tr>
+              <tr><td>CPF</td><td id="lCpf"><span class="laudo-vazio">—</span></td></tr>
+              <tr><td>Endereco</td><td id="lEndereco"><span class="laudo-vazio">—</span></td></tr>
+              <tr><td>Causa Raiz</td><td>Alegacao de Fraude</td></tr>
+              <tr><td>Produto</td><td>Emprestimo Consignado</td></tr>
+              <tr><td>Data da Analise</td><td id="lData"><span class="laudo-vazio">—</span></td></tr>
+            </table>
+          </div>
+
+          <!-- Secao 2 -->
+          <div class="laudo-secao">
+            <div class="laudo-secao-titulo">2. Contrato(s) Vinculado(s)</div>
+            <table class="laudo-table">
+              <tbody id="lContratos">
+                <tr><td colspan="2"><span class="laudo-vazio">Nenhum contrato detectado</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Secao 4 -->
+          <div class="laudo-secao">
+            <div class="laudo-secao-titulo">4. Checklist de Analise</div>
+            <table class="cl-laudo">
+              <thead><tr><th>#</th><th>Pergunta</th><th>Resposta</th><th>Evidencia</th></tr></thead>
+              <tbody id="lChecklist"></tbody>
+            </table>
+          </div>
+
+          <!-- Secao 5 -->
+          <div class="laudo-secao">
+            <div class="laudo-secao-titulo">5. Sistemas Consultados</div>
+            <table class="laudo-table">
+              <tbody id="lSistemas">
+                <tr><td colspan="2"><span class="laudo-vazio">Nenhum sistema identificado</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Secao 6 -->
+          <div class="laudo-secao">
+            <div class="laudo-secao-titulo">6. Resultado Final</div>
+            <table class="laudo-table">
+              <tr><td>Subsidios Favoraveis</td><td id="lSubsidios"><span class="laudo-vazio">—</span></td></tr>
+              <tr><td>Estrategia</td><td id="lEstrategia"><span class="laudo-vazio">—</span></td></tr>
+              <tr><td>Resultado</td><td id="lResultado"><span class="laudo-vazio">—</span></td></tr>
+              <tr><td>Justificativa</td><td id="lJustificativa"><span class="laudo-vazio">—</span></td></tr>
+            </table>
+          </div>
+
+          <!-- Secao 7 -->
+          <div class="laudo-secao">
+            <div class="laudo-secao-titulo">7. Evidencias — Arquivos Anexados</div>
+            <div id="lEvidencias" style="padding:8px 0"><span class="laudo-vazio" style="font-size:11px;padding:6px 0;display:block">Nenhum arquivo anexado</span></div>
+          </div>
+
         </div>
-      </div>
-      <div class="scard-body">
-        <div class="cl-resumo" id="clResumo"></div>
-        <div class="cl-grid" id="clGrid"></div>
       </div>
     </div>
-
   </div>
 
 </div>
@@ -307,362 +273,563 @@ html.dark .cl-ev{background:var(--off);border-color:var(--border-color)}
 <script>
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-// ── Estado ───────────────────────────────────────────────────────────────────
-const TIPOS = ['peticao','hiscon','dossie','extrato','salesforce','outros'];
-const LABELS = {
-  peticao:    'Peticao Inicial',
-  hiscon:     'HISCON / INSS',
-  dossie:     'Dossie AppSmith',
-  extrato:    'Extrato Bancario Agi',
-  salesforce: 'Salesforce / Consumidor.gov',
-  outros:     'Outros Documentos',
+// ── Estado global ─────────────────────────────────────────────────────────────
+let arquivos = [];        // { file, nome, tipo_detectado, texto }
+let dadosExtraidos = {    // preenchido pelo motor de extracao
+  processo: null, autor: null, cpf: null, endereco: null, contratos: []
 };
-const docs = { peticao:[], hiscon:[], dossie:[], extrato:[], salesforce:[], outros:[] };
+let sistemas = [];        // ['AppSmith', 'HISCON/INSS', ...]
+let checklist = new Array(14).fill(null).map((_,i)=>i===0?null:{id:i,resposta:null,evidencia:'',fonte:''});
+let faseAtual = 'upload'; // 'upload' | 'checklist_N' | 'resultado'
+let itemAtual = 0;
+let textoGlobal = '';     // concatenado de todos os arquivos
 
 // ── Dark mode ─────────────────────────────────────────────────────────────────
 (function(){
-  const stored = localStorage.getItem('agi_theme');
-  if(stored==='dark') document.documentElement.classList.add('dark');
-  else if(!stored && window.matchMedia('(prefers-color-scheme:dark)').matches) document.documentElement.classList.add('dark');
+  const s=localStorage.getItem('agi_theme');
+  if(s==='dark') document.documentElement.classList.add('dark');
+  else if(!s&&window.matchMedia('(prefers-color-scheme:dark)').matches) document.documentElement.classList.add('dark');
 })();
 function toggleDark(){
-  const html = document.documentElement;
-  if(html.classList.contains('dark')){ html.classList.remove('dark'); localStorage.setItem('agi_theme','light'); }
-  else { html.classList.add('dark'); localStorage.setItem('agi_theme','dark'); }
+  const h=document.documentElement;
+  h.classList.toggle('dark');
+  localStorage.setItem('agi_theme',h.classList.contains('dark')?'dark':'light');
 }
 
-// ── Drop zones ────────────────────────────────────────────────────────────────
-function dzDrag(e, tipo){ e.preventDefault(); document.getElementById('dz-'+tipo).classList.add('drag'); }
-function dzLeave(tipo){ document.getElementById('dz-'+tipo).classList.remove('drag'); }
-function dzDrop(e, tipo){ e.preventDefault(); dzLeave(tipo); dzAdd(e.dataTransfer.files, tipo); }
-function dzAdd(files, tipo){
-  [...files].forEach(f => { if(!docs[tipo].find(x=>x.name===f.name)) docs[tipo].push(f); });
-  dzRender(tipo);
+// ── Drop zone ─────────────────────────────────────────────────────────────────
+function dzOver(e){e.preventDefault();document.getElementById('dropChat').classList.add('drag')}
+function dzLeave(){document.getElementById('dropChat').classList.remove('drag')}
+function dzDrop(e){e.preventDefault();dzLeave();addFiles(e.dataTransfer.files)}
+function addFiles(files){
+  [...files].forEach(f=>{if(!arquivos.find(a=>a.nome===f.name)) arquivos.push({file:f,nome:f.name,tipo_detectado:detectarSistema(f.name),texto:null})});
+  renderFiles();
+  document.getElementById('btnIniciar').disabled=arquivos.length===0;
+  document.getElementById('dropChat').classList.toggle('ok',arquivos.length>0);
 }
-function dzRemove(tipo, nome){
-  docs[tipo] = docs[tipo].filter(f=>f.name!==nome);
-  dzRender(tipo);
+function removerArquivo(nome){
+  arquivos=arquivos.filter(a=>a.nome!==nome);
+  renderFiles();
+  document.getElementById('btnIniciar').disabled=arquivos.length===0;
+  document.getElementById('dropChat').classList.toggle('ok',arquivos.length>0);
 }
-function dzRender(tipo){
-  const el = document.getElementById('files-'+tipo);
-  const dz = document.getElementById('dz-'+tipo);
-  el.innerHTML = docs[tipo].map(f=>`
-    <div class="dz-file">
-      <span style="font-size:10px">&#128196;</span>
-      <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${f.name}</span>
-      <button class="dz-remove" onclick="event.stopPropagation();dzRemove('${tipo}','${f.name.replace(/'/g,"\\'")}')">&#10005;</button>
-    </div>`).join('');
-  dz.classList.toggle('ok', docs[tipo].length > 0);
+function renderFiles(){
+  document.getElementById('filesList').innerHTML=arquivos.map(a=>`
+    <span class="file-pill">
+      ${a.tipo_detectado?`<strong>${a.tipo_detectado}:</strong>&nbsp;`:''}${a.nome}
+      <button class="file-rm" onclick="removerArquivo('${a.nome.replace(/'/g,"\\'")}')">&#10005;</button>
+    </span>`).join('');
+}
+
+// ── Deteccao de sistema por nome de arquivo ───────────────────────────────────
+const SISTEMA_REGRAS = [
+  {r:/appsmith/i,s:'AppSmith'},{r:/salesforce/i,s:'Salesforce'},{r:/ged/i,s:'GED'},
+  {r:/conductor/i,s:'Conductor'},{r:/fraud/i,s:'Fraud Prevention'},{r:/matera/i,s:'Matera'},
+  {r:/recupera/i,s:'Recupera'},{r:/biometria|unico/i,s:'Unico Biometria'},
+  {r:/extrato/i,s:'Extrato Bancario'},{r:/hiscon|inss/i,s:'HISCON/INSS'},
+];
+function detectarSistema(nome){
+  const r=SISTEMA_REGRAS.find(x=>x.r.test(nome));
+  return r?r.s:null;
 }
 
 // ── Extracao de texto PDF ─────────────────────────────────────────────────────
-async function extrairPDF(file){
+async function extrairTexto(arq){
+  const f=arq.file;
   try{
-    const buf = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({data:buf}).promise;
-    let txt = '';
-    for(let i=1;i<=Math.min(pdf.numPages,30);i++){
-      const page = await pdf.getPage(i);
-      const content = await page.getTextContent();
-      txt += content.items.map(it=>it.str).join(' ') + '\n';
+    if(f.type==='text/plain') return await f.text();
+    if(!f.name.toLowerCase().endsWith('.pdf')) return `[Imagem: ${f.name}]`;
+    const buf=await f.arrayBuffer();
+    const pdf=await pdfjsLib.getDocument({data:buf}).promise;
+    let txt='';
+    for(let i=1;i<=Math.min(pdf.numPages,40);i++){
+      const p=await pdf.getPage(i);
+      const c=await p.getTextContent();
+      txt+=c.items.map(it=>it.str).join(' ')+'\n';
     }
+    // Limpeza basica
+    txt=txt.replace(/ ,/g,',').replace(/ \./g,'.').replace(/ {2,}/g,' ');
     return txt.trim();
-  } catch(e){ return `[Erro ao ler PDF: ${e.message}]`; }
+  }catch(e){return `[Erro: ${e.message}]`;}
 }
 
-async function extrairArquivo(file){
-  if(file.type==='text/plain') return await file.text();
-  if(file.name.toLowerCase().endsWith('.pdf')) return await extrairPDF(file);
-  // Imagem: retorna aviso (Claude nao recebe imagens aqui via texto)
-  return `[Imagem: ${file.name} — analise visual necessaria pelo analista]`;
-}
+// ── Motor de extracao documental (regex, sem IA) ──────────────────────────────
+function limparTexto(t){ return t.replace(/ ,/g,',').replace(/ \./g,'.').replace(/ {2,}/g,' '); }
 
-// ── Progress ──────────────────────────────────────────────────────────────────
-function setProgress(pct, msg){
-  document.getElementById('progressWrap').style.display='block';
-  document.getElementById('progressFill').style.width=pct+'%';
-  document.getElementById('progressMsg').textContent=msg||'';
-}
-function setStatus(msg, erro){
-  const el=document.getElementById('statusBar');
-  el.style.display='block';
-  el.textContent=msg;
-  el.className='status-bar'+(erro?' erro':'');
-}
-function clearStatus(){ document.getElementById('statusBar').style.display='none'; }
+function extrairCampos(textos){
+  const all=textos.join('\n');
+  textoGlobal=all;
 
-// ── API ───────────────────────────────────────────────────────────────────────
-async function chamarAPI(payload){
-  const token = localStorage.getItem('eagle_token')||'';
-  const resp = await fetch('/api/extrair',{
-    method:'POST',
-    headers:{'Content-Type':'application/json',...(token?{'Authorization':'Bearer '+token}:{})},
-    body: JSON.stringify(payload)
-  });
-  if(!resp.ok){
-    const err = await resp.json().catch(()=>({error:resp.statusText}));
-    throw new Error(err.error||resp.statusText);
-  }
-  return await resp.json();
-}
+  // Numero do processo
+  const mProc=all.match(/\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}/);
+  dadosExtraidos.processo=mProc?mProc[0]:null;
 
-// ── Analise principal ─────────────────────────────────────────────────────────
-async function analisar(){
-  const totalArquivos = TIPOS.reduce((s,t)=>s+docs[t].length,0);
-  if(!totalArquivos){ setStatus('Importe pelo menos um documento antes de analisar.',true); return; }
-
-  clearStatus();
-  document.getElementById('btnAnalisar').disabled=true;
-  document.getElementById('resultadoSection').style.display='none';
-
-  // 1. Extrair texto de todos os arquivos
-  setProgress(10,'Extraindo texto dos documentos...');
-  const blocos = [];
-  let idx=0, total=totalArquivos;
-  for(const tipo of TIPOS){
-    for(const file of docs[tipo]){
-      idx++;
-      setProgress(10+Math.round((idx/total)*40), `Lendo: ${file.name}`);
-      const txt = await extrairArquivo(file);
-      if(txt.trim()) blocos.push(`=== ${LABELS[tipo].toUpperCase()} — ${file.name} ===\n${txt}`);
+  // Nome + CPF (extracao pareada com exclusao)
+  dadosExtraidos.autor=null; dadosExtraidos.cpf=null;
+  const EXCL=/(OUTORGADO|ADVOGAD[OA]|PROCURADOR)/i;
+  const padroes=[
+    /([A-ZÀ-Ü][A-ZÀ-Ü\.\s]{6,70}?),\s*brasileir[ao][^]{0,240}?CPF\s*(?:n[ºo°.]*)?:?\s*(\d{3}\.\d{3}\.\d{3}-\d{2})/gi,
+    /([A-ZÀ-Ü][A-ZÀ-Ü\.\s]{6,70}?)\s*\((\d{3}\.\d{3}\.\d{3}-\d{2})\)/g,
+  ];
+  for(const re of padroes){
+    let m;
+    while((m=re.exec(all))!==null){
+      const antes=all.slice(Math.max(0,m.index-60),m.index);
+      if(!EXCL.test(antes)){
+        dadosExtraidos.autor=m[1].replace(/\s+/g,' ').trim();
+        dadosExtraidos.cpf=m[2];
+        break;
+      }
     }
+    if(dadosExtraidos.cpf) break;
   }
 
-  if(!blocos.length){ setStatus('Nenhum texto extraido dos documentos.',true); document.getElementById('btnAnalisar').disabled=false; return; }
+  // Endereco
+  const mEnd=all.match(/(Rua|Avenida|Av\.)[^\n]{5,140}?CEP[\s:]*\d{2}\.?\d{3}-?\d{3}/i);
+  dadosExtraidos.endereco=mEnd?mEnd[0].replace(/\s+/g,' ').trim():null;
 
-  // 2. Montar prompt
-  setProgress(55,'Enviando para analise pela IA...');
-  const processo = (document.getElementById('inputProcesso').value||'').trim();
+  // Contratos (10 digitos comecando em 1)
+  const mCon=[...new Set((all.match(/\b1\d{9}\b/g)||[]))];
+  dadosExtraidos.contratos=mCon;
 
-  const CHECKLIST_JSON = {
-    "checklist": [
-      {"id":1,"pergunta":"O autor apresenta Boletim de Ocorrencia?","formato_resposta":"Sim/Nao","regra":"Sim somente se um BO estiver anexado aos autos. Ausencia de mencao ou anexo = Nao."},
-      {"id":2,"pergunta":"O autor apresenta evidencias de que e analfabeto, interditado ou portador de doenca grave?","formato_resposta":"Sim/Nao","regra":"A alegacao do advogado na peticao NAO e suficiente. So responder Sim havendo prova concreta: laudo pericial, atestado medico, interdicao judicial ou procuracao publica. Sem prova documental, resposta e Nao."},
-      {"id":3,"pergunta":"A biometria esta legivel e confere com os documentos apresentados?","formato_resposta":"Sim/Nao/Pendente","regra":"Comparar foto da biometria facial (dossie AppSmith) com foto de documento oficial do autor. Se faltarem imagens, responder Pendente."},
-      {"id":4,"pergunta":"Os documentos conferem com os dados cadastrados no Agi?","formato_resposta":"Sim/Nao","regra":"Comparar nome, CPF e endereco entre peticao, HISCON, dossie AppSmith e docs pessoais. Sim se todos os dados batem."},
-      {"id":5,"pergunta":"O cliente possui conta no Agi?","formato_resposta":"Sim/Nao","regra":"Sim quando a conta de recebimento do beneficio/liberacao do credito estiver no Agibank OU em instituicao parceira oficial (ex: Banco Cooperativo Sicoob S.A.)."},
-      {"id":6,"pergunta":"O cliente possui outras acoes contra o Agi?","formato_resposta":"Sim/Nao/Pendente","regra":"Requer consulta ao Benner. Se nao disponivel nos documentos, marcar Pendente."},
-      {"id":7,"pergunta":"Existem passagens anteriores pelos canais de atendimento?","formato_resposta":"Sim/Nao","regra":"Sim se houver print de caso/reclamacao (Salesforce, Consumidor.gov, Ouvidoria). Sem registro, Nao."},
-      {"id":8,"pergunta":"O comprovante de endereco esta atualizado?","formato_resposta":"Sim/Nao","regra":"Sim se emissao recente e endereco bate com a peticao. Se fatura em nome de terceiro, aceitar se houver declaracao de residencia nos autos."},
-      {"id":9,"pergunta":"Alegada irregularidade na inscricao ao SPC?","formato_resposta":"Sim/Nao","regra":"Sim somente se a peticao mencionar negativacao/SPC/Serasa como parte do pedido ou dos fatos."},
-      {"id":10,"pergunta":"O valor liberado foi transferido para terceiros em data proxima ao recebimento?","formato_resposta":"Sim/Nao/Pendente","regra":"Verificar extrato. Sim se houver PIX/TED/DOC para conta de terceiro logo apos o credito. Sem extrato, Pendente."},
-      {"id":11,"pergunta":"Foi a primeira transacao do cliente ou ele ja possuia outros contratos com o Agi?","formato_resposta":"Sim (primeira transacao) / Nao (ja possuia outros contratos)","regra":"Verificar no HISCON se ha contratos anteriores com o Agibank. Se houver, Nao."},
-      {"id":12,"pergunta":"O valor do emprestimo foi recebido na conta Agibank?","formato_resposta":"Sim/Nao","regra":"Sim se o extrato mostrar lancamento do tipo Liberacao de Credito na conta do proprio titular."},
-      {"id":13,"pergunta":"Houve transacoes ou uso do valor com o emprestimo apos o recebimento?","formato_resposta":"Sim/Nao/Pendente","regra":"Sim se o extrato mostrar movimentacao nos dias seguintes ao credito. Sem extrato, Pendente."}
-    ],
-    "arvore_decisao": {
-      "subsidios_favoraveis": "Se a maioria dos itens (biometria, dados cadastrais, historico de contratos) indicar contratacao regular, Subsidios = Sim => estrategia DEFESA",
-      "subsidios_desfavoraveis": "Caso contrario => estrategia ACORDO"
+  // Sistemas
+  sistemas=[...new Set(arquivos.map(a=>a.tipo_detectado).filter(Boolean))];
+}
+
+// ── Motor de sugestao do checklist (regras, sem IA) ──────────────────────────
+function sugerirItem(id){
+  const t=textoGlobal.toLowerCase();
+  const tOrig=textoGlobal;
+  const cpf=dadosExtraidos.cpf;
+
+  if(id===1){
+    const ok=t.includes('boletim de ocorrencia')||t.includes('boletim de ocorrência');
+    if(ok){const src=encontrarFonte('boletim de ocorrencia'); return {resp:'Sim',ev:`Expressao "Boletim de Ocorrencia" localizada no documento.`,fonte:src};}
+    return {resp:'Nao',ev:'Nenhuma mencao a Boletim de Ocorrencia em nenhum dos arquivos.',fonte:'todos os arquivos'};
+  }
+  if(id===2){
+    const achado=/(analfabeto|analfabeta|interditado|interditada|interdicao|interdição|doenca grave|doença grave)/i.test(tOrig);
+    if(achado) return {resp:'Nao',ev:'Alegacao encontrada no texto, mas a regra exige prova documental concreta (laudo, atestado, procuracao publica). Revise se ha documento nos autos que confirme a alegacao.',fonte:encontrarFonte('analfabeto|interditado|doenca grave'),sugestao_manual:true};
+    return {resp:'Nao',ev:'Nenhuma alegacao de analfabetismo, interdicao ou doenca grave localizada.',fonte:'todos os arquivos'};
+  }
+  if(id===3){
+    return {resp:null,ev:'Exige comparacao visual entre a foto da biometria facial (dossie AppSmith) e o documento oficial do autor. Julgamento visual — sem regra automatica.',fonte:null,sem_regra:true};
+  }
+  if(id===4){
+    if(cpf){
+      const ocorrs=arquivos.filter(a=>a.texto&&a.texto.includes(cpf));
+      if(ocorrs.length>=2) return {resp:'Sim',ev:`CPF ${cpf} localizado em ${ocorrs.length} arquivos distintos: ${ocorrs.map(a=>a.nome).join(', ')}.`,fonte:ocorrs.map(a=>a.nome).join(', ')};
     }
+    return {resp:null,ev:'CPF nao encontrado em multiplos arquivos para confirmar conferencia dos dados.',fonte:null};
+  }
+  if(id===5){
+    const ok=/(banco\s*121|agib|sicoob|banco cooperativo sicoob|\b121\b|\b756\b)/i.test(tOrig);
+    if(ok){const src=encontrarFonte('121|756|sicoob|agib'); return {resp:'Sim',ev:'Referencia ao Agibank (codigo 121) ou parceiro Sicoob localizada nos documentos.',fonte:src};}
+    return {resp:null,ev:'Nenhuma referencia ao Agibank ou parceiro oficial localizada.',fonte:null};
+  }
+  if(id===6){
+    return {resp:'Pendente',ev:'Requer consulta direta ao Benner/sistema de cadastro. Nao disponivel nos documentos anexados.',fonte:null,sem_regra:true};
+  }
+  if(id===7){
+    const temSalesforce=sistemas.includes('Salesforce');
+    const menção=/(salesforce|consumidor\.gov|ouvidoria|reclamação|reclamacao)/i.test(tOrig);
+    if(temSalesforce||menção){const src=encontrarFonte('salesforce|consumidor|ouvidoria'); return {resp:'Sim',ev:'Registro de atendimento/reclamacao localizado nos arquivos.',fonte:src};}
+    return {resp:'Nao',ev:'Nenhum print de Salesforce, Consumidor.gov ou Ouvidoria localizado no pacote de documentos.',fonte:'todos os arquivos'};
+  }
+  if(id===8){
+    const temComp=/(comprovante\s*de\s*resid|fatura\s*(de\s*)?(luz|agua|energia)|conta\s*(de\s*)?(luz|agua|energia))/i.test(tOrig);
+    if(temComp){
+      const anoRecente=/(202[5-9]|2030)/i.test(tOrig);
+      if(anoRecente) return {resp:'Sim',ev:'Comprovante de endereco com data recente (2025/2026) localizado.',fonte:encontrarFonte('comprovante|fatura')};
+      return {resp:'Pendente',ev:'Comprovante de endereco encontrado mas data de emissao nao confirmada automaticamente.',fonte:encontrarFonte('comprovante|fatura')};
+    }
+    return {resp:'Pendente',ev:'Nenhum comprovante de endereco identificado no pacote.',fonte:'todos os arquivos'};
+  }
+  if(id===9){
+    const ok=/(spc|serasa|negativação|negativacao)/i.test(tOrig);
+    if(ok){const src=encontrarFonte('spc|serasa'); return {resp:'Sim',ev:'Mencao a SPC/Serasa/negativacao localizada na peticao.',fonte:src};}
+    return {resp:'Nao',ev:'Nenhuma mencao a SPC, Serasa ou negativacao nos documentos.',fonte:'todos os arquivos'};
+  }
+  if(id===10){
+    const janelaPos=janelaPosCredito(tOrig,300);
+    if(janelaPos){
+      const temTransf=/(pix|ted|doc|transferencia|transferência)/i.test(janelaPos);
+      const temProprio=/(compra|saque|cartao|débito|debito)/i.test(janelaPos);
+      if(temTransf) return {resp:'Pendente',ev:'Transferencia (PIX/TED/DOC) detectada apos o credito do emprestimo. Verifique o destinatario manualmente.',fonte:encontrarFonte('extrato|liberacao')};
+      if(temProprio) return {resp:'Nao',ev:'Movimentacao em nome do proprio titular detectada apos o credito (compra/saque/cartao). Sem indicativo de transferencia a terceiros.',fonte:encontrarFonte('extrato|liberacao')};
+    }
+    return {resp:null,ev:'Nao foi possivel localizar o lancamento de liberacao de credito no extrato para analisar a janela de movimentacao.',fonte:null};
+  }
+  if(id===11){
+    const n=dadosExtraidos.contratos.length;
+    if(n>1) return {resp:'Nao',ev:`${n} contratos detectados: ${dadosExtraidos.contratos.join(', ')}. Cliente ja possuia outros contratos.`,fonte:'documentos do processo'};
+    if(n===1) return {resp:'Pendente',ev:`1 contrato detectado (${dadosExtraidos.contratos[0]}). Confirme no HISCON completo se havia contratos anteriores.`,fonte:'documentos do processo'};
+    return {resp:null,ev:'Nenhum numero de contrato detectado automaticamente.',fonte:null};
+  }
+  if(id===12){
+    const ok=/(liberacao\s*de\s*credito|credito\s*emprestimo|crédito\s*empréstimo)/i.test(tOrig);
+    if(ok){const src=encontrarFonte('liberacao|extrato'); return {resp:'Sim',ev:'Lancamento de liberacao de credito localizado no extrato bancario.',fonte:src};}
+    return {resp:null,ev:'Lancamento de liberacao de credito nao localizado no extrato.',fonte:null};
+  }
+  if(id===13){
+    const janelaPos=janelaPosCredito(tOrig,300);
+    if(janelaPos){
+      const tem=/(compra|saque|cartao|pix|ted|debito|débito|pagamento)/i.test(janelaPos);
+      if(tem) return {resp:'Sim',ev:'Movimentacao detectada nos dias seguintes ao credito do emprestimo.',fonte:encontrarFonte('extrato|liberacao')};
+    }
+    return {resp:null,ev:'Nao foi possivel analisar a janela pos-credito no extrato.',fonte:null};
+  }
+  return {resp:null,ev:'',fonte:null};
+}
+
+function encontrarFonte(pattern){
+  const re=new RegExp(pattern,'i');
+  const arq=arquivos.find(a=>a.texto&&re.test(a.texto));
+  return arq?arq.nome:'documentos do processo';
+}
+
+function janelaPosCredito(txt,janela){
+  const re=/(liberacao\s*de\s*credito|credito\s*emprestimo)/i;
+  const m=re.exec(txt);
+  if(!m) return null;
+  return txt.slice(m.index+m[0].length,m.index+m[0].length+janela);
+}
+
+// ── Chat ──────────────────────────────────────────────────────────────────────
+const PERGUNTAS=[null,
+  'O autor apresenta Boletim de Ocorrencia?',
+  'O autor apresenta evidencias de que e analfabeto, interditado ou portador de doenca grave?',
+  'A biometria esta legivel e confere com os documentos apresentados?',
+  'Os documentos conferem com os dados cadastrados no Agi?',
+  'O cliente possui conta no Agi?',
+  'O cliente possui outras acoes contra o Agi?',
+  'Existem passagens anteriores pelos canais de atendimento?',
+  'O comprovante de endereco esta atualizado?',
+  'Alegada irregularidade na inscricao ao SPC?',
+  'O valor liberado foi transferido para terceiros em data proxima ao recebimento?',
+  'Foi a primeira transacao do cliente ou ele ja possuia outros contratos com o Agi?',
+  'O valor do emprestimo foi recebido na conta Agibank?',
+  'Houve transacoes ou uso do valor com o emprestimo apos o recebimento?',
+];
+
+function botMsg(html,classe){
+  const msgs=document.getElementById('chatMsgs');
+  const div=document.createElement('div');
+  div.className='msg bot';
+  div.innerHTML=`<div class="msg-avatar">SBK</div><div class="msg-bubble${classe?' '+classe:''}">${html}</div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop=msgs.scrollHeight;
+}
+function userMsg(texto){
+  const msgs=document.getElementById('chatMsgs');
+  const div=document.createElement('div');
+  div.className='msg user';
+  div.innerHTML=`<div class="msg-bubble">${texto}</div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop=msgs.scrollHeight;
+}
+function clearQR(){document.querySelectorAll('.qr-wrap').forEach(e=>e.remove())}
+
+function adicionarQR(opcoes){
+  const msgs=document.getElementById('chatMsgs');
+  const div=document.createElement('div');
+  div.className='qr-wrap';
+  div.style.paddingLeft='36px';
+  div.innerHTML=opcoes.map(o=>`<button class="qr-btn ${o.cls}" onclick="${o.fn}">${o.txt}</button>`).join('');
+  msgs.appendChild(div);
+  msgs.scrollTop=msgs.scrollHeight;
+}
+
+// ── Iniciar checklist ─────────────────────────────────────────────────────────
+async function iniciarChecklist(){
+  document.getElementById('chatInputWrap').style.display='none';
+  document.getElementById('progBar').style.display='block';
+
+  botMsg('Processando os documentos... aguarde.');
+
+  let idx=0;
+  const textos=[];
+  for(const arq of arquivos){
+    idx++;
+    document.getElementById('progFill').style.width=Math.round((idx/arquivos.length)*100)+'%';
+    document.getElementById('progMsg').textContent=`Lendo: ${arq.nome}`;
+    arq.texto=await extrairTexto(arq);
+    textos.push(`=== ${arq.nome} ===\n${arq.texto}`);
+    reportarExtracao(arq);
+  }
+
+  extrairCampos(textos);
+  atualizarLaudoCampos();
+  atualizarLaudoEvidencias();
+  atualizarLaudoSistemas();
+
+  document.getElementById('progBar').style.display='none';
+  document.getElementById('progMsg').textContent='';
+
+  // Resumo da extracao
+  let resumo=[];
+  if(dadosExtraidos.processo) resumo.push(`Processo: <strong>${dadosExtraidos.processo}</strong>`);
+  if(dadosExtraidos.autor) resumo.push(`Autor(a): <strong>${dadosExtraidos.autor}</strong>`);
+  if(dadosExtraidos.cpf) resumo.push(`CPF: <strong>${dadosExtraidos.cpf}</strong>`);
+  if(dadosExtraidos.contratos.length) resumo.push(`Contratos detectados: <strong>${dadosExtraidos.contratos.join(', ')}</strong>`);
+  if(sistemas.length) resumo.push(`Sistemas identificados: <strong>${sistemas.join(', ')}</strong>`);
+
+  if(resumo.length){
+    botMsg('Extracao concluida. Campos identificados automaticamente:<br><br>'+resumo.join('<br>'));
+  }
+
+  // Atualiza data da analise
+  document.getElementById('lData').textContent=new Date().toLocaleDateString('pt-BR');
+
+  faseAtual='checklist';
+  itemAtual=1;
+  perguntarItem(1);
+}
+
+function reportarExtracao(arq){
+  let html=`<strong>${arq.nome}</strong>`;
+  if(arq.tipo_detectado) html+=` <span style="font-size:9px;background:var(--auto-bg);color:var(--ciano-med);padding:1px 6px;border-radius:99px">${arq.tipo_detectado}</span>`;
+  if(arq.texto&&arq.texto.length>10) html+=`<br><span style="font-size:9px;color:var(--chumbo)">${arq.texto.length} caracteres extraidos</span>`;
+  else html+=`<br><span style="font-size:9px;color:var(--err)">Nenhum texto extraido</span>`;
+  botMsg(html);
+}
+
+// ── Perguntar item ────────────────────────────────────────────────────────────
+function perguntarItem(id){
+  if(id>13){ perguntarSubsidios(); return; }
+  itemAtual=id;
+  const sug=sugerirItem(id);
+  const pergunta=PERGUNTAS[id];
+
+  let html=`<strong>Item ${id}/13:</strong> ${pergunta}`;
+
+  if(sug.sem_regra){
+    html+=`<br><br><span style="font-size:10px;color:var(--chumbo)"><em>Sem regra automatica — decisao fica com voce.</em></span>`;
+    if(sug.ev) html+=`<div class="ev-box">${sug.ev}</div>`;
+    botMsg(html);
+    const opts=montarOpcoes(id);
+    adicionarQR(opts);
+  } else if(sug.resp){
+    html+=`<br><br><span style="font-size:10px;font-weight:600">Sugestao automatica: <strong>${sug.resp}</strong></span>`;
+    if(sug.ev) html+=`<div class="ev-box"><strong>Evidencia:</strong> ${sug.ev}${sug.fonte?`<br><strong>Fonte:</strong> ${sug.fonte}`:''}</div>`;
+    if(sug.sugestao_manual) html+=`<span style="font-size:10px;color:var(--amb)">Atencao: a sugestao e Nao mesmo com alegacao encontrada. Verifique se ha prova documental concreta para mudar para Sim.</span>`;
+    botMsg(html,'sugestao');
+    const opts=[
+      {txt:'Confirmar',cls:'qr-btn qr-confirm',fn:`confirmarSugestao(${id},'${sug.resp}','${escJs(sug.ev)}','${escJs(sug.fonte||'')}')`},
+      ...montarOpcoes(id,true),
+    ];
+    adicionarQR(opts);
+  } else {
+    html+=`<br><br><span style="font-size:10px;color:var(--chumbo)"><em>Nenhuma evidencia automatica — escolha abaixo.</em></span>`;
+    botMsg(html);
+    adicionarQR(montarOpcoes(id));
+  }
+}
+
+function montarOpcoes(id,alternativo){
+  const label=alternativo?'Alterar para:':'';
+  const pre=label?`<span style="font-size:10px;color:var(--chumbo)">${label}</span>`:'';
+  const opts=[];
+  opts.push({txt:'Sim',cls:'qr-btn qr-sim',fn:`responderItem(${id},'Sim')`});
+  opts.push({txt:'Nao',cls:'qr-btn qr-nao',fn:`responderItem(${id},'Nao')`});
+  // Pendente disponivel apenas para itens que suportam
+  if([3,6,8,10,11,13].includes(id)) opts.push({txt:'Pendente',cls:'qr-btn qr-pend',fn:`responderItem(${id},'Pendente')`});
+  return opts;
+}
+
+function escJs(s){ return String(s||'').replace(/'/g,"\\'").replace(/\n/g,' '); }
+
+function confirmarSugestao(id,resp,ev,fonte){
+  clearQR();
+  registrarResposta(id,resp,ev,fonte);
+  userMsg(`Confirmado: <strong>${resp}</strong>`);
+  checarRegrasNegocio(id,resp);
+  setTimeout(()=>perguntarItem(id+1),400);
+}
+
+function responderItem(id,resp){
+  clearQR();
+  const sug=sugerirItem(id);
+  const ev=sug.ev||'';
+  const fonte=sug.fonte||'';
+  registrarResposta(id,resp,ev,fonte);
+  userMsg(`<strong>${resp}</strong>`);
+  checarRegrasNegocio(id,resp);
+  setTimeout(()=>perguntarItem(id+1),400);
+}
+
+function registrarResposta(id,resp,ev,fonte){
+  checklist[id]={id,resposta:resp,evidencia:ev,fonte};
+  atualizarLaudoChecklist(id);
+}
+
+function checarRegrasNegocio(id,resp){
+  if(id===1&&resp==='Sim'){
+    botMsg('<strong>Alerta:</strong> Boletim de Ocorrencia presente nos autos. Analise com atencao redobrada.','alerta');
+  }
+  if(id===2&&resp==='Sim'){
+    botMsg('<strong>Regra de negocio:</strong> Item 2 = Sim. Se o resultado final for ACORDO, a causa raiz deve ser alterada para "Vicio de Consentimento" no Benner.','alerta');
+  }
+}
+
+// ── Pergunta final: Subsidios ─────────────────────────────────────────────────
+function perguntarSubsidios(){
+  botMsg('Checklist concluido. Os subsidios para este caso sao <strong>favoraveis</strong> ao Agibank?');
+  adicionarQR([
+    {txt:'Sim — Subsidios Favoraveis (DEFESA)',cls:'qr-btn qr-sim',fn:"definirSubsidios(true)"},
+    {txt:'Nao — Subsidios Desfavoraveis (ACORDO)',cls:'qr-btn qr-nao',fn:"definirSubsidios(false)"},
+  ]);
+}
+
+function definirSubsidios(favoravel){
+  clearQR();
+  userMsg(favoravel?'Sim — Subsidios Favoraveis':'Nao — Subsidios Desfavoraveis');
+  const estrategia=favoravel?'DEFESA':'ACORDO';
+  const opcoes=favoravel
+    ?['SUBSIDIO FAVORAVEL - CONTRATACAO REGULAR','SUBSIDIO FAVORAVEL - GOLPE','SUBSIDIO FAVORAVEL - CARTAO CONSIGNADO COM COMPRAS','SUBSIDIO FAVORAVEL - OPERACAO REGULAR']
+    :['SUBSIDIO DESFAVORAVEL - FRAUDE','SUBSIDIO DESFAVORAVEL - ANALFABETO / INTERDITADO / DOENCA GRAVE','SUBSIDIO DESFAVORAVEL - SEM SUBSIDIOS','SUBSIDIO DESFAVORAVEL - CARTAO CONSIGNADO SEM COMPRAS','SUBSIDIO DESFAVORAVEL - DESCONTOS DUPLICADOS'];
+
+  botMsg(`Estrategia definida: <strong>${estrategia}</strong>. Selecione o resultado:`);
+  adicionarQR(opcoes.map(o=>({txt:o,cls:'qr-btn '+(favoravel?'qr-sim':'qr-nao'),fn:`selecionarResultado('${escJs(o)}','${estrategia}',${favoravel})`})));
+}
+
+function selecionarResultado(resultado,estrategia,favoravel){
+  clearQR();
+  userMsg(resultado);
+  // Preenche laudo
+  document.getElementById('lSubsidios').innerHTML=favoravel?'<span class="laudo-ok">Sim</span>':'<span class="laudo-warn">Nao</span>';
+  document.getElementById('lEstrategia').innerHTML=`<span class="${favoravel?'laudo-ok':'laudo-warn'}">${estrategia}</span>`;
+  document.getElementById('lResultado').textContent=resultado;
+  document.getElementById('lJustificativa').textContent=gerarJustificativa(favoravel);
+
+  document.getElementById('btnExport').disabled=false;
+  botMsg(`Laudo concluido. <strong>${resultado}</strong><br><br>Clique em "Exportar PDF" no painel direito para gerar o documento.`,'ok');
+}
+
+function gerarJustificativa(favoravel){
+  const sim=checklist.slice(1).filter(x=>x&&x.resposta==='Sim').length;
+  const nao=checklist.slice(1).filter(x=>x&&x.resposta==='Nao').length;
+  const pend=checklist.slice(1).filter(x=>x&&x.resposta==='Pendente').length;
+  if(favoravel) return `Documentacao analisada indica contratacao regular: ${sim} itens confirmados positivamente, ${nao} nao confirmados e ${pend} pendentes. A biometria e os dados cadastrais apresentam consistencia com os registros do Agibank.`;
+  return `Analise indica inconsistencias: ${nao} itens nao confirmados e ${pend} pendentes de verificacao, o que nao sustenta a tese de contratacao fraudulenta pelos subsidios disponiveis.`;
+}
+
+// ── Atualizacao do laudo (preview ao vivo) ────────────────────────────────────
+function atualizarLaudoCampos(){
+  const d=dadosExtraidos;
+  const set=(id,val)=>{
+    const el=document.getElementById(id);
+    if(!el) return;
+    el.innerHTML=val?val:'<span class="laudo-vazio">nao confirmado — preencher manualmente</span>';
   };
+  set('lProcesso',d.processo);
+  set('lAutor',d.autor);
+  set('lCpf',d.cpf);
+  set('lEndereco',d.endereco);
+  set('lData',new Date().toLocaleDateString('pt-BR'));
 
-  const promptSistema = `Voce e um analista juridico especializado em fraudes de emprestimo consignado Agibank.
-Receberá textos extraídos de documentos de um processo judicial e deve preencher um checklist de 13 itens.
-
-REGRAS CRITICAS:
-- Nenhuma pergunta pode ser respondida Sim com base apenas em alegacao textual do advogado. E necessario documento, print ou dado concreto.
-- Para itens com Pendente como opcao: use Pendente quando o documento necessario nao foi anexado ao processo.
-- Seja objetivo e cite o trecho exato que sustenta cada resposta.
-
-FORMATO DE RESPOSTA:
-Responda APENAS com um objeto JSON valido, sem markdown, sem explicacoes fora do JSON, com esta estrutura exata:
-{
-  "processo": "${processo||'nao informado'}",
-  "checklist": [
-    {
-      "id": 1,
-      "resposta": "Sim|Nao|Pendente",
-      "fonte": "nome do documento de origem",
-      "evidencia": "trecho exato ou descricao do dado que sustenta a resposta",
-      "observacao": "nuance importante para o analista revisar (vazio se nao houver)"
-    }
-  ],
-  "resultado": {
-    "subsidios_favoraveis": true,
-    "estrategia": "DEFESA|ACORDO",
-    "opcao_recomendada": "ex: SUBSIDIO FAVORAVEL - CONTRATACAO REGULAR",
-    "justificativa": "resumo de 2-3 linhas explicando a recomendacao",
-    "alerta_bo": true,
-    "alerta_vicio_consentimento": true
+  // Contratos
+  const tbody=document.getElementById('lContratos');
+  if(d.contratos.length){
+    tbody.innerHTML=d.contratos.map((c,i)=>`<tr><td>Contrato ${i+1}</td><td>${c}</td></tr>`).join('');
   }
-}`;
-
-  const promptUsuario = `DOCUMENTOS DO PROCESSO${processo?' '+processo:''}:\n\n${blocos.join('\n\n')}\n\nCHECKLIST A PREENCHER:\n${JSON.stringify(CHECKLIST_JSON,null,2)}\n\nPreencha o checklist baseado exclusivamente nos documentos acima e retorne o JSON.`;
-
-  let resultado;
-  try{
-    setProgress(60,'Aguardando resposta da IA...');
-    const resp = await chamarAPI({ sistema: promptSistema, mensagem: promptUsuario });
-    const raw = resp.texto||resp.resultado||resp.conteudo||'';
-    // Tenta extrair JSON da resposta
-    const match = raw.match(/\{[\s\S]*\}/);
-    if(!match) throw new Error('Resposta da IA nao continha JSON valido.');
-    resultado = JSON.parse(match[0]);
-  }catch(e){
-    setStatus('Erro na analise: '+e.message, true);
-    document.getElementById('btnAnalisar').disabled=false;
-    setProgress(0,'');
-    document.getElementById('progressWrap').style.display='none';
-    return;
-  }
-
-  setProgress(95,'Renderizando resultado...');
-  renderResultado(resultado);
-  setProgress(100,'Analise concluida.');
-  setTimeout(()=>{ document.getElementById('progressWrap').style.display='none'; },1200);
-  document.getElementById('btnAnalisar').disabled=false;
 }
 
-// ── Render ────────────────────────────────────────────────────────────────────
-function renderResultado(data){
-  const sec = document.getElementById('resultadoSection');
-  sec.style.display='block';
+function atualizarLaudoChecklist(id){
+  const item=checklist[id];
+  if(!item) return;
+  let tr=document.getElementById('lCl-'+id);
+  if(!tr){
+    tr=document.createElement('tr');
+    tr.id='lCl-'+id;
+    document.getElementById('lChecklist').appendChild(tr);
+  }
+  const bCls=item.resposta==='Sim'?'badge-sim':item.resposta==='Nao'?'badge-nao':'badge-pend';
+  tr.innerHTML=`
+    <td style="text-align:center;color:#888;font-size:10px">${id}</td>
+    <td style="font-size:10.5px">${PERGUNTAS[id]}</td>
+    <td><span class="badge ${bCls}">${item.resposta||'—'}</span></td>
+    <td style="font-size:9.5px;color:var(--chumbo);max-width:160px">${item.evidencia||''}</td>`;
+}
 
-  const res = data.resultado||{};
-  const cl  = data.checklist||[];
+function atualizarLaudoSistemas(){
+  const tbody=document.getElementById('lSistemas');
+  if(sistemas.length){
+    tbody.innerHTML=sistemas.map(s=>`<tr><td>Sistema</td><td>${s}</td></tr>`).join('');
+  }
+}
 
-  // Alertas
-  document.getElementById('alertaBO').style.display    = res.alerta_bo ? '' : 'none';
-  document.getElementById('alertaVicio').style.display = res.alerta_vicio_consentimento ? '' : 'none';
+function atualizarLaudoEvidencias(){
+  const div=document.getElementById('lEvidencias');
+  if(!arquivos.length){div.innerHTML='<span class="laudo-vazio" style="font-size:11px">Nenhum arquivo</span>';return;}
+  div.innerHTML=arquivos.map(a=>`
+    <div class="ev-laudo">
+      <div class="ev-laudo-nome">${a.nome}</div>
+      <div class="ev-laudo-tipo">${a.tipo_detectado||'Documento sem classificacao automatica'}</div>
+    </div>`).join('');
+}
 
-  // Resultado final
-  const favoravel = res.subsidios_favoraveis;
-  const cls = favoravel ? 'resultado-defesa' : 'resultado-acordo';
-  document.getElementById('resultadoFinal').innerHTML = `
-    <div class="resultado-box ${cls}">
-      <div class="resultado-titulo">${favoravel ? 'Subsidios Favoraveis — ' : 'Subsidios Desfavoraveis — '}${res.estrategia||''}</div>
-      <div class="resultado-subtitulo">${res.opcao_recomendada||''}</div>
-      ${res.justificativa ? `<div class="resultado-obs">${res.justificativa}</div>` : ''}
-    </div>`;
+// ── Exportar / copiar ─────────────────────────────────────────────────────────
+function exportarLaudo(){
+  const el=document.getElementById('laudo');
+  const original=document.body.style.overflow;
+  window.print();
+  document.body.style.overflow=original;
+}
 
-  // Resumo
-  let nSim=0, nNao=0, nPend=0;
-  cl.forEach(item=>{
-    const r=(item.resposta||'').toLowerCase();
-    if(r==='sim'||r.startsWith('sim')) nSim++;
-    else if(r==='nao'||r==='não'||r.startsWith('nao')) nNao++;
-    else nPend++;
-  });
-  document.getElementById('clResumo').innerHTML =
-    `<span class="cl-count sim">Sim: ${nSim}</span>` +
-    `<span class="cl-count nao">Nao: ${nNao}</span>` +
-    `<span class="cl-count pendente">Pendente: ${nPend}</span>`;
-
-  // Itens
-  const PERGUNTAS = [
-    '',
-    'O autor apresenta Boletim de Ocorrencia?',
-    'O autor apresenta evidencias de que e analfabeto, interditado ou portador de doenca grave?',
-    'A biometria esta legivel e confere com os documentos apresentados?',
-    'Os documentos conferem com os dados cadastrados no Agi?',
-    'O cliente possui conta no Agi?',
-    'O cliente possui outras acoes contra o Agi?',
-    'Existem passagens anteriores pelos canais de atendimento?',
-    'O comprovante de endereco esta atualizado?',
-    'Alegada irregularidade na inscricao ao SPC?',
-    'O valor liberado foi transferido para terceiros em data proxima ao recebimento?',
-    'Foi a primeira transacao do cliente ou ele ja possuia outros contratos com o Agi?',
-    'O valor do emprestimo foi recebido na conta Agibank?',
-    'Houve transacoes ou uso do valor com o emprestimo apos o recebimento?',
-  ];
-
-  let html = '';
+function copiarTexto(){
+  const d=dadosExtraidos;
+  let txt='PARECER DE ANALISE JURIDICA — AGIBANK\nAlegacao de Fraude — Emprestimo Consignado\n'+'='.repeat(55)+'\n\n';
+  txt+=`1. IDENTIFICACAO\nProcesso: ${d.processo||'—'}\nAutor(a): ${d.autor||'—'}\nCPF: ${d.cpf||'—'}\nEndereco: ${d.endereco||'—'}\nData: ${new Date().toLocaleDateString('pt-BR')}\n\n`;
+  txt+=`2. CONTRATOS\n${d.contratos.length?d.contratos.join(', '):'Nenhum detectado'}\n\n`;
+  txt+=`4. CHECKLIST\n`;
   for(let i=1;i<=13;i++){
-    const item = cl.find(x=>x.id===i)||{ id:i, resposta:'Pendente', evidencia:'', observacao:'', fonte:'' };
-    const resp = (item.resposta||'Pendente');
-    const respNorm = resp.toLowerCase().startsWith('sim') ? 'sim' : resp.toLowerCase().startsWith('nao')||resp.toLowerCase().startsWith('não') ? 'nao' : 'pendente';
-    const badgeClass = `badge-${respNorm}`;
-    const itemClass = respNorm;
-    const pergunta = PERGUNTAS[i]||item.pergunta||'';
-    html += `
-    <div class="cl-item ${itemClass}" id="cli-${i}">
-      <div class="cl-header" onclick="toggleItem(${i})">
-        <div class="cl-num">${i}</div>
-        <div class="cl-pergunta">${pergunta}</div>
-        <span class="cl-badge ${badgeClass}">${resp}</span>
-        <span class="cl-chevron">&#9660;</span>
-      </div>
-      <div class="cl-body">
-        ${item.fonte ? `<div style="font-size:10px;color:var(--chumbo);margin-bottom:4px"><strong>Fonte:</strong> ${item.fonte}</div>` : ''}
-        ${item.evidencia ? `<div class="cl-ev"><div class="cl-ev-lbl">Evidencia</div><div class="cl-ev-txt">${escHtml(item.evidencia)}</div></div>` : '<div class="cl-ev"><div class="cl-ev-lbl">Evidencia</div><div class="cl-ev-txt" style="opacity:.5">Nenhuma evidencia documental encontrada nos arquivos importados.</div></div>'}
-        ${item.observacao ? `<div class="cl-obs">${escHtml(item.observacao)}</div>` : ''}
-      </div>
-    </div>`;
+    const item=checklist[i];
+    txt+=`${i}. ${PERGUNTAS[i]}\n   Resposta: ${item?.resposta||'—'}\n`;
+    if(item?.evidencia) txt+=`   Evidencia: ${item.evidencia}\n`;
+    txt+='\n';
   }
-  document.getElementById('clGrid').innerHTML = html;
-
-  // Abre o primeiro item com problema
-  const primeiroProblema = cl.find(x=>x.resposta&&(x.resposta.toLowerCase().startsWith('nao')||x.resposta.toLowerCase().startsWith('não')));
-  if(primeiroProblema) toggleItem(primeiroProblema.id);
-
-  sec.scrollIntoView({behavior:'smooth',block:'start'});
+  txt+=`6. RESULTADO\nSubsidios Favoraveis: ${document.getElementById('lSubsidios').textContent}\n`;
+  txt+=`Estrategia: ${document.getElementById('lEstrategia').textContent}\n`;
+  txt+=`Resultado: ${document.getElementById('lResultado').textContent}\n`;
+  txt+=`Justificativa: ${document.getElementById('lJustificativa').textContent}\n`;
+  navigator.clipboard.writeText(txt).catch(()=>{});
 }
 
-function toggleItem(id){
-  document.getElementById('cli-'+id)?.classList.toggle('open');
+// ── Reiniciar ─────────────────────────────────────────────────────────────────
+function reiniciar(){
+  arquivos=[];
+  dadosExtraidos={processo:null,autor:null,cpf:null,endereco:null,contratos:[]};
+  sistemas=[];
+  checklist=new Array(14).fill(null).map((_,i)=>i===0?null:{id:i,resposta:null,evidencia:'',fonte:''});
+  textoGlobal='';
+  faseAtual='upload';
+  itemAtual=0;
+  document.getElementById('chatMsgs').innerHTML='';
+  document.getElementById('chatInputWrap').style.display='';
+  document.getElementById('filesList').innerHTML='';
+  document.getElementById('btnIniciar').disabled=true;
+  document.getElementById('dropChat').classList.remove('ok','drag');
+  document.getElementById('btnExport').disabled=true;
+  // Reset laudo
+  ['lProcesso','lAutor','lCpf','lEndereco','lData'].forEach(id=>{document.getElementById(id).innerHTML='<span class="laudo-vazio">—</span>';});
+  document.getElementById('lContratos').innerHTML='<tr><td colspan="2"><span class="laudo-vazio">Nenhum contrato detectado</span></td></tr>';
+  document.getElementById('lChecklist').innerHTML='';
+  document.getElementById('lSistemas').innerHTML='<tr><td colspan="2"><span class="laudo-vazio">Nenhum sistema identificado</span></td></tr>';
+  document.getElementById('lEvidencias').innerHTML='<span class="laudo-vazio" style="font-size:11px;padding:6px 0;display:block">Nenhum arquivo anexado</span>';
+  ['lSubsidios','lEstrategia','lResultado','lJustificativa'].forEach(id=>{document.getElementById(id).innerHTML='<span class="laudo-vazio">—</span>';});
+  botBemVindo();
 }
 
-function escHtml(s){
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+// ── Boas vindas ───────────────────────────────────────────────────────────────
+function botBemVindo(){
+  botMsg('Ola! Vou ajudar na analise do processo de alegacao de fraude em emprestimo consignado Agibank.<br><br>Importe os documentos disponiveis abaixo — peticao inicial, HISCON/INSS, dossie AppSmith, extrato bancario, prints de Salesforce e outros. Nao e necessario ter todos.<br><br><em>Os campos estruturados (processo, CPF, contratos) serao extraidos automaticamente por regex, sem IA.</em>');
 }
+botBemVindo();
 
-// ── Copiar relatorio ──────────────────────────────────────────────────────────
-function copiarRelatorio(){
-  const processo = (document.getElementById('inputProcesso').value||'nao informado').trim();
-  const items = document.querySelectorAll('.cl-item');
-  let txt = `RELATORIO DE ANALISE — FRAUDE EM EMPRESTIMO CONSIGNADO AGIBANK\n`;
-  txt += `Processo: ${processo}\n${'='.repeat(60)}\n\n`;
-
-  const PERGUNTAS = [
-    '',
-    'O autor apresenta Boletim de Ocorrencia?',
-    'O autor apresenta evidencias de que e analfabeto, interditado ou portador de doenca grave?',
-    'A biometria esta legivel e confere com os documentos apresentados?',
-    'Os documentos conferem com os dados cadastrados no Agi?',
-    'O cliente possui conta no Agi?',
-    'O cliente possui outras acoes contra o Agi?',
-    'Existem passagens anteriores pelos canais de atendimento?',
-    'O comprovante de endereco esta atualizado?',
-    'Alegada irregularidade na inscricao ao SPC?',
-    'O valor liberado foi transferido para terceiros em data proxima ao recebimento?',
-    'Foi a primeira transacao do cliente ou ele ja possuia outros contratos com o Agi?',
-    'O valor do emprestimo foi recebido na conta Agibank?',
-    'Houve transacoes ou uso do valor com o emprestimo apos o recebimento?',
-  ];
-
-  items.forEach(el=>{
-    const id = parseInt(el.id.replace('cli-',''));
-    const badge = el.querySelector('.cl-badge')?.textContent||'';
-    const ev    = el.querySelector('.cl-ev-txt')?.textContent||'';
-    const obs   = el.querySelector('.cl-obs')?.textContent||'';
-    txt += `${id}. ${PERGUNTAS[id]||''}\n   Resposta: ${badge}\n`;
-    if(ev&&!ev.includes('Nenhuma evidencia')) txt += `   Evidencia: ${ev}\n`;
-    if(obs) txt += `   Obs: ${obs}\n`;
-    txt += '\n';
-  });
-
-  const rfEl = document.getElementById('resultadoFinal');
-  if(rfEl){
-    const tit = rfEl.querySelector('.resultado-titulo')?.textContent||'';
-    const opc = rfEl.querySelector('.resultado-subtitulo')?.textContent||'';
-    const just = rfEl.querySelector('.resultado-obs')?.textContent||'';
-    txt += `${'='.repeat(60)}\nRESULTADO FINAL: ${tit}\n${opc}\n${just?just+'\n':''}`;
-  }
-
-  navigator.clipboard.writeText(txt).then(()=>{
-    setStatus('Relatorio copiado para a area de transferencia.');
-    setTimeout(clearStatus,3000);
-  }).catch(()=>{ setStatus('Erro ao copiar. Use Ctrl+A para selecionar manualmente.',true); });
-}
-
-// ── Limpar ────────────────────────────────────────────────────────────────────
-function limparTudo(){
-  TIPOS.forEach(t=>{ docs[t]=[]; dzRender(t); });
-  document.getElementById('inputProcesso').value='';
-  document.getElementById('resultadoSection').style.display='none';
-  document.getElementById('progressWrap').style.display='none';
-  clearStatus();
-}
+// ── Print CSS ────────────────────────────────────────────────────────────────
+const printStyle=document.createElement('style');
+printStyle.textContent=`@media print{body{overflow:auto!important}.topbar,.main>.col-chat,.preview-toolbar{display:none!important}.col-preview{height:auto;overflow:visible}.laudo-wrap{padding:0}.laudo{box-shadow:none;border-radius:0;width:100%}}`;
+document.head.appendChild(printStyle);
 </script>
 </body>
 </html>
