@@ -3354,6 +3354,11 @@ function exportarCampos() {
   a.download = 'eagle_cadastro_' + Date.now() + '.txt';
   a.click();
   URL.revokeObjectURL(url);
+
+  // Salvar no banco automaticamente quando a análise foi concluída e ainda não foi salvo
+  if (textoPeticaoGlobal && !processoIdBanco) {
+    salvarEContabilizar();
+  }
 }
 
 // =============================================
@@ -4865,14 +4870,12 @@ async function salvarEContabilizar() {
       });
     });
 
-    // 3. Enviar validações
-    if (validacoes.length > 0) {
-      await fetch('/api/validar', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ processo_id: processoIdBanco, validacoes })
-      });
-    }
+    // 3. Enviar validações e marcar processo como validado
+    await fetch('/api/validar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ processo_id: processoIdBanco, validacoes })
+    });
 
     // 4. Aprender com campos corrigidos automaticamente
     if (textoPeticaoGlobal) {

@@ -30,7 +30,7 @@ export default async function handler(req, res) {
         LEFT JOIN usuarios u ON u.id = p.usuario_id
         WHERE p.status = 'validado'
         ORDER BY p.data_upload DESC
-        LIMIT 100
+        LIMIT 500
       `,
       sql`
         SELECT campo, COUNT(*)::int AS total,
