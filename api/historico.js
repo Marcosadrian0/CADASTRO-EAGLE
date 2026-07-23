@@ -22,6 +22,15 @@ export default async function handler(req, res) {
   try {
     const sql = neon(DB);
 
+    // Migração: processos com status 'pendente' sem validações registradas
+    // ficam presos invisíveis. Promover todos para 'validado' silenciosamente.
+    await sql`
+      UPDATE processos
+      SET status = 'validado'
+      WHERE status = 'pendente'
+        AND id NOT IN (SELECT DISTINCT processo_id FROM validacoes)
+    `;
+
     const [processos, stats, erros, acuraciaEvolucao, acuraciaFields, acuraciaOperadores, tiposDocumento] = await Promise.all([
       sql`
         SELECT p.id, p.npu, p.arquivo_nome, p.data_upload, p.status, u.nome AS usuario_nome,
