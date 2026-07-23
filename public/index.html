@@ -822,6 +822,59 @@ html.dark .z-info-row{border-color:var(--border-color)}
         </button>
       </div>
     </div>
+    <!-- PAINEL DE REGRAS CUSTOMIZADAS -->
+    <div id="regrasPanel" style="margin-top:32px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+        <div>
+          <div class="acuracia-title" style="font-size:15px">Regras de preenchimento automatico</div>
+          <div class="acuracia-sub" style="margin:0">Quando o documento conter a palavra-chave, os campos definidos sao preenchidos automaticamente.</div>
+        </div>
+        <button onclick="regrasAbrirForm()" style="padding:7px 16px;background:var(--verde);color:#fff;border:none;border-radius:var(--r);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Nova regra</button>
+      </div>
+
+      <!-- Form nova regra (oculto por padrao) -->
+      <div id="regrasForm" style="display:none;background:var(--off);border:1.5px solid var(--borda);border-radius:var(--r);padding:18px;margin-bottom:16px">
+        <div style="font-size:12px;font-weight:700;color:var(--verde);margin-bottom:12px">Nova regra de preenchimento</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+          <div>
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--chumbo);margin-bottom:4px">Descricao da regra</div>
+            <input id="regraDesc" type="text" placeholder="Ex: Debito em conta bancaria" style="width:100%;padding:7px 10px;border:1.5px solid var(--borda);border-radius:6px;font-family:inherit;font-size:12px;outline:none">
+          </div>
+          <div>
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--chumbo);margin-bottom:4px">Palavras-chave no documento (separadas por virgula)</div>
+            <input id="regraGatilho" type="text" placeholder="Ex: desconto na conta, debito indevido, debitou" style="width:100%;padding:7px 10px;border:1.5px solid var(--borda);border-radius:6px;font-family:inherit;font-size:12px;outline:none">
+          </div>
+        </div>
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--chumbo);margin-bottom:6px">Campos a preencher quando a regra for ativada</div>
+        <div id="regraAcoes" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px">
+          <div class="acao-row" style="display:flex;gap:8px;align-items:center">
+            <select class="acao-campo" style="flex:1;padding:6px 8px;border:1.5px solid var(--borda);border-radius:6px;font-family:inherit;font-size:11px;outline:none;background:var(--surface)">
+              <option value="">Selecione o campo...</option>
+              <option value="causa_raiz">Causa raiz</option>
+              <option value="objeto_principal">Objeto principal</option>
+              <option value="desconto_conta">Desconto em conta</option>
+              <option value="rito">Rito</option>
+              <option value="fase_processual">Fase processual</option>
+              <option value="tipo_documento">Tipo de documento</option>
+              <option value="pedido">Pedido</option>
+            </select>
+            <input class="acao-valor" type="text" placeholder="Valor a preencher" style="flex:1.5;padding:6px 8px;border:1.5px solid var(--borda);border-radius:6px;font-family:inherit;font-size:11px;outline:none">
+            <button onclick="this.closest('.acao-row').remove()" style="background:none;border:none;color:var(--err);cursor:pointer;font-size:14px;padding:0 4px;flex-shrink:0">x</button>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button onclick="regraAddAcao()" style="padding:5px 12px;border:1.5px solid var(--borda);border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;background:var(--surface);color:var(--chumbo)">Adicionar campo</button>
+          <button onclick="regrasSalvar()" style="padding:5px 14px;background:var(--verde);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">Salvar regra</button>
+          <button onclick="document.getElementById('regrasForm').style.display='none'" style="padding:5px 12px;border:1.5px solid var(--borda);border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;background:var(--surface);color:var(--chumbo)">Cancelar</button>
+        </div>
+      </div>
+
+      <!-- Lista de regras -->
+      <div id="regrasList" style="display:flex;flex-direction:column;gap:8px">
+        <div style="font-size:11px;color:var(--chumbo);text-align:center;padding:20px 0">Carregando regras...</div>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -1738,6 +1791,8 @@ function capturarValoresIA() {
   });
   // Mostrar botão Salvar após análise
   document.getElementById('btnSalvarProcesso').style.display = 'inline-flex';
+  // Aplicar regras customizadas sobre o texto extraído
+  if (textoPeticaoGlobal && _regrasCache.length) aplicarRegrasCustom(textoPeticaoGlobal);
 }
 
 let reuCount = 0;
@@ -4247,6 +4302,8 @@ function mostrarLogin() {
 function aplicarSessao(user) {
   document.getElementById('loginOverlay').style.display = 'none';
   document.getElementById('tabBar').style.display = 'flex';
+  // Pré-carregar regras customizadas para aplicação durante análise
+  regrasCarregar();
   document.getElementById('userMenuWrap').style.display = 'block';
   document.getElementById('topUserName').textContent = user.nome;
   document.getElementById('menuUserNome').textContent = user.nome;
@@ -4368,7 +4425,7 @@ function mudarAba(aba) {
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   document.getElementById('tab-' + aba).classList.add('active');
   document.getElementById('panel-' + aba).classList.add('active');
-  if (aba === 'acuracia') carregarAcuracia();
+  if (aba === 'acuracia') { carregarAcuracia(); regrasCarregar(); }
   if (aba === 'usuarios') carregarUsuarios();
   if (aba === 'faturamento') fatInit();
   if (aba === 'dashboard') dashRender();
@@ -7211,6 +7268,153 @@ async function dashRender(mkOverride) {
         agiCardEl.innerHTML = dashCard('Agibank — historico', '<p style="font-size:11px;color:var(--chumbo);text-align:center;padding:20px 0">Historico indisponivel. Acesse o ambiente Agibank primeiro.</p>', null);
       }
     })();
+  }
+}
+
+// =====================================================================
+// REGRAS DE PREENCHIMENTO CUSTOMIZADAS
+// =====================================================================
+let _regrasCache = [];
+
+async function regrasCarregar() {
+  const el = document.getElementById('regrasList');
+  if (!el) return;
+  try {
+    const r = await fetch('/api/regras?token=' + encodeURIComponent(sessaoToken));
+    if (!r.ok) { el.innerHTML = '<div style="font-size:11px;color:var(--err);text-align:center;padding:12px 0">Erro ao carregar regras.</div>'; return; }
+    _regrasCache = await r.json();
+    regrasRenderizar(_regrasCache);
+  } catch(e) {
+    el.innerHTML = '<div style="font-size:11px;color:var(--err);text-align:center;padding:12px 0">Erro: ' + e.message + '</div>';
+  }
+}
+
+function regrasRenderizar(lista) {
+  const el = document.getElementById('regrasList');
+  if (!el) return;
+  if (!lista || lista.length === 0) {
+    el.innerHTML = '<div style="font-size:11px;color:var(--chumbo);text-align:center;padding:20px 0;border:1.5px dashed var(--borda);border-radius:var(--r)">Nenhuma regra cadastrada. Clique em "Nova regra" para comecar.</div>';
+    return;
+  }
+  const CAMPO_MAP = {
+    causa_raiz: 'Causa raiz', objeto_principal: 'Objeto principal',
+    desconto_conta: 'Desconto em conta', rito: 'Rito',
+    fase_processual: 'Fase processual', tipo_documento: 'Tipo de documento', pedido: 'Pedido'
+  };
+  el.innerHTML = lista.map(r => {
+    const acoes = (r.acoes || []).map(a => `<span style="background:var(--auto-bg);color:var(--ciano-med);border:1px solid var(--auto-b);border-radius:99px;padding:1px 8px;font-size:10px;font-weight:600">${CAMPO_MAP[a.campo]||a.campo}: ${a.valor}</span>`).join(' ');
+    const corAtivo = r.ativo ? 'var(--vok)' : 'var(--chumbo)';
+    return `<div style="background:var(--surface);border:1.5px solid ${r.ativo ? 'var(--borda)' : 'var(--borda-l)'};border-radius:var(--r);padding:14px 16px;opacity:${r.ativo ? 1 : .6}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap">
+        <div style="flex:1">
+          <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px">${r.descricao}</div>
+          <div style="font-size:10px;color:var(--chumbo);margin-bottom:8px">Gatilho: <span style="font-family:monospace;background:var(--off);padding:1px 6px;border-radius:4px">${r.gatilho}</span></div>
+          <div style="display:flex;flex-wrap:wrap;gap:4px">${acoes}</div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;flex-shrink:0">
+          <button onclick="regraToggle(${r.id},${!r.ativo})" style="padding:4px 10px;border:1.5px solid ${corAtivo};border-radius:6px;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;background:transparent;color:${corAtivo}">${r.ativo ? 'Ativa' : 'Inativa'}</button>
+          <button onclick="regraExcluir(${r.id})" style="padding:4px 8px;border:1.5px solid var(--borda);border-radius:6px;font-size:10px;cursor:pointer;font-family:inherit;background:transparent;color:var(--err)">Excluir</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function regrasAbrirForm() {
+  document.getElementById('regrasForm').style.display = 'block';
+  document.getElementById('regraDesc').focus();
+}
+
+function regraAddAcao() {
+  const CAMPO_MAP = {
+    causa_raiz: 'Causa raiz', objeto_principal: 'Objeto principal',
+    desconto_conta: 'Desconto em conta', rito: 'Rito',
+    fase_processual: 'Fase processual', tipo_documento: 'Tipo de documento', pedido: 'Pedido'
+  };
+  const opts = Object.entries(CAMPO_MAP).map(([v, l]) => `<option value="${v}">${l}</option>`).join('');
+  const div = document.createElement('div');
+  div.className = 'acao-row';
+  div.style.cssText = 'display:flex;gap:8px;align-items:center';
+  div.innerHTML = `<select class="acao-campo" style="flex:1;padding:6px 8px;border:1.5px solid var(--borda);border-radius:6px;font-family:inherit;font-size:11px;outline:none;background:var(--surface)"><option value="">Selecione o campo...</option>${opts}</select><input class="acao-valor" type="text" placeholder="Valor a preencher" style="flex:1.5;padding:6px 8px;border:1.5px solid var(--borda);border-radius:6px;font-family:inherit;font-size:11px;outline:none"><button onclick="this.closest('.acao-row').remove()" style="background:none;border:none;color:var(--err);cursor:pointer;font-size:14px;padding:0 4px;flex-shrink:0">x</button>`;
+  document.getElementById('regraAcoes').appendChild(div);
+}
+
+async function regrasSalvar() {
+  const descricao = document.getElementById('regraDesc').value.trim();
+  const gatilho = document.getElementById('regraGatilho').value.trim();
+  if (!descricao || !gatilho) { alert('Preencha a descricao e as palavras-chave.'); return; }
+  const acoes = [];
+  document.querySelectorAll('#regraAcoes .acao-row').forEach(row => {
+    const campo = row.querySelector('.acao-campo').value;
+    const valor = row.querySelector('.acao-valor').value.trim();
+    if (campo && valor) acoes.push({ campo, valor });
+  });
+  if (acoes.length === 0) { alert('Adicione ao menos um campo para preencher.'); return; }
+  try {
+    const r = await fetch('/api/regras', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: sessaoToken, descricao, gatilho, acoes })
+    });
+    if (!r.ok) { const d = await r.json(); alert('Erro: ' + (d.error || 'Falha ao salvar.')); return; }
+    document.getElementById('regraDesc').value = '';
+    document.getElementById('regraGatilho').value = '';
+    document.querySelector('#regraAcoes .acao-valor').value = '';
+    document.querySelector('#regraAcoes .acao-campo').value = '';
+    document.getElementById('regrasForm').style.display = 'none';
+    regrasCarregar();
+  } catch(e) { alert('Erro: ' + e.message); }
+}
+
+async function regraToggle(id, ativo) {
+  await fetch('/api/regras', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token: sessaoToken, id, ativo })
+  });
+  regrasCarregar();
+}
+
+async function regraExcluir(id) {
+  if (!confirm('Excluir esta regra?')) return;
+  await fetch('/api/regras', {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token: sessaoToken, id })
+  });
+  regrasCarregar();
+}
+
+// Aplica regras ativas ao texto do documento e preenche os campos correspondentes
+async function aplicarRegrasCustom(texto) {
+  if (!texto || !_regrasCache.length) return;
+  const txtNorm = texto.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  let aplicadas = 0;
+  _regrasCache.filter(r => r.ativo).forEach(regra => {
+    const palavras = regra.gatilho.split(',').map(p => p.trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')).filter(Boolean);
+    const ativou = palavras.some(p => txtNorm.includes(p));
+    if (!ativou) return;
+    (regra.acoes || []).forEach(acao => {
+      const el = document.getElementById('f_' + acao.campo);
+      if (!el) return;
+      el.value = acao.valor;
+      // Marcar campo como editado (para acurácia)
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+      aplicadas++;
+    });
+  });
+  if (aplicadas > 0) {
+    // Notificar o analista que regras foram aplicadas
+    const bar = document.getElementById('salvarStatusBar');
+    const msg = document.getElementById('salvarStatusMsg');
+    if (bar && msg) {
+      bar.style.background = 'var(--auto-bg)';
+      bar.style.borderColor = 'var(--auto-b)';
+      bar.style.color = 'var(--ciano-med)';
+      bar.style.display = 'flex';
+      msg.textContent = 'Regras de preenchimento aplicadas (' + aplicadas + ' campo(s) preenchido(s) automaticamente).';
+      setTimeout(() => { bar.style.display = 'none'; }, 5000);
+    }
   }
 }
 
