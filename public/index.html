@@ -822,6 +822,59 @@ html.dark .z-info-row{border-color:var(--border-color)}
         </button>
       </div>
     </div>
+    <!-- PAINEL DE REGRAS CUSTOMIZADAS -->
+    <div id="regrasPanel" style="margin-top:32px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+        <div>
+          <div class="acuracia-title" style="font-size:15px">Regras de preenchimento automatico</div>
+          <div class="acuracia-sub" style="margin:0">Quando o documento conter a palavra-chave, os campos definidos sao preenchidos automaticamente.</div>
+        </div>
+        <button onclick="regrasAbrirForm()" style="padding:7px 16px;background:var(--verde);color:#fff;border:none;border-radius:var(--r);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Nova regra</button>
+      </div>
+
+      <!-- Form nova regra (oculto por padrao) -->
+      <div id="regrasForm" style="display:none;background:var(--off);border:1.5px solid var(--borda);border-radius:var(--r);padding:18px;margin-bottom:16px">
+        <div style="font-size:12px;font-weight:700;color:var(--verde);margin-bottom:12px">Nova regra de preenchimento</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+          <div>
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--chumbo);margin-bottom:4px">Descricao da regra</div>
+            <input id="regraDesc" type="text" placeholder="Ex: Debito em conta bancaria" style="width:100%;padding:7px 10px;border:1.5px solid var(--borda);border-radius:6px;font-family:inherit;font-size:12px;outline:none">
+          </div>
+          <div>
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--chumbo);margin-bottom:4px">Palavras-chave no documento (separadas por virgula)</div>
+            <input id="regraGatilho" type="text" placeholder="Ex: desconto na conta, debito indevido, debitou" style="width:100%;padding:7px 10px;border:1.5px solid var(--borda);border-radius:6px;font-family:inherit;font-size:12px;outline:none">
+          </div>
+        </div>
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--chumbo);margin-bottom:6px">Campos a preencher quando a regra for ativada</div>
+        <div id="regraAcoes" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px">
+          <div class="acao-row" style="display:flex;gap:8px;align-items:center">
+            <select class="acao-campo" style="flex:1;padding:6px 8px;border:1.5px solid var(--borda);border-radius:6px;font-family:inherit;font-size:11px;outline:none;background:var(--surface)">
+              <option value="">Selecione o campo...</option>
+              <option value="causa_raiz">Causa raiz</option>
+              <option value="objeto_principal">Objeto principal</option>
+              <option value="desconto_conta">Desconto em conta</option>
+              <option value="rito">Rito</option>
+              <option value="fase_processual">Fase processual</option>
+              <option value="tipo_documento">Tipo de documento</option>
+              <option value="pedido">Pedido</option>
+            </select>
+            <input class="acao-valor" type="text" placeholder="Valor a preencher" style="flex:1.5;padding:6px 8px;border:1.5px solid var(--borda);border-radius:6px;font-family:inherit;font-size:11px;outline:none">
+            <button onclick="this.closest('.acao-row').remove()" style="background:none;border:none;color:var(--err);cursor:pointer;font-size:14px;padding:0 4px;flex-shrink:0">x</button>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button onclick="regraAddAcao()" style="padding:5px 12px;border:1.5px solid var(--borda);border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;background:var(--surface);color:var(--chumbo)">Adicionar campo</button>
+          <button onclick="regrasSalvar()" style="padding:5px 14px;background:var(--verde);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">Salvar regra</button>
+          <button onclick="document.getElementById('regrasForm').style.display='none'" style="padding:5px 12px;border:1.5px solid var(--borda);border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;background:var(--surface);color:var(--chumbo)">Cancelar</button>
+        </div>
+      </div>
+
+      <!-- Lista de regras -->
+      <div id="regrasList" style="display:flex;flex-direction:column;gap:8px">
+        <div style="font-size:11px;color:var(--chumbo);text-align:center;padding:20px 0">Carregando regras...</div>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -859,6 +912,7 @@ html.dark .z-info-row{border-color:var(--border-color)}
       <div class="fat-kpi" onclick="fatAbrirCadastradosOutros()" title="Clique para ver os processos cadastrados por outros" style="cursor:pointer;border-color:#FDE68A;background:#FFFBEB"><div class="fat-kpi-val" id="fatKpiOutros" style="color:#B45309">—</div><div class="fat-kpi-lbl">Cadastrados Outros</div><div style="font-size:9px;color:#B45309;margin-top:4px;opacity:.8">clique para ver</div></div>
       <div class="fat-kpi fat-kpi-warn" onclick="fatAbrirSemCadastro()" title="Clique para ver e gerenciar os casos sem cadastro"><div class="fat-kpi-val" id="fatKpiSemCad">—</div><div class="fat-kpi-lbl">Sem cadastro</div><div style="font-size:9px;color:var(--err);margin-top:4px;opacity:.8">clique para gerenciar</div></div>
       <div class="fat-kpi fat-kpi-dupl" onclick="fatAbrirDuplBase()" title="Clique para analisar os processos em duplicidade na base iiLex"><div class="fat-kpi-val" id="fatKpiDuplBase" style="color:#7c3aed">—</div><div class="fat-kpi-lbl">Duplicidade iiLex</div><div style="font-size:9px;color:#7c3aed;margin-top:4px;opacity:.8">clique para avaliar</div></div>
+      <div class="fat-kpi" onclick="fatVerificarQualidadeBase()" title="Clique para verificar inconsistencias de justica e escritorio na base iiLex" style="cursor:pointer;border-color:#FCA5A5;background:#FEF2F2"><div class="fat-kpi-val" id="fatKpiQualidade" style="color:#DC2626">—</div><div class="fat-kpi-lbl">Qualidade iiLex</div><div style="font-size:9px;color:#DC2626;margin-top:4px;opacity:.8">clique para verificar</div></div>
     </div>
 
     <!-- GRÁFICOS -->
@@ -1031,6 +1085,24 @@ html.dark .z-info-row{border-color:var(--border-color)}
     <!-- Lista de sem cadastro -->
     <div id="fatSemCadLista" style="max-height:500px;overflow-y:auto">
       <p style="font-size:11px;color:var(--chumbo)">Carregando...</p>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL QUALIDADE IILEX -->
+<div class="fat-modal" id="fatModalQualidade" onclick="if(event.target===this)document.getElementById('fatModalQualidade').classList.remove('open')">
+  <div class="fat-modal-box" style="max-width:900px">
+    <div class="fat-modal-hdr">
+      <div class="fat-modal-ttl">Qualidade da base iiLex</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="fat-btn fat-btn-ghost" style="font-size:11px;padding:6px 12px" onclick="fatExportarQualidade()">Exportar lista (.xlsx)</button>
+        <button class="fat-modal-close" onclick="document.getElementById('fatModalQualidade').classList.remove('open')">&#xd7;</button>
+      </div>
+    </div>
+    <p style="font-size:11px;color:var(--chumbo);margin:0 0 6px">Verifica se casos trabalhistas estao com escritorio Debellis e se a justica da planilha bate com o digito J do NPU.</p>
+    <div id="fatQualidadeResumo" style="font-size:12px;margin-bottom:10px;font-weight:600"></div>
+    <div id="fatQualidadeLista" style="max-height:520px;overflow-y:auto">
+      <p style="font-size:11px;color:var(--chumbo)">Clique em "Verificar qualidade" para analisar.</p>
     </div>
   </div>
 </div>
@@ -1738,6 +1810,8 @@ function capturarValoresIA() {
   });
   // Mostrar botão Salvar após análise
   document.getElementById('btnSalvarProcesso').style.display = 'inline-flex';
+  // Aplicar regras customizadas sobre o texto extraído
+  if (textoPeticaoGlobal && _regrasCache.length) aplicarRegrasCustom(textoPeticaoGlobal);
 }
 
 let reuCount = 0;
@@ -2648,6 +2722,28 @@ function extrairCampos(txt, seg) {
       if (reus.length > 0) break;
     }
   }
+
+  // Complemento C: secao POLO PASSIVO (formato portal TJMT e afins)
+  if (!ehAgravo) {
+    const mPolo = txt.match(/POLO\s+PASSIVO[:\s]+([\s\S]{10,800}?)(?:\n\n\n|\nPOLO\s+ATIVO|\nADVOGADO|\nDOS\s+FATOS|\nFATOS|\nRELATÓRIO)/i);
+    if (mPolo) {
+      const linhasPolo = mPolo[1].split('\n');
+      for (const linha of linhasPolo) {
+        const l = linha.trim().replace(/\s+/g,' ');
+        if (!l || l.length < 4) continue;
+        if (/^(?:POLO|ADV|OAB|Proc|Ref\.|Distribu)/i.test(l)) continue;
+        const mCnpjLinha = l.match(/(\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2})/);
+        const cnpjLinha = mCnpjLinha ? mCnpjLinha[1] : '';
+        let nomeLinha = l.replace(/,?\s*(?:CNPJ|CPF|C\.N\.P\.J).*$/i,'').replace(/(\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2})/,'').trim().replace(/,\s*$/,'');
+        if (nomeLinha.length < 3) continue;
+        if (/^[a-záéíóúâêôãõç]/.test(nomeLinha)) continue;
+        const jaExiste = reus.find(r => r.nome.toLowerCase().startsWith(nomeLinha.toLowerCase().substring(0,6)));
+        if (jaExiste) { if (cnpjLinha && !jaExiste.cnpj) jaExiste.cnpj = cnpjLinha; continue; }
+        reus.push({ nome: capitalizar(nomeLinha), cnpj: cnpjLinha });
+      }
+    }
+  }
+
   // Enriquecer réus com dados do bloco portal (Padrao 0) se disponivel
   // O bloco portal tem os nomes sem CNPJ; o scan por CNPJ tem CNPJ sem nome confiável
   // Estrategia: usar nomes do portal e associar CNPJs achados no texto
@@ -3332,6 +3428,11 @@ function exportarCampos() {
   a.download = 'eagle_cadastro_' + Date.now() + '.txt';
   a.click();
   URL.revokeObjectURL(url);
+
+  // Salvar no banco automaticamente quando a análise foi concluída e ainda não foi salvo
+  if (textoPeticaoGlobal && !processoIdBanco) {
+    salvarEContabilizar();
+  }
 }
 
 // =============================================
@@ -4220,6 +4321,8 @@ function mostrarLogin() {
 function aplicarSessao(user) {
   document.getElementById('loginOverlay').style.display = 'none';
   document.getElementById('tabBar').style.display = 'flex';
+  // Pré-carregar regras customizadas para aplicação durante análise
+  regrasCarregar();
   document.getElementById('userMenuWrap').style.display = 'block';
   document.getElementById('topUserName').textContent = user.nome;
   document.getElementById('menuUserNome').textContent = user.nome;
@@ -4341,7 +4444,7 @@ function mudarAba(aba) {
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   document.getElementById('tab-' + aba).classList.add('active');
   document.getElementById('panel-' + aba).classList.add('active');
-  if (aba === 'acuracia') carregarAcuracia();
+  if (aba === 'acuracia') { carregarAcuracia(); regrasCarregar(); }
   if (aba === 'usuarios') carregarUsuarios();
   if (aba === 'faturamento') fatInit();
   if (aba === 'dashboard') dashRender();
@@ -4843,14 +4946,12 @@ async function salvarEContabilizar() {
       });
     });
 
-    // 3. Enviar validações
-    if (validacoes.length > 0) {
-      await fetch('/api/validar', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ processo_id: processoIdBanco, validacoes })
-      });
-    }
+    // 3. Enviar validações e marcar processo como validado
+    await fetch('/api/validar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ processo_id: processoIdBanco, validacoes })
+    });
 
     // 4. Aprender com campos corrigidos automaticamente
     if (textoPeticaoGlobal) {
@@ -5312,8 +5413,100 @@ function fatAutoDetectCadastroCols(headers) {
     processo: find(['numero do processo', 'processo', 'cnj']),
     pasta: find(['pasta']),
     dataCadastro: find(['data de cadastro', 'data cadastro']),
-    cadastrante: find(['cadastrante'])
+    cadastrante: find(['cadastrante']),
+    escritorio: find(['escritorio responsavel', 'escritorio', 'responsavel']),
+    justica: find(['justica'])
   };
+}
+
+// Extrai o dígito J do NPU CNJ: NNNNNNN-DD.AAAA.J.TR.OOOO
+function fatExtrairJusticaNPU(npu) {
+  const m = String(npu || '').match(/\d{7}-\d{2}\.\d{4}\.(\d)\.\d{2}\.\d{4}/);
+  return m ? parseInt(m[1]) : null;
+}
+
+const FAT_J_MAP = { 1:'STF', 2:'CNJ', 3:'STJ', 4:'Federal', 5:'Trabalho', 6:'Eleitoral', 7:'Militar Uniao', 8:'Estadual', 9:'Militar Estadual' };
+
+function fatVerificarQualidadeBase() {
+  if (!fatCadastroConsolidado || !fatCadastroConsolidado.rows.length) {
+    fatShowToast('Importe a base iiLex primeiro.');
+    return;
+  }
+  const problemas = [];
+  const todas = [...fatCadastroConsolidado.rows, ...(fatCadastroConsolidado.outrosRows || [])];
+  for (const r of todas) {
+    const j = fatExtrairJusticaNPU(r.processo);
+    if (j === null) continue;
+    const jNome = FAT_J_MAP[j] || String(j);
+    const justicaBase = (r.justica || '').trim();
+    const escritorioBase = (r.escritorio || '').trim().toUpperCase();
+
+    // Trabalhistas sem Debellis
+    if (j === 5 && escritorioBase && !/DEBEL/i.test(escritorioBase)) {
+      problemas.push({ pasta: r.pasta, processo: r.processo, jNPU: jNome, justicaBase, escritorio: r.escritorio || '', problema: 'Trabalhista sem escritorio Debellis' });
+    }
+
+    // Justica divergente (apenas quando a planilha tem esse campo)
+    if (justicaBase && jNome.toLowerCase() !== justicaBase.toLowerCase()) {
+      problemas.push({ pasta: r.pasta, processo: r.processo, jNPU: jNome, justicaBase, escritorio: r.escritorio || '', problema: 'Justica divergente entre NPU e planilha' });
+    }
+  }
+
+  const modal = document.getElementById('fatModalQualidade');
+  const lista = document.getElementById('fatQualidadeLista');
+  const resumo = document.getElementById('fatQualidadeResumo');
+
+  if (!problemas.length) {
+    lista.innerHTML = '<p style="font-size:12px;color:var(--vok);padding:16px 0;text-align:center">Nenhum problema de qualidade encontrado.</p>';
+    resumo.textContent = '';
+  } else {
+    const trabSemDebellis = problemas.filter(p => p.problema.includes('Debellis')).length;
+    const divergentes = problemas.filter(p => p.problema.includes('divergente')).length;
+    resumo.innerHTML = `<span style="color:var(--err)">${trabSemDebellis} trabalhistas sem Debellis</span> &nbsp;|&nbsp; <span style="color:#B45309">${divergentes} justicas divergentes</span> &nbsp;|&nbsp; Total: ${problemas.length}`;
+    lista.innerHTML = `
+      <table style="width:100%;border-collapse:collapse;font-size:11px">
+        <thead><tr style="background:#fafafa">
+          <th style="text-align:left;padding:6px 10px;color:var(--chumbo);font-weight:600;border-bottom:1px solid var(--borda)">Pasta</th>
+          <th style="text-align:left;padding:6px 10px;color:var(--chumbo);font-weight:600;border-bottom:1px solid var(--borda)">NPU</th>
+          <th style="text-align:left;padding:6px 10px;color:var(--chumbo);font-weight:600;border-bottom:1px solid var(--borda)">J (NPU)</th>
+          <th style="text-align:left;padding:6px 10px;color:var(--chumbo);font-weight:600;border-bottom:1px solid var(--borda)">Justica (planilha)</th>
+          <th style="text-align:left;padding:6px 10px;color:var(--chumbo);font-weight:600;border-bottom:1px solid var(--borda)">Escritorio</th>
+          <th style="text-align:left;padding:6px 10px;color:var(--chumbo);font-weight:600;border-bottom:1px solid var(--borda)">Problema</th>
+        </tr></thead>
+        <tbody>${problemas.map((p, i) => `<tr style="background:${i%2?'#fafafa':'#fff'}">
+          <td style="padding:5px 10px;font-family:monospace">${p.pasta}</td>
+          <td style="padding:5px 10px;font-family:monospace;font-size:10px">${p.processo}</td>
+          <td style="padding:5px 10px">${p.jNPU}</td>
+          <td style="padding:5px 10px">${p.justicaBase || '<span style="color:#aaa">—</span>'}</td>
+          <td style="padding:5px 10px">${p.escritorio || '<span style="color:#aaa">—</span>'}</td>
+          <td style="padding:5px 10px;color:${p.problema.includes('Debellis')?'var(--err)':'#B45309'};font-weight:600">${p.problema}</td>
+        </tr>`).join('')}</tbody>
+      </table>`;
+  }
+  modal.classList.add('open');
+}
+
+function fatExportarQualidade() {
+  if (!fatCadastroConsolidado || !fatCadastroConsolidado.rows.length) return;
+  const problemas = [];
+  const todas = [...fatCadastroConsolidado.rows, ...(fatCadastroConsolidado.outrosRows || [])];
+  for (const r of todas) {
+    const j = fatExtrairJusticaNPU(r.processo);
+    if (j === null) continue;
+    const jNome = FAT_J_MAP[j] || String(j);
+    const justicaBase = (r.justica || '').trim();
+    const escritorioBase = (r.escritorio || '').trim().toUpperCase();
+    if (j === 5 && escritorioBase && !/DEBEL/i.test(escritorioBase)) {
+      problemas.push([r.pasta, r.processo, jNome, justicaBase, r.escritorio || '', 'Trabalhista sem escritorio Debellis']);
+    }
+    if (justicaBase && jNome.toLowerCase() !== justicaBase.toLowerCase()) {
+      problemas.push([r.pasta, r.processo, jNome, justicaBase, r.escritorio || '', 'Justica divergente entre NPU e planilha']);
+    }
+  }
+  const wb = XLSX.utils.book_new();
+  const aoa = [['Pasta iiLex','NPU','Justica (NPU)','Justica (planilha)','Escritorio','Problema'], ...problemas];
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa), 'Qualidade');
+  XLSX.writeFile(wb, `qualidade_iilex_${fatMonthKey || 'base'}.xlsx`);
 }
 
 function fatAutoDetectCapturaCols(headers, tipo) {
@@ -5971,6 +6164,24 @@ function fatAtualizarKpiDupl() {
   const totalDupl = grupos.reduce((acc, g) => acc + g.rows.length - 1, 0);
   const kpiEl = document.getElementById('fatKpiDuplBase');
   if (kpiEl) kpiEl.textContent = totalDupl > 0 ? totalDupl.toLocaleString('pt-BR') : '0';
+  fatAtualizarKpiQualidade();
+}
+
+function fatAtualizarKpiQualidade() {
+  const kpiEl = document.getElementById('fatKpiQualidade');
+  if (!kpiEl || !fatCadastroConsolidado) return;
+  const todas = [...fatCadastroConsolidado.rows, ...(fatCadastroConsolidado.outrosRows || [])];
+  let count = 0;
+  for (const r of todas) {
+    const j = fatExtrairJusticaNPU(r.processo);
+    if (j === null) continue;
+    const jNome = FAT_J_MAP[j] || String(j);
+    const justicaBase = (r.justica || '').trim();
+    const escritorioBase = (r.escritorio || '').trim();
+    if (j === 5 && escritorioBase && !/DEBEL/i.test(escritorioBase)) count++;
+    if (justicaBase && jNome.toLowerCase() !== justicaBase.toLowerCase()) count++;
+  }
+  kpiEl.textContent = count > 0 ? count.toLocaleString('pt-BR') : '0';
 }
 
 // ---- FIM DUPLICIDADE IILEX ----
@@ -6402,8 +6613,10 @@ async function fatInit() {
         if (!n || n.length < 15) continue;
         const pasta = cols.pasta > -1 ? String(r[cols.pasta] || '').trim() : '';
         const dataCadastro = cols.dataCadastro > -1 ? fatExcelDateToStr(r[cols.dataCadastro]) : '';
+        const escritorio = cols.escritorio > -1 ? String(r[cols.escritorio] || '').trim() : '';
+        const justica = cols.justica > -1 ? String(r[cols.justica] || '').trim() : '';
         if (!npuNoArquivo.has(n)) npuNoArquivo.set(n, []);
-        npuNoArquivo.get(n).push({ processo, pasta, dataCadastro, cad });
+        npuNoArquivo.get(n).push({ processo, pasta, dataCadastro, cad, escritorio, justica });
       }
 
       // --- PASSO 2: Limpar duplicatas resolvidas da base consolidada ---
@@ -6451,7 +6664,7 @@ async function fatInit() {
           if (!outrosNPUs.has(n)) {
             const e = entradas[0];
             outrosNPUs.add(n);
-            fatCadastroConsolidado.outrosRows.push({ processo: e.processo, pasta: e.pasta, dataCadastro: e.dataCadastro, cadastrante: e.cad });
+            fatCadastroConsolidado.outrosRows.push({ processo: e.processo, pasta: e.pasta, dataCadastro: e.dataCadastro, cadastrante: e.cad, escritorio: e.escritorio || '', justica: e.justica || '' });
             fatCadastroConsolidado.outrosPorCadastrante[e.cad] = (fatCadastroConsolidado.outrosPorCadastrante[e.cad] || 0) + 1;
           }
           return;
@@ -6462,7 +6675,7 @@ async function fatInit() {
           if (!allowedNorm.includes(e.cad.toLowerCase())) return;
           if (!pastasNaBase.has(e.pasta)) {
             // Registro novo (pasta ainda nao esta na base)
-            const row = { processo: e.processo, pasta: e.pasta, dataCadastro: e.dataCadastro, cadastrante: e.cad };
+            const row = { processo: e.processo, pasta: e.pasta, dataCadastro: e.dataCadastro, cadastrante: e.cad, escritorio: e.escritorio || '', justica: e.justica || '' };
             if (existentesNaBase.length > 0) row._duplicata = true; // ha outro com mesmo NPU
             fatCadastroConsolidado.rows.push(row);
             if (!sbkExistentes.has(n)) sbkExistentes.set(n, []);
@@ -7098,7 +7311,31 @@ async function dashRender(mkOverride) {
       )}
     </div>
 
-    <!-- Linha 5 — Faturamento resumo -->
+    <!-- Linha 5 — Painel operacional: Monitor + Agibank -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+      ${(() => {
+        const mon = typeof _monResult !== 'undefined' && _monResult;
+        if (!mon) return dashCard('Monitor API', '<p style="font-size:11px;color:var(--chumbo);text-align:center;padding:20px 0">Carregue a planilha na aba Monitor para ver os dados.</p>', null);
+        const totalMon = (mon.cadastrados?.length||0) + (mon.naoCadastrados?.length||0) + (mon.semCorrespondencia?.length||0);
+        const resolv = typeof _monResolvidos !== 'undefined' ? _monResolvidos.size : 0;
+        const naoCad = mon.naoCadastrados?.length||0;
+        const pctCad = totalMon > 0 ? Math.round(((mon.cadastrados?.length||0)/totalMon)*100) : 0;
+        const corPct = pctCad >= 80 ? '#16a34a' : pctCad >= 60 ? '#d97706' : '#dc2626';
+        return dashCard('Monitor API',
+          '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:6px 0">'
+          + '<div style="text-align:center"><div style="font-size:22px;font-weight:700;color:var(--verde)">' + (mon.cadastrados?.length||0) + '</div><div style="font-size:9px;color:var(--chumbo);text-transform:uppercase;letter-spacing:.3px">Cadastrados</div></div>'
+          + '<div style="text-align:center"><div style="font-size:22px;font-weight:700;color:var(--err)">' + naoCad + '</div><div style="font-size:9px;color:var(--chumbo);text-transform:uppercase;letter-spacing:.3px">Pendentes</div></div>'
+          + '<div style="text-align:center"><div style="font-size:22px;font-weight:700;color:#2e7fc2">' + resolv + '</div><div style="font-size:9px;color:var(--chumbo);text-transform:uppercase;letter-spacing:.3px">Resolvidos</div></div>'
+          + '</div>'
+          + '<div style="margin-top:8px"><div style="display:flex;justify-content:space-between;font-size:9px;color:var(--chumbo);margin-bottom:3px"><span>Taxa de cadastro</span><span style="font-weight:700;color:' + corPct + '">' + pctCad + '%</span></div>'
+          + '<div style="height:5px;background:var(--borda-l);border-radius:99px;overflow:hidden"><div style="height:100%;width:' + pctCad + '%;background:' + corPct + ';border-radius:99px"></div></div></div>',
+          totalMon + ' processos analisados'
+        );
+      })()}
+      <div id="dashAgiCard">${dashCard('Agibank — historico', '<p style="font-size:11px;color:var(--chumbo);text-align:center;padding:20px 0">Carregando...</p>', null)}</div>
+    </div>
+
+    <!-- Linha 6 — Faturamento resumo -->
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
       ${dashCard('Faturamento Real — ' + mesLabel,
         `<div style="text-align:center;padding:12px 0">
@@ -7119,6 +7356,197 @@ async function dashRender(mkOverride) {
 
   // Listener do seletor de mês
   document.getElementById('dashMesSelect')?.addEventListener('change', e => dashRender(e.target.value));
+
+  // Carregar historico Agibank do IDB sbk_agi (mesmo origin, banco separado)
+  const agiCardEl = document.getElementById('dashAgiCard');
+  if (agiCardEl) {
+    (async () => {
+      try {
+        const agiDb = await new Promise((res, rej) => {
+          const r = indexedDB.open('sbk_agi', 1);
+          r.onupgradeneeded = e => e.target.result.createObjectStore('kv');
+          r.onsuccess = e => res(e.target.result);
+          r.onerror = () => rej();
+        });
+        const agiHist = await new Promise((res, rej) => {
+          const tx = agiDb.transaction('kv', 'readonly');
+          const req = tx.objectStore('kv').get('agibank:historico');
+          req.onsuccess = () => res(req.result || []);
+          req.onerror = () => rej();
+        });
+        if (!agiHist.length) {
+          agiCardEl.innerHTML = dashCard('Agibank — historico', '<p style="font-size:11px;color:var(--chumbo);text-align:center;padding:20px 0">Nenhum caso analisado. Acesse o ambiente Agibank para comecar.</p>', null);
+        } else {
+          const favoraveis = agiHist.filter(h => h.subsidios === 'Favoraveis' || (h.resultado||'').includes('DEFESA')).length;
+          const desfav = agiHist.length - favoraveis;
+          const mediaAcc = Math.round(agiHist.reduce((s,h) => s + (h.acuracia||0), 0) / agiHist.length);
+          const ultimos = agiHist.slice(0,3);
+          agiCardEl.innerHTML = dashCard('Agibank — ' + agiHist.length + ' casos',
+            '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:6px 0;margin-bottom:8px">'
+            + '<div style="text-align:center"><div style="font-size:22px;font-weight:700;color:var(--vok)">' + favoraveis + '</div><div style="font-size:9px;color:var(--chumbo);text-transform:uppercase;letter-spacing:.3px">Defesa</div></div>'
+            + '<div style="text-align:center"><div style="font-size:22px;font-weight:700;color:var(--err)">' + desfav + '</div><div style="font-size:9px;color:var(--chumbo);text-transform:uppercase;letter-spacing:.3px">Acordo</div></div>'
+            + '<div style="text-align:center"><div style="font-size:22px;font-weight:700;color:var(--ciano-med)">' + mediaAcc + '%</div><div style="font-size:9px;color:var(--chumbo);text-transform:uppercase;letter-spacing:.3px">Media auto</div></div>'
+            + '</div>'
+            + '<div style="font-size:9.5px;font-weight:700;color:var(--chumbo);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px">Ultimos casos</div>'
+            + ultimos.map(h => '<div style="display:flex;justify-content:space-between;font-size:10px;padding:3px 0;border-bottom:1px solid var(--borda-l)">'
+                + '<span style="color:var(--verde);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:55%">' + h.processo + '</span>'
+                + '<span style="color:' + ((h.subsidios==='Favoraveis'||(h.resultado||'').includes('DEFESA'))?'var(--vok)':'var(--err)') + ';font-weight:600;flex-shrink:0">' + (h.resultado||h.subsidios||'—') + '</span>'
+                + '</div>').join(''),
+            'Media de automatizacao: ' + mediaAcc + '%'
+          );
+        }
+      } catch(e) {
+        agiCardEl.innerHTML = dashCard('Agibank — historico', '<p style="font-size:11px;color:var(--chumbo);text-align:center;padding:20px 0">Historico indisponivel. Acesse o ambiente Agibank primeiro.</p>', null);
+      }
+    })();
+  }
+}
+
+// =====================================================================
+// REGRAS DE PREENCHIMENTO CUSTOMIZADAS
+// =====================================================================
+let _regrasCache = [];
+
+async function regrasCarregar() {
+  const el = document.getElementById('regrasList');
+  if (!el) return;
+  try {
+    const r = await fetch('/api/regras?token=' + encodeURIComponent(sessaoToken));
+    if (!r.ok) { el.innerHTML = '<div style="font-size:11px;color:var(--err);text-align:center;padding:12px 0">Erro ao carregar regras.</div>'; return; }
+    _regrasCache = await r.json();
+    regrasRenderizar(_regrasCache);
+  } catch(e) {
+    el.innerHTML = '<div style="font-size:11px;color:var(--err);text-align:center;padding:12px 0">Erro: ' + e.message + '</div>';
+  }
+}
+
+function regrasRenderizar(lista) {
+  const el = document.getElementById('regrasList');
+  if (!el) return;
+  if (!lista || lista.length === 0) {
+    el.innerHTML = '<div style="font-size:11px;color:var(--chumbo);text-align:center;padding:20px 0;border:1.5px dashed var(--borda);border-radius:var(--r)">Nenhuma regra cadastrada. Clique em "Nova regra" para comecar.</div>';
+    return;
+  }
+  const CAMPO_MAP = {
+    causa_raiz: 'Causa raiz', objeto_principal: 'Objeto principal',
+    desconto_conta: 'Desconto em conta', rito: 'Rito',
+    fase_processual: 'Fase processual', tipo_documento: 'Tipo de documento', pedido: 'Pedido'
+  };
+  el.innerHTML = lista.map(r => {
+    const acoes = (r.acoes || []).map(a => `<span style="background:var(--auto-bg);color:var(--ciano-med);border:1px solid var(--auto-b);border-radius:99px;padding:1px 8px;font-size:10px;font-weight:600">${CAMPO_MAP[a.campo]||a.campo}: ${a.valor}</span>`).join(' ');
+    const corAtivo = r.ativo ? 'var(--vok)' : 'var(--chumbo)';
+    return `<div style="background:var(--surface);border:1.5px solid ${r.ativo ? 'var(--borda)' : 'var(--borda-l)'};border-radius:var(--r);padding:14px 16px;opacity:${r.ativo ? 1 : .6}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap">
+        <div style="flex:1">
+          <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px">${r.descricao}</div>
+          <div style="font-size:10px;color:var(--chumbo);margin-bottom:8px">Gatilho: <span style="font-family:monospace;background:var(--off);padding:1px 6px;border-radius:4px">${r.gatilho}</span></div>
+          <div style="display:flex;flex-wrap:wrap;gap:4px">${acoes}</div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;flex-shrink:0">
+          <button onclick="regraToggle(${r.id},${!r.ativo})" style="padding:4px 10px;border:1.5px solid ${corAtivo};border-radius:6px;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;background:transparent;color:${corAtivo}">${r.ativo ? 'Ativa' : 'Inativa'}</button>
+          <button onclick="regraExcluir(${r.id})" style="padding:4px 8px;border:1.5px solid var(--borda);border-radius:6px;font-size:10px;cursor:pointer;font-family:inherit;background:transparent;color:var(--err)">Excluir</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function regrasAbrirForm() {
+  document.getElementById('regrasForm').style.display = 'block';
+  document.getElementById('regraDesc').focus();
+}
+
+function regraAddAcao() {
+  const CAMPO_MAP = {
+    causa_raiz: 'Causa raiz', objeto_principal: 'Objeto principal',
+    desconto_conta: 'Desconto em conta', rito: 'Rito',
+    fase_processual: 'Fase processual', tipo_documento: 'Tipo de documento', pedido: 'Pedido'
+  };
+  const opts = Object.entries(CAMPO_MAP).map(([v, l]) => `<option value="${v}">${l}</option>`).join('');
+  const div = document.createElement('div');
+  div.className = 'acao-row';
+  div.style.cssText = 'display:flex;gap:8px;align-items:center';
+  div.innerHTML = `<select class="acao-campo" style="flex:1;padding:6px 8px;border:1.5px solid var(--borda);border-radius:6px;font-family:inherit;font-size:11px;outline:none;background:var(--surface)"><option value="">Selecione o campo...</option>${opts}</select><input class="acao-valor" type="text" placeholder="Valor a preencher" style="flex:1.5;padding:6px 8px;border:1.5px solid var(--borda);border-radius:6px;font-family:inherit;font-size:11px;outline:none"><button onclick="this.closest('.acao-row').remove()" style="background:none;border:none;color:var(--err);cursor:pointer;font-size:14px;padding:0 4px;flex-shrink:0">x</button>`;
+  document.getElementById('regraAcoes').appendChild(div);
+}
+
+async function regrasSalvar() {
+  const descricao = document.getElementById('regraDesc').value.trim();
+  const gatilho = document.getElementById('regraGatilho').value.trim();
+  if (!descricao || !gatilho) { alert('Preencha a descricao e as palavras-chave.'); return; }
+  const acoes = [];
+  document.querySelectorAll('#regraAcoes .acao-row').forEach(row => {
+    const campo = row.querySelector('.acao-campo').value;
+    const valor = row.querySelector('.acao-valor').value.trim();
+    if (campo && valor) acoes.push({ campo, valor });
+  });
+  if (acoes.length === 0) { alert('Adicione ao menos um campo para preencher.'); return; }
+  try {
+    const r = await fetch('/api/regras', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: sessaoToken, descricao, gatilho, acoes })
+    });
+    if (!r.ok) { const d = await r.json(); alert('Erro: ' + (d.error || 'Falha ao salvar.')); return; }
+    document.getElementById('regraDesc').value = '';
+    document.getElementById('regraGatilho').value = '';
+    document.querySelector('#regraAcoes .acao-valor').value = '';
+    document.querySelector('#regraAcoes .acao-campo').value = '';
+    document.getElementById('regrasForm').style.display = 'none';
+    regrasCarregar();
+  } catch(e) { alert('Erro: ' + e.message); }
+}
+
+async function regraToggle(id, ativo) {
+  await fetch('/api/regras', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token: sessaoToken, id, ativo })
+  });
+  regrasCarregar();
+}
+
+async function regraExcluir(id) {
+  if (!confirm('Excluir esta regra?')) return;
+  await fetch('/api/regras', {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token: sessaoToken, id })
+  });
+  regrasCarregar();
+}
+
+// Aplica regras ativas ao texto do documento e preenche os campos correspondentes
+async function aplicarRegrasCustom(texto) {
+  if (!texto || !_regrasCache.length) return;
+  const txtNorm = texto.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  let aplicadas = 0;
+  _regrasCache.filter(r => r.ativo).forEach(regra => {
+    const palavras = regra.gatilho.split(',').map(p => p.trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')).filter(Boolean);
+    const ativou = palavras.some(p => txtNorm.includes(p));
+    if (!ativou) return;
+    (regra.acoes || []).forEach(acao => {
+      const el = document.getElementById('f_' + acao.campo);
+      if (!el) return;
+      el.value = acao.valor;
+      // Marcar campo como editado (para acurácia)
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+      aplicadas++;
+    });
+  });
+  if (aplicadas > 0) {
+    // Notificar o analista que regras foram aplicadas
+    const bar = document.getElementById('salvarStatusBar');
+    const msg = document.getElementById('salvarStatusMsg');
+    if (bar && msg) {
+      bar.style.background = 'var(--auto-bg)';
+      bar.style.borderColor = 'var(--auto-b)';
+      bar.style.color = 'var(--ciano-med)';
+      bar.style.display = 'flex';
+      msg.textContent = 'Regras de preenchimento aplicadas (' + aplicadas + ' campo(s) preenchido(s) automaticamente).';
+      setTimeout(() => { bar.style.display = 'none'; }, 5000);
+    }
+  }
 }
 
 // ── FEATURE 1: DARK MODE ─────────────────────────────────────────────────────
@@ -8227,11 +8655,11 @@ function monExportar() {
     nome = 'monitor_resolvidos.xlsx';
   } else {
     const all = [
-      ..._monResult.cadastrados.map(r => [r.id, r.npu, r.pasta, 'Cadastrado', r.resumo]),
-      ..._monResult.naoCadastrados.map(r => [r.id, r.npu, '', 'Nao cadastrado', r.resumo]),
-      ..._monResult.semCorrespondencia.map(r => [r.id, '', '', 'Sem correspondencia', r.resumo])
+      ..._monResult.cadastrados.map(r => [r.id, r.npu, r.pasta, r.dataCadastro || r.dtEntrada || '', 'Cadastrado', 'N/A', r.resumo]),
+      ..._monResult.naoCadastrados.map(r => [r.id, r.npu, '', r.dtEntrada || '', 'Nao cadastrado', _monResolvidos.has(r.id) ? 'Sim' : 'Nao', r.resumo]),
+      ..._monResult.semCorrespondencia.map(r => [r.id, '', '', r.data || '', 'Sem correspondencia', 'N/A', r.resumo])
     ];
-    linhas = [['ID', 'Processo (NPU)', 'Pasta iiLex', 'Status', 'Erro (simplificado)'], ...all];
+    linhas = [['ID', 'Processo (NPU)', 'Pasta iiLex', 'Data', 'Status', 'Resolvido', 'Erro (simplificado)'], ...all];
     nome = 'monitor_api_completo.xlsx';
   }
   const ws = XLSX.utils.aoa_to_sheet(linhas);
