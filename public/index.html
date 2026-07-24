@@ -5425,7 +5425,7 @@ function fatExtrairJusticaNPU(npu) {
   return m ? parseInt(m[1]) : null;
 }
 
-const FAT_J_MAP = { 1:'STF', 2:'CNJ', 3:'STJ', 4:'Federal', 5:'Trabalho', 6:'Eleitoral', 7:'Militar Uniao', 8:'Estadual', 9:'Militar Estadual' };
+const FAT_J_MAP = { 1:'STF', 2:'CNJ', 3:'STJ', 4:'Federal', 5:'Trabalhista', 6:'Eleitoral', 7:'Militar Uniao', 8:'Estadual', 9:'Militar Estadual' };
 
 function fatVerificarQualidadeBase() {
   if (!fatCadastroConsolidado || !fatCadastroConsolidado.rows.length) {
@@ -5442,7 +5442,7 @@ function fatVerificarQualidadeBase() {
     const escritorioBase = (r.escritorio || '').trim().toUpperCase();
 
     // Trabalhistas sem Debellis
-    if (j === 5 && escritorioBase && !/DEBEL/i.test(escritorioBase)) {
+    if (j === 5 && escritorioBase && !/DE\s*BELL/i.test(escritorioBase)) {
       problemas.push({ pasta: r.pasta, processo: r.processo, jNPU: jNome, justicaBase, escritorio: r.escritorio || '', problema: 'Trabalhista sem escritorio Debellis' });
     }
 
@@ -5496,7 +5496,7 @@ function fatExportarQualidade() {
     const jNome = FAT_J_MAP[j] || String(j);
     const justicaBase = (r.justica || '').trim();
     const escritorioBase = (r.escritorio || '').trim().toUpperCase();
-    if (j === 5 && escritorioBase && !/DEBEL/i.test(escritorioBase)) {
+    if (j === 5 && escritorioBase && !/DE\s*BELL/i.test(escritorioBase)) {
       problemas.push([r.pasta, r.processo, jNome, justicaBase, r.escritorio || '', 'Trabalhista sem escritorio Debellis']);
     }
     if (justicaBase && jNome.toLowerCase() !== justicaBase.toLowerCase()) {
@@ -6178,7 +6178,7 @@ function fatAtualizarKpiQualidade() {
     const jNome = FAT_J_MAP[j] || String(j);
     const justicaBase = (r.justica || '').trim();
     const escritorioBase = (r.escritorio || '').trim();
-    if (j === 5 && escritorioBase && !/DEBEL/i.test(escritorioBase)) count++;
+    if (j === 5 && escritorioBase && !/DE\s*BELL/i.test(escritorioBase)) count++;
     if (justicaBase && jNome.toLowerCase() !== justicaBase.toLowerCase()) count++;
   }
   kpiEl.textContent = count > 0 ? count.toLocaleString('pt-BR') : '0';
