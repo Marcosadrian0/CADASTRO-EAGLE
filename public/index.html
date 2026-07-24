@@ -6295,7 +6295,34 @@ function fatRenderCadastradosLista() {
     return;
   }
 
+  const contJ = { estadual: 0, federal: 0, trabalho: 0, outros: 0 };
+  rows.forEach(r => {
+    const j = fatExtrairJusticaNPU(r.processo);
+    if (j === 8) contJ.estadual++;
+    else if (j === 4) contJ.federal++;
+    else if (j === 5) contJ.trabalho++;
+    else contJ.outros++;
+  });
+  const cardStyle = 'flex:1;min-width:90px;border-radius:8px;padding:10px 14px;text-align:center;border:1px solid';
   let html = `<div style="font-size:11px;color:var(--chumbo);margin-bottom:10px">${rows.length} processo(s) cadastrado(s) SBK neste mês</div>`;
+  html += `<div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+    <div style="${cardStyle} #BBF7D0;background:#F0FDF4">
+      <div style="font-size:20px;font-weight:700;color:#16A34A">${contJ.estadual.toLocaleString('pt-BR')}</div>
+      <div style="font-size:10px;color:#16A34A;margin-top:2px;font-weight:600">Estadual</div>
+    </div>
+    <div style="${cardStyle} #BFDBFE;background:#EFF6FF">
+      <div style="font-size:20px;font-weight:700;color:#1D4ED8">${contJ.federal.toLocaleString('pt-BR')}</div>
+      <div style="font-size:10px;color:#1D4ED8;margin-top:2px;font-weight:600">Federal</div>
+    </div>
+    <div style="${cardStyle} #FDE68A;background:#FFFBEB">
+      <div style="font-size:20px;font-weight:700;color:#B45309">${contJ.trabalho.toLocaleString('pt-BR')}</div>
+      <div style="font-size:10px;color:#B45309;margin-top:2px;font-weight:600">Trabalhista</div>
+    </div>
+    ${contJ.outros > 0 ? `<div style="${cardStyle} var(--borda);background:var(--off)">
+      <div style="font-size:20px;font-weight:700;color:var(--chumbo)">${contJ.outros.toLocaleString('pt-BR')}</div>
+      <div style="font-size:10px;color:var(--chumbo);margin-top:2px;font-weight:600">Outros</div>
+    </div>` : ''}
+  </div>`;
   html += `<table style="width:100%;border-collapse:collapse;font-size:11px">
     <thead><tr style="background:var(--off)">
       <th style="padding:7px 8px;text-align:left;color:var(--chumbo);font-size:10px;text-transform:uppercase;letter-spacing:.3px">Processo</th>
