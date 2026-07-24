@@ -912,6 +912,7 @@ html.dark .z-info-row{border-color:var(--border-color)}
       <div class="fat-kpi" onclick="fatAbrirCadastradosOutros()" title="Clique para ver os processos cadastrados por outros" style="cursor:pointer;border-color:#FDE68A;background:#FFFBEB"><div class="fat-kpi-val" id="fatKpiOutros" style="color:#B45309">—</div><div class="fat-kpi-lbl">Cadastrados Outros</div><div style="font-size:9px;color:#B45309;margin-top:4px;opacity:.8">clique para ver</div></div>
       <div class="fat-kpi fat-kpi-warn" onclick="fatAbrirSemCadastro()" title="Clique para ver e gerenciar os casos sem cadastro"><div class="fat-kpi-val" id="fatKpiSemCad">—</div><div class="fat-kpi-lbl">Sem cadastro</div><div style="font-size:9px;color:var(--err);margin-top:4px;opacity:.8">clique para gerenciar</div></div>
       <div class="fat-kpi fat-kpi-dupl" onclick="fatAbrirDuplBase()" title="Clique para analisar os processos em duplicidade na base iiLex"><div class="fat-kpi-val" id="fatKpiDuplBase" style="color:#7c3aed">—</div><div class="fat-kpi-lbl">Duplicidade iiLex</div><div style="font-size:9px;color:#7c3aed;margin-top:4px;opacity:.8">clique para avaliar</div></div>
+      <div class="fat-kpi" onclick="fatVerificarQualidadeBase()" title="Clique para verificar inconsistencias de justica e escritorio na base iiLex" style="cursor:pointer;border-color:#FCA5A5;background:#FEF2F2"><div class="fat-kpi-val" id="fatKpiQualidade" style="color:#DC2626">—</div><div class="fat-kpi-lbl">Qualidade iiLex</div><div style="font-size:9px;color:#DC2626;margin-top:4px;opacity:.8">clique para verificar</div></div>
     </div>
 
     <!-- GRÁFICOS -->
@@ -1084,6 +1085,24 @@ html.dark .z-info-row{border-color:var(--border-color)}
     <!-- Lista de sem cadastro -->
     <div id="fatSemCadLista" style="max-height:500px;overflow-y:auto">
       <p style="font-size:11px;color:var(--chumbo)">Carregando...</p>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL QUALIDADE IILEX -->
+<div class="fat-modal" id="fatModalQualidade" onclick="if(event.target===this)document.getElementById('fatModalQualidade').classList.remove('open')">
+  <div class="fat-modal-box" style="max-width:900px">
+    <div class="fat-modal-hdr">
+      <div class="fat-modal-ttl">Qualidade da base iiLex</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="fat-btn fat-btn-ghost" style="font-size:11px;padding:6px 12px" onclick="fatExportarQualidade()">Exportar lista (.xlsx)</button>
+        <button class="fat-modal-close" onclick="document.getElementById('fatModalQualidade').classList.remove('open')">&#xd7;</button>
+      </div>
+    </div>
+    <p style="font-size:11px;color:var(--chumbo);margin:0 0 6px">Verifica se casos trabalhistas estao com escritorio Debellis e se a justica da planilha bate com o digito J do NPU.</p>
+    <div id="fatQualidadeResumo" style="font-size:12px;margin-bottom:10px;font-weight:600"></div>
+    <div id="fatQualidadeLista" style="max-height:520px;overflow-y:auto">
+      <p style="font-size:11px;color:var(--chumbo)">Clique em "Verificar qualidade" para analisar.</p>
     </div>
   </div>
 </div>
@@ -5394,8 +5413,100 @@ function fatAutoDetectCadastroCols(headers) {
     processo: find(['numero do processo', 'processo', 'cnj']),
     pasta: find(['pasta']),
     dataCadastro: find(['data de cadastro', 'data cadastro']),
-    cadastrante: find(['cadastrante'])
+    cadastrante: find(['cadastrante']),
+    escritorio: find(['escritorio responsavel', 'escritorio', 'responsavel']),
+    justica: find(['justica'])
   };
+}
+
+// Extrai o dígito J do NPU CNJ: NNNNNNN-DD.AAAA.J.TR.OOOO
+function fatExtrairJusticaNPU(npu) {
+  const m = String(npu || '').match(/\d{7}-\d{2}\.\d{4}\.(\d)\.\d{2}\.\d{4}/);
+  return m ? parseInt(m[1]) : null;
+}
+
+const FAT_J_MAP = { 1:'STF', 2:'CNJ', 3:'STJ', 4:'Federal', 5:'Trabalho', 6:'Eleitoral', 7:'Militar Uniao', 8:'Estadual', 9:'Militar Estadual' };
+
+function fatVerificarQualidadeBase() {
+  if (!fatCadastroConsolidado || !fatCadastroConsolidado.rows.length) {
+    fatShowToast('Importe a base iiLex primeiro.');
+    return;
+  }
+  const problemas = [];
+  const todas = [...fatCadastroConsolidado.rows, ...(fatCadastroConsolidado.outrosRows || [])];
+  for (const r of todas) {
+    const j = fatExtrairJusticaNPU(r.processo);
+    if (j === null) continue;
+    const jNome = FAT_J_MAP[j] || String(j);
+    const justicaBase = (r.justica || '').trim();
+    const escritorioBase = (r.escritorio || '').trim().toUpperCase();
+
+    // Trabalhistas sem Debellis
+    if (j === 5 && escritorioBase && !/DEBEL/i.test(escritorioBase)) {
+      problemas.push({ pasta: r.pasta, processo: r.processo, jNPU: jNome, justicaBase, escritorio: r.escritorio || '', problema: 'Trabalhista sem escritorio Debellis' });
+    }
+
+    // Justica divergente (apenas quando a planilha tem esse campo)
+    if (justicaBase && jNome.toLowerCase() !== justicaBase.toLowerCase()) {
+      problemas.push({ pasta: r.pasta, processo: r.processo, jNPU: jNome, justicaBase, escritorio: r.escritorio || '', problema: 'Justica divergente entre NPU e planilha' });
+    }
+  }
+
+  const modal = document.getElementById('fatModalQualidade');
+  const lista = document.getElementById('fatQualidadeLista');
+  const resumo = document.getElementById('fatQualidadeResumo');
+
+  if (!problemas.length) {
+    lista.innerHTML = '<p style="font-size:12px;color:var(--vok);padding:16px 0;text-align:center">Nenhum problema de qualidade encontrado.</p>';
+    resumo.textContent = '';
+  } else {
+    const trabSemDebellis = problemas.filter(p => p.problema.includes('Debellis')).length;
+    const divergentes = problemas.filter(p => p.problema.includes('divergente')).length;
+    resumo.innerHTML = `<span style="color:var(--err)">${trabSemDebellis} trabalhistas sem Debellis</span> &nbsp;|&nbsp; <span style="color:#B45309">${divergentes} justicas divergentes</span> &nbsp;|&nbsp; Total: ${problemas.length}`;
+    lista.innerHTML = `
+      <table style="width:100%;border-collapse:collapse;font-size:11px">
+        <thead><tr style="background:#fafafa">
+          <th style="text-align:left;padding:6px 10px;color:var(--chumbo);font-weight:600;border-bottom:1px solid var(--borda)">Pasta</th>
+          <th style="text-align:left;padding:6px 10px;color:var(--chumbo);font-weight:600;border-bottom:1px solid var(--borda)">NPU</th>
+          <th style="text-align:left;padding:6px 10px;color:var(--chumbo);font-weight:600;border-bottom:1px solid var(--borda)">J (NPU)</th>
+          <th style="text-align:left;padding:6px 10px;color:var(--chumbo);font-weight:600;border-bottom:1px solid var(--borda)">Justica (planilha)</th>
+          <th style="text-align:left;padding:6px 10px;color:var(--chumbo);font-weight:600;border-bottom:1px solid var(--borda)">Escritorio</th>
+          <th style="text-align:left;padding:6px 10px;color:var(--chumbo);font-weight:600;border-bottom:1px solid var(--borda)">Problema</th>
+        </tr></thead>
+        <tbody>${problemas.map((p, i) => `<tr style="background:${i%2?'#fafafa':'#fff'}">
+          <td style="padding:5px 10px;font-family:monospace">${p.pasta}</td>
+          <td style="padding:5px 10px;font-family:monospace;font-size:10px">${p.processo}</td>
+          <td style="padding:5px 10px">${p.jNPU}</td>
+          <td style="padding:5px 10px">${p.justicaBase || '<span style="color:#aaa">—</span>'}</td>
+          <td style="padding:5px 10px">${p.escritorio || '<span style="color:#aaa">—</span>'}</td>
+          <td style="padding:5px 10px;color:${p.problema.includes('Debellis')?'var(--err)':'#B45309'};font-weight:600">${p.problema}</td>
+        </tr>`).join('')}</tbody>
+      </table>`;
+  }
+  modal.classList.add('open');
+}
+
+function fatExportarQualidade() {
+  if (!fatCadastroConsolidado || !fatCadastroConsolidado.rows.length) return;
+  const problemas = [];
+  const todas = [...fatCadastroConsolidado.rows, ...(fatCadastroConsolidado.outrosRows || [])];
+  for (const r of todas) {
+    const j = fatExtrairJusticaNPU(r.processo);
+    if (j === null) continue;
+    const jNome = FAT_J_MAP[j] || String(j);
+    const justicaBase = (r.justica || '').trim();
+    const escritorioBase = (r.escritorio || '').trim().toUpperCase();
+    if (j === 5 && escritorioBase && !/DEBEL/i.test(escritorioBase)) {
+      problemas.push([r.pasta, r.processo, jNome, justicaBase, r.escritorio || '', 'Trabalhista sem escritorio Debellis']);
+    }
+    if (justicaBase && jNome.toLowerCase() !== justicaBase.toLowerCase()) {
+      problemas.push([r.pasta, r.processo, jNome, justicaBase, r.escritorio || '', 'Justica divergente entre NPU e planilha']);
+    }
+  }
+  const wb = XLSX.utils.book_new();
+  const aoa = [['Pasta iiLex','NPU','Justica (NPU)','Justica (planilha)','Escritorio','Problema'], ...problemas];
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa), 'Qualidade');
+  XLSX.writeFile(wb, `qualidade_iilex_${fatMonthKey || 'base'}.xlsx`);
 }
 
 function fatAutoDetectCapturaCols(headers, tipo) {
@@ -6053,6 +6164,24 @@ function fatAtualizarKpiDupl() {
   const totalDupl = grupos.reduce((acc, g) => acc + g.rows.length - 1, 0);
   const kpiEl = document.getElementById('fatKpiDuplBase');
   if (kpiEl) kpiEl.textContent = totalDupl > 0 ? totalDupl.toLocaleString('pt-BR') : '0';
+  fatAtualizarKpiQualidade();
+}
+
+function fatAtualizarKpiQualidade() {
+  const kpiEl = document.getElementById('fatKpiQualidade');
+  if (!kpiEl || !fatCadastroConsolidado) return;
+  const todas = [...fatCadastroConsolidado.rows, ...(fatCadastroConsolidado.outrosRows || [])];
+  let count = 0;
+  for (const r of todas) {
+    const j = fatExtrairJusticaNPU(r.processo);
+    if (j === null) continue;
+    const jNome = FAT_J_MAP[j] || String(j);
+    const justicaBase = (r.justica || '').trim();
+    const escritorioBase = (r.escritorio || '').trim();
+    if (j === 5 && escritorioBase && !/DEBEL/i.test(escritorioBase)) count++;
+    if (justicaBase && jNome.toLowerCase() !== justicaBase.toLowerCase()) count++;
+  }
+  kpiEl.textContent = count > 0 ? count.toLocaleString('pt-BR') : '0';
 }
 
 // ---- FIM DUPLICIDADE IILEX ----
@@ -6484,8 +6613,10 @@ async function fatInit() {
         if (!n || n.length < 15) continue;
         const pasta = cols.pasta > -1 ? String(r[cols.pasta] || '').trim() : '';
         const dataCadastro = cols.dataCadastro > -1 ? fatExcelDateToStr(r[cols.dataCadastro]) : '';
+        const escritorio = cols.escritorio > -1 ? String(r[cols.escritorio] || '').trim() : '';
+        const justica = cols.justica > -1 ? String(r[cols.justica] || '').trim() : '';
         if (!npuNoArquivo.has(n)) npuNoArquivo.set(n, []);
-        npuNoArquivo.get(n).push({ processo, pasta, dataCadastro, cad });
+        npuNoArquivo.get(n).push({ processo, pasta, dataCadastro, cad, escritorio, justica });
       }
 
       // --- PASSO 2: Limpar duplicatas resolvidas da base consolidada ---
@@ -6533,7 +6664,7 @@ async function fatInit() {
           if (!outrosNPUs.has(n)) {
             const e = entradas[0];
             outrosNPUs.add(n);
-            fatCadastroConsolidado.outrosRows.push({ processo: e.processo, pasta: e.pasta, dataCadastro: e.dataCadastro, cadastrante: e.cad });
+            fatCadastroConsolidado.outrosRows.push({ processo: e.processo, pasta: e.pasta, dataCadastro: e.dataCadastro, cadastrante: e.cad, escritorio: e.escritorio || '', justica: e.justica || '' });
             fatCadastroConsolidado.outrosPorCadastrante[e.cad] = (fatCadastroConsolidado.outrosPorCadastrante[e.cad] || 0) + 1;
           }
           return;
@@ -6544,7 +6675,7 @@ async function fatInit() {
           if (!allowedNorm.includes(e.cad.toLowerCase())) return;
           if (!pastasNaBase.has(e.pasta)) {
             // Registro novo (pasta ainda nao esta na base)
-            const row = { processo: e.processo, pasta: e.pasta, dataCadastro: e.dataCadastro, cadastrante: e.cad };
+            const row = { processo: e.processo, pasta: e.pasta, dataCadastro: e.dataCadastro, cadastrante: e.cad, escritorio: e.escritorio || '', justica: e.justica || '' };
             if (existentesNaBase.length > 0) row._duplicata = true; // ha outro com mesmo NPU
             fatCadastroConsolidado.rows.push(row);
             if (!sbkExistentes.has(n)) sbkExistentes.set(n, []);
