@@ -21,8 +21,13 @@ async function initDB(sql) {
       tipo         TEXT NOT NULL DEFAULT 'regex',
       descricao    TEXT,
       contador_uso INTEGER DEFAULT 0,
-      criado_em    TIMESTAMPTZ DEFAULT NOW()
+      criado_em    TIMESTAMPTZ DEFAULT NOW(),
+      UNIQUE (campo, padrao)
     )
+  `;
+  await sql`
+    CREATE UNIQUE INDEX IF NOT EXISTS padroes_campo_padrao_idx
+    ON padroes_aprendidos (campo, padrao)
   `;
 }
 
