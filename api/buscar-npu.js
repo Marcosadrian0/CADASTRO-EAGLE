@@ -21,13 +21,11 @@ export default async function handler(req, res) {
   const { npu, token } = req.query;
   if (!npu) return res.status(400).json({ error: 'npu obrigatório.' });
 
-  const sql = neon(DB);
-
-  // Verificar sessão
-  const [sess] = await sql`SELECT usuario_id FROM sessoes WHERE token = ${token} AND expira_em > NOW()`;
-  if (!sess) return res.status(403).json({ error: 'Sessão inválida.' });
-
   try {
+    const sql = neon(DB);
+
+    const [sess] = await sql`SELECT usuario_id FROM sessoes WHERE token = ${token} AND expira_em > NOW()`;
+    if (!sess) return res.status(403).json({ error: 'Sessão inválida.' });
     const [proc] = await sql`
       SELECT campos, data_upload, status FROM processos
       WHERE npu = ${npu} AND status = 'validado'

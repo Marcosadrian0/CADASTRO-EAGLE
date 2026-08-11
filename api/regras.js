@@ -82,7 +82,7 @@ export default async function handler(req, res) {
       const uid = await validarToken(sql, token);
       if (!uid) return res.status(401).json({ error: 'Sessão inválida.' });
       if (!id) return res.status(400).json({ error: 'id obrigatório.' });
-      await sql`DELETE FROM regras_custom WHERE id = ${id}`;
+      await sql`DELETE FROM regras_custom WHERE id = ${id} AND (criado_por = ${uid} OR ${uid} IN (SELECT id FROM usuarios WHERE perfil = 'admin' AND ativo = true))`;
       return res.status(200).json({ ok: true });
     }
 

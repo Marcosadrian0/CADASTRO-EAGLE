@@ -22,10 +22,14 @@ const IPS_PERMITIDOS = new Set(
  * Extrai o IP real do request, considerando proxies/Vercel.
  */
 function resolverIP(req) {
+  // x-vercel-forwarded-for é injetado pelo Vercel e não pode ser forjado pelo cliente
+  const vercel = req.headers['x-vercel-forwarded-for'];
+  if (vercel) return vercel.split(',')[0].trim();
+  // fallback para ambientes locais/outros proxies: usar o último IP da cadeia (mais confiável)
   const forwarded = req.headers['x-forwarded-for'];
   if (forwarded) {
-    // x-forwarded-for pode ser "ip1, ip2, ip3" — o primeiro é o cliente real
-    return forwarded.split(',')[0].trim();
+    const parts = forwarded.split(',');
+    return parts[parts.length - 1].trim();
   }
   return req.socket?.remoteAddress || req.connection?.remoteAddress || '';
 }

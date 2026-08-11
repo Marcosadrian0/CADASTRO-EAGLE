@@ -52,7 +52,7 @@ export default async function handler(req, res) {
     const sql = neon(DB);
     await initDB(sql);
 
-    // Seed admin se tabela vazia
+    // Garante coluna senha_salt (migração única — idempotente)
     await sql`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS senha_salt TEXT`;
     const rows0 = await sql`SELECT COUNT(*)::int AS count FROM usuarios`;
     if (rows0[0].count === 0) {
@@ -84,8 +84,8 @@ export default async function handler(req, res) {
     const user = rows[0];
     if (!user) return res.status(401).json({ error: 'Credenciais inválidas.' });
 
-    const salt = user.senha_salt || 'eagle_sbk_2026';
-    const hash = hashSenha(senha, salt);
+    if (!user.senha_salt) return res.status(401).json({ error: 'Credenciais inválidas.' });
+    const hash = hashSenha(senha, user.senha_salt);
     if (hash !== user.senha_hash) return res.status(401).json({ error: 'Credenciais inválidas.' });
 
     // Garante que admin sempre tenha a aba faturamento

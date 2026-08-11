@@ -57,16 +57,14 @@ export default async function handler(req, res) {
     await initDB(sql);
 
     const { arquivo_nome, campos, token } = req.body || {};
+    if (!token) return res.status(401).json({ error: 'Token obrigatório.' });
     const npu = campos?.npu || null;
 
-    // resolve usuario_id a partir do token de sessão
-    let usuarioId = null;
-    if (token) {
-      const [sess] = await sql`
-        SELECT usuario_id FROM sessoes WHERE token = ${token} AND expira_em > NOW()
-      `;
-      if (sess) usuarioId = sess.usuario_id;
-    }
+    const [sess] = await sql`
+      SELECT usuario_id FROM sessoes WHERE token = ${token} AND expira_em > NOW()
+    `;
+    if (!sess) return res.status(401).json({ error: 'Sessão inválida.' });
+    const usuarioId = sess.usuario_id;
 
     const result = await sql`
       INSERT INTO processos (npu, arquivo_nome, campos, usuario_id)

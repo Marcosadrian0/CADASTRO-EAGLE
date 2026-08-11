@@ -3243,7 +3243,7 @@ function atualizarConfiancaCampos() {
   const now = Date.now();
   if (now - cached.ts > 5 * 60 * 1000) {
     // cache expirado, busca em background
-    fetch('/api/historico').then(r => r.json()).then(d => {
+    fetch('/api/historico?token=' + (sessaoToken||'')).then(r => r.json()).then(d => {
       if (d.acuraciaFields) {
         localStorage.setItem(ACURACIA_CACHE_KEY, JSON.stringify({ ts: Date.now(), fields: d.acuraciaFields }));
         _aplicarConfiancaUI(d.acuraciaFields);
@@ -4465,7 +4465,7 @@ const CAMPO_LABELS = {
 
 async function carregarAcuracia() {
   try {
-    const r = await fetch('/api/historico');
+    const r = await fetch('/api/historico?token=' + (sessaoToken||''));
     const { processos, stats, erros } = await r.json();
 
     // KPIs
@@ -4744,23 +4744,38 @@ async function carregarUsuarios() {
     let html = `<table class="usr-table"><thead><tr>
       <th>#</th><th>Login</th><th>Nome</th><th>Perfil</th><th>Abas</th><th>Status</th><th></th>
     </tr></thead><tbody>`;
+    // Armazena dados dos usuarios em dataset para evitar XSS via onclick com strings interpoladas
+    const usersMap = {};
+    users.forEach(u => { usersMap[u.id] = u; });
+    wrap._usersMap = usersMap;
+
     users.forEach(u => {
       const cls = u.ativo ? '' : ' usr-inativo';
+      const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
       html += `<tr class="${cls}">
         <td style="color:var(--chumbo)">${u.id}</td>
-        <td><strong>${u.usuario}</strong></td>
-        <td>${u.nome}</td>
-        <td><span class="usr-badge ${u.perfil}">${u.perfil}</span></td>
-        <td style="color:var(--chumbo);font-size:11px">${u.abas||'-'}</td>
+        <td><strong>${esc(u.usuario)}</strong></td>
+        <td>${esc(u.nome)}</td>
+        <td><span class="usr-badge ${esc(u.perfil)}">${esc(u.perfil)}</span></td>
+        <td style="color:var(--chumbo);font-size:11px">${esc(u.abas||'-')}</td>
         <td><span style="font-size:10px;font-weight:600;color:${u.ativo?'var(--vok)':'var(--err)'}">${u.ativo?'Ativo':'Inativo'}</span></td>
         <td>
-          <button onclick="editarUsuario(${u.id},'${u.usuario}','${u.nome}','${u.perfil}','${u.abas}')" style="background:none;border:1px solid var(--borda);border-radius:5px;padding:3px 8px;font-size:10px;cursor:pointer;font-family:inherit;color:var(--chumbo)">Editar</button>
-          ${u.ativo ? `<button onclick="desativarUsuario(${u.id})" style="background:none;border:1px solid var(--err-b);border-radius:5px;padding:3px 8px;font-size:10px;cursor:pointer;font-family:inherit;color:var(--err);margin-left:4px">Desativar</button>` : ''}
+          <button data-uid="${u.id}" data-action="editar" style="background:none;border:1px solid var(--borda);border-radius:5px;padding:3px 8px;font-size:10px;cursor:pointer;font-family:inherit;color:var(--chumbo)">Editar</button>
+          ${u.ativo ? `<button data-uid="${u.id}" data-action="desativar" style="background:none;border:1px solid var(--err-b);border-radius:5px;padding:3px 8px;font-size:10px;cursor:pointer;font-family:inherit;color:var(--err);margin-left:4px">Desativar</button>` : ''}
         </td>
       </tr>`;
     });
     html += '</tbody></table>';
     wrap.innerHTML = html;
+    wrap.querySelectorAll('[data-action]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const uid = parseInt(btn.dataset.uid);
+        const u2 = wrap._usersMap[uid];
+        if (!u2) return;
+        if (btn.dataset.action === 'editar') editarUsuario(u2.id, u2.usuario, u2.nome, u2.perfil, u2.abas);
+        else desativarUsuario(u2.id);
+      });
+    });
   } catch(e) {
     wrap.innerHTML = `<p style="color:var(--err);font-size:12px">Erro: ${e.message}</p>`;
   }
@@ -4850,7 +4865,6 @@ async function desativarUsuario(id) {
 
 // Verificar sessão ao carregar
 document.addEventListener('DOMContentLoaded', verificarSessao);
-fetch('/api/historico').then(r=>r.json()).then(d=>{if(d.acuraciaFields)localStorage.setItem('eagle_acuracia_campos',JSON.stringify({ts:Date.now(),fields:d.acuraciaFields}))}).catch(()=>{});
 
 // ── INTEGRAÇÃO BANCO DE DADOS ─────────────────────────────────────────────────
 
@@ -4950,7 +4964,7 @@ async function salvarEContabilizar() {
     await fetch('/api/validar', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ processo_id: processoIdBanco, validacoes })
+      body: JSON.stringify({ token: sessaoToken, processo_id: processoIdBanco, validacoes })
     });
 
     // 4. Aprender com campos corrigidos automaticamente
@@ -5031,7 +5045,7 @@ async function abrirHistorico() {
   conteudo.innerHTML = '<p style="color:var(--chumbo);font-size:12px">Carregando...</p>';
 
   try {
-    const resp = await fetch('/api/historico');
+    const resp = await fetch('/api/historico?token=' + (sessaoToken||''));
     const { processos, stats, erros } = await resp.json();
 
     let html = '';
@@ -7028,7 +7042,7 @@ async function dashRender(mkOverride) {
 
   let acuraciaEvolucao = [], acuraciaFields = [];
   try {
-    const rAcc = await fetch('/api/historico');
+    const rAcc = await fetch('/api/historico?token=' + (sessaoToken||''));
     if (rAcc.ok) { const d = await rAcc.json(); acuraciaEvolucao = d.acuraciaEvolucao || []; acuraciaFields = d.acuraciaFields || []; }
   } catch(e) {}
 
@@ -7882,7 +7896,7 @@ window.abrirHistorico = async function() {
   modal.style.display = 'block';
   conteudo.innerHTML = '<p style="color:var(--chumbo);font-size:12px">Carregando...</p>';
   try {
-    const resp = await fetch('/api/historico');
+    const resp = await fetch('/api/historico?token=' + (sessaoToken||''));
     const { processos, stats, erros } = await resp.json();
     let html = '';
     html += '<h3 style="font-size:13px;font-weight:600;margin-bottom:12px;color:var(--verde)">Acuracia por campo</h3>';
@@ -7981,7 +7995,7 @@ window.carregarAcuracia = async function() {
   document.querySelectorAll('.acc-card-extra, .roi-card').forEach(el => el.remove());
   await _origCarregarAcuracia();
   try {
-    const r = await fetch('/api/historico');
+    const r = await fetch('/api/historico?token=' + (sessaoToken||''));
     const data = await r.json();
     const { erros, acuraciaOperadores, tiposDocumento } = data;
     carregarChipsSugestao(erros);

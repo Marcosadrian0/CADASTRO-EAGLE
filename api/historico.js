@@ -8,6 +8,14 @@ import { ipBloqueado } from './_ipGuard.js';
 
 export const config = { maxDuration: 30 };
 
+async function validarToken(sql, token) {
+  if (!token) return null;
+  const [sess] = await sql`
+    SELECT usuario_id FROM sessoes WHERE token = ${token} AND expira_em > NOW()
+  `;
+  return sess ? sess.usuario_id : null;
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -21,6 +29,8 @@ export default async function handler(req, res) {
 
   try {
     const sql = neon(DB);
+    const uid = await validarToken(sql, req.query.token);
+    if (!uid) return res.status(401).json({ error: 'Sessão inválida.' });
 
     // Migração: processos com status 'pendente' sem validações registradas
     // ficam presos invisíveis. Promover todos para 'validado' silenciosamente.
