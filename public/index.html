@@ -8400,6 +8400,26 @@ function monProcessar() {
     }
   });
 
+  // 3b. Cruzar naoCadastrados com base iiLex consolidada do Faturamento
+  if (typeof fatCadastroConsolidado !== 'undefined' && fatCadastroConsolidado) {
+    const iiLexMap = new Map();
+    [...(fatCadastroConsolidado.rows || []), ...(fatCadastroConsolidado.manuaisRows || [])].forEach(r => {
+      const n = typeof fatNormalizeNPU === 'function' ? fatNormalizeNPU(r.processo) : r.processo;
+      if (n) iiLexMap.set(n, r);
+    });
+    const ainda = [];
+    for (const r of naoCadastrados) {
+      const n = typeof fatNormalizeNPU === 'function' ? fatNormalizeNPU(r.npu) : r.npu;
+      const encontrado = n ? iiLexMap.get(n) : null;
+      if (encontrado) {
+        cadastrados.push({ ...r, pasta: encontrado.pasta || '', dataCadastro: encontrado.dataCadastro || '', cadastrante: encontrado.cadastrante || '', _fonteIiLex: true });
+      } else {
+        ainda.push(r);
+      }
+    }
+    naoCadastrados.splice(0, naoCadastrados.length, ...ainda);
+  }
+
   _monResult = { cadastrados, naoCadastrados, semCorrespondencia };
 
   // 4. Atualizar KPIs (filtrando resolvidos)
@@ -8537,19 +8557,31 @@ function monAplicarFiltro() {
 function monRenderModalCadastrados() {
   const rows = _monResult.cadastrados;
   if (!rows.length) { document.getElementById('monModalBody').innerHTML = '<p style="font-size:12px;color:var(--chumbo);padding:16px 0">Nenhum registro.</p>'; return; }
-  let html = `<table style="width:100%;border-collapse:collapse;font-size:11px">
+  const viaIiLex = rows.filter(r => r._fonteIiLex).length;
+  let html = '';
+  if (viaIiLex > 0) {
+    html += `<div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:6px;padding:8px 12px;margin-bottom:10px;font-size:11px;color:#1D4ED8">
+      <strong>${viaIiLex}</strong> caso(s) identificado(s) pela base iiLex importada (nao tinham PASTA_IILEX na base do sistema).
+    </div>`;
+  }
+  html += `<table style="width:100%;border-collapse:collapse;font-size:11px">
     <thead><tr style="border-bottom:2px solid var(--borda)">
       <th style="text-align:left;padding:6px 10px;color:var(--chumbo)">Processo (NPU)</th>
       <th style="text-align:left;padding:6px 10px;color:var(--chumbo)">Pasta iiLex</th>
       <th style="text-align:left;padding:6px 10px;color:var(--chumbo)">Data cadastro</th>
       <th style="text-align:left;padding:6px 10px;color:var(--chumbo)">Erro original</th>
+      <th style="text-align:left;padding:6px 10px;color:var(--chumbo)">Fonte</th>
     </tr></thead><tbody>`;
   rows.forEach(r => {
+    const fonteTag = r._fonteIiLex
+      ? `<span style="background:#EFF6FF;color:#1D4ED8;border-radius:4px;padding:1px 6px;font-size:9px;font-weight:700">base iiLex</span>`
+      : `<span style="background:var(--off);color:var(--chumbo);border-radius:4px;padding:1px 6px;font-size:9px">sistema</span>`;
     html += `<tr style="border-bottom:1px solid var(--borda-l)">
       <td style="padding:6px 10px;font-family:monospace;font-size:10px">${r.npu || '-'}</td>
       <td style="padding:6px 10px;font-weight:600;color:var(--verde)">${r.pasta || '-'}</td>
       <td style="padding:6px 10px">${r.dataCadastro || r.dtEntrada || '-'}</td>
       <td style="padding:6px 10px;font-size:10px;color:var(--chumbo);max-width:280px">${r.resumo}</td>
+      <td style="padding:6px 10px">${fonteTag}</td>
     </tr>`;
   });
   html += '</tbody></table>';
