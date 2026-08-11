@@ -21,8 +21,10 @@ export default async function handler(req, res) {
 
   try {
     const sql = neon(DB);
+    const { token, processo_id, validacoes } = req.body || {};
+    const [sess] = await sql`SELECT usuario_id FROM sessoes WHERE token = ${token} AND expira_em > NOW()`;
+    if (!sess) return res.status(401).json({ error: 'Sessão inválida.' });
     await sql`ALTER TABLE processos ADD COLUMN IF NOT EXISTS concluido_em TIMESTAMPTZ`;
-    const { processo_id, validacoes } = req.body || {};
 
     if (!processo_id || !Array.isArray(validacoes)) {
       return res.status(400).json({ error: 'processo_id e validacoes são obrigatórios.' });

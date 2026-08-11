@@ -22,6 +22,7 @@ async function initDB(sql) {
       descricao    TEXT,
       contador_uso INTEGER DEFAULT 0,
       criado_em    TIMESTAMPTZ DEFAULT NOW(),
+      criado_por   INTEGER,
       UNIQUE (campo, padrao)
     )
   `;
@@ -29,6 +30,7 @@ async function initDB(sql) {
     CREATE UNIQUE INDEX IF NOT EXISTS padroes_campo_padrao_idx
     ON padroes_aprendidos (campo, padrao)
   `;
+  await sql`ALTER TABLE padroes_aprendidos ADD COLUMN IF NOT EXISTS criado_por INTEGER`;
 }
 
 async function validarToken(sql, token) {
@@ -79,8 +81,8 @@ export default async function handler(req, res) {
       }
 
       const [row] = await sql`
-        INSERT INTO padroes_aprendidos (campo, padrao, tipo, descricao)
-        VALUES (${campo}, ${padrao}, ${tipo || 'regex'}, ${descricao || null})
+        INSERT INTO padroes_aprendidos (campo, padrao, tipo, descricao, criado_por)
+        VALUES (${campo}, ${padrao}, ${tipo || 'regex'}, ${descricao || null}, ${usuarioId})
         ON CONFLICT (campo, padrao)
           DO UPDATE SET
             tipo      = EXCLUDED.tipo,
@@ -99,7 +101,7 @@ export default async function handler(req, res) {
 
       if (!id) return res.status(400).json({ error: 'Parâmetro id é obrigatório.' });
 
-      await sql`DELETE FROM padroes_aprendidos WHERE id = ${id}`;
+      await sql`DELETE FROM padroes_aprendidos WHERE id = ${id} AND (criado_por = ${usuarioId} OR ${usuarioId} IN (SELECT id FROM usuarios WHERE perfil = 'admin' AND ativo = true))`;
       return res.status(200).json({ ok: true });
     }
 

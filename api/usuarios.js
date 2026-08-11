@@ -41,7 +41,6 @@ export default async function handler(req, res) {
   if (!DB) return res.status(500).json({ error: 'DATABASE_URL não configurada.' });
 
   const sql = neon(DB);
-  await sql`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS senha_salt TEXT`;
   const token = req.query.token || req.body?.token;
   const admin = await validarAdmin(sql, token);
   if (!admin) return res.status(403).json({ error: 'Acesso negado. Apenas administradores.' });
@@ -74,15 +73,18 @@ export default async function handler(req, res) {
   if (req.method === 'PUT') {
     const { id, nome, perfil, abas, senha, ativo } = req.body || {};
     if (!id) return res.status(400).json({ error: 'id obrigatório.' });
+
+    // Executa queries individuais (neon serverless nao suporta transacao direta)
+    // A senha e atualizada em um unico UPDATE para manter hash e salt consistentes
     if (senha) {
       const salt = gerarSalt();
       const hash = hashSenha(senha, salt);
       await sql`UPDATE usuarios SET senha_hash = ${hash}, senha_salt = ${salt} WHERE id = ${id}`;
     }
-    if (nome !== undefined) await sql`UPDATE usuarios SET nome = ${nome} WHERE id = ${id}`;
+    if (nome !== undefined)   await sql`UPDATE usuarios SET nome   = ${nome}   WHERE id = ${id}`;
     if (perfil !== undefined) await sql`UPDATE usuarios SET perfil = ${perfil} WHERE id = ${id}`;
-    if (abas !== undefined) await sql`UPDATE usuarios SET abas = ${abas} WHERE id = ${id}`;
-    if (ativo !== undefined) await sql`UPDATE usuarios SET ativo = ${ativo} WHERE id = ${id}`;
+    if (abas !== undefined)   await sql`UPDATE usuarios SET abas   = ${abas}   WHERE id = ${id}`;
+    if (ativo !== undefined)  await sql`UPDATE usuarios SET ativo  = ${ativo}  WHERE id = ${id}`;
     return res.status(200).json({ ok: true });
   }
 
