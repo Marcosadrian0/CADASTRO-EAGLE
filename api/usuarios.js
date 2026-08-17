@@ -71,15 +71,21 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'PUT') {
-    const { id, nome, perfil, abas, senha, ativo } = req.body || {};
+    const { id, nome, perfil, abas, senha, ativo, resetar_senha } = req.body || {};
     if (!id) return res.status(400).json({ error: 'id obrigatório.' });
 
-    // Executa queries individuais (neon serverless nao suporta transacao direta)
-    // A senha e atualizada em um unico UPDATE para manter hash e salt consistentes
+    if (resetar_senha) {
+      // Admin reseta para senha padrão 1234 e marca como provisória
+      const salt = gerarSalt();
+      const hash = hashSenha('1234', salt);
+      await sql`UPDATE usuarios SET senha_hash = ${hash}, senha_salt = ${salt}, senha_provisoria = true, ativo = true WHERE id = ${id}`;
+      return res.status(200).json({ ok: true });
+    }
+
     if (senha) {
       const salt = gerarSalt();
       const hash = hashSenha(senha, salt);
-      await sql`UPDATE usuarios SET senha_hash = ${hash}, senha_salt = ${salt} WHERE id = ${id}`;
+      await sql`UPDATE usuarios SET senha_hash = ${hash}, senha_salt = ${salt}, senha_provisoria = false WHERE id = ${id}`;
     }
     if (nome !== undefined)   await sql`UPDATE usuarios SET nome   = ${nome}   WHERE id = ${id}`;
     if (perfil !== undefined) await sql`UPDATE usuarios SET perfil = ${perfil} WHERE id = ${id}`;

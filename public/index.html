@@ -514,6 +514,29 @@ html.dark .z-info-row{border-color:var(--border-color)}
   </div>
 </div>
 
+<!-- MODAL TROCA DE SENHA OBRIGATÓRIA -->
+<div id="trocarSenhaOverlay" style="display:none;position:fixed;inset:0;background:linear-gradient(135deg,var(--verde-prof) 0%,var(--ciano) 100%);z-index:10000;align-items:center;justify-content:center">
+  <div class="login-box" style="max-width:380px">
+    <div class="login-logo">
+      <div class="cards-sym" style="width:22px"><span style="display:block;background:var(--verde);border-radius:2px;height:5px;width:22px;margin-bottom:3px;opacity:.9"></span><span style="display:block;background:var(--verde);border-radius:2px;height:5px;width:14px;margin-bottom:3px;opacity:.55"></span><span style="display:block;background:var(--verde);border-radius:2px;height:5px;width:18px;opacity:.72"></span></div>
+      <div>
+        <div class="login-brand">Troca de senha obrigatória</div>
+        <div class="login-sub">Defina uma nova senha para continuar</div>
+      </div>
+    </div>
+    <div class="login-field">
+      <label>Nova senha</label>
+      <input type="password" id="trocaSenhaInput" placeholder="Mínimo 4 caracteres" autocomplete="new-password" onkeydown="if(event.key==='Enter')document.getElementById('trocaSenhaConfirm').focus()">
+    </div>
+    <div class="login-field">
+      <label>Confirmar nova senha</label>
+      <input type="password" id="trocaSenhaConfirm" placeholder="Repita a senha" autocomplete="new-password" onkeydown="if(event.key==='Enter')confirmarTrocaSenha()">
+    </div>
+    <button class="login-btn" id="trocaSenhaBtn" onclick="confirmarTrocaSenha()">Salvar e entrar</button>
+    <div class="login-err" id="trocaSenhaErr"></div>
+  </div>
+</div>
+
 <!-- TOPBAR -->
 <header class="topbar">
   <div class="brand">
@@ -4487,10 +4510,24 @@ async function fazerLogin() {
     const data = await r.json();
     if (!r.ok) { err.textContent = data.error || 'Erro ao entrar.'; err.style.display='block'; btn.disabled=false; btn.textContent='Entrar'; return; }
     localStorage.setItem('eagle_token', data.token);
-    // Salvar expiry de sessao: 8 horas a partir do login
     localStorage.setItem('eagle_expiry', Date.now() + 8 * 60 * 60 * 1000);
     sessaoToken = data.token;
     sessaoUser = data;
+
+    if (data.trocar_senha) {
+      // Senha provisória: exibir modal de troca antes de entrar no sistema
+      document.getElementById('loginOverlay').style.display = 'none';
+      const ov = document.getElementById('trocarSenhaOverlay');
+      ov.style.display = 'flex';
+      document.getElementById('trocaSenhaInput').value = '';
+      document.getElementById('trocaSenhaConfirm').value = '';
+      document.getElementById('trocaSenhaErr').style.display = 'none';
+      document.getElementById('trocaSenhaBtn').disabled = false;
+      document.getElementById('trocaSenhaBtn').textContent = 'Salvar e entrar';
+      setTimeout(() => document.getElementById('trocaSenhaInput').focus(), 100);
+      return;
+    }
+
     aplicarSessao(data);
     iniciarVerificacaoSessao();
   } catch(e) {
@@ -4498,6 +4535,36 @@ async function fazerLogin() {
     err.style.display = 'block';
     btn.disabled = false;
     btn.textContent = 'Entrar';
+  }
+}
+
+async function confirmarTrocaSenha() {
+  const nova = document.getElementById('trocaSenhaInput').value;
+  const conf = document.getElementById('trocaSenhaConfirm').value;
+  const err  = document.getElementById('trocaSenhaErr');
+  const btn  = document.getElementById('trocaSenhaBtn');
+  err.style.display = 'none';
+  if (!nova || nova.length < 4) { err.textContent = 'A senha deve ter ao menos 4 caracteres.'; err.style.display='block'; return; }
+  if (nova === '1234') { err.textContent = 'Escolha uma senha diferente da padrão.'; err.style.display='block'; return; }
+  if (nova !== conf)   { err.textContent = 'As senhas não coincidem.'; err.style.display='block'; return; }
+  btn.disabled = true;
+  btn.textContent = 'Salvando...';
+  try {
+    const r = await fetch('/api/trocar-senha', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: sessaoToken, nova_senha: nova })
+    });
+    const data = await r.json();
+    if (!r.ok) { err.textContent = data.error || 'Erro ao salvar.'; err.style.display='block'; btn.disabled=false; btn.textContent='Salvar e entrar'; return; }
+    document.getElementById('trocarSenhaOverlay').style.display = 'none';
+    aplicarSessao(sessaoUser);
+    iniciarVerificacaoSessao();
+  } catch(e) {
+    err.textContent = 'Erro de conexão.';
+    err.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Salvar e entrar';
   }
 }
 
@@ -4877,6 +4944,7 @@ async function carregarUsuarios() {
         <td><span style="font-size:10px;font-weight:600;color:${u.ativo?'var(--vok)':'var(--err)'}">${u.ativo?'Ativo':'Inativo'}</span></td>
         <td>
           <button data-uid="${u.id}" data-action="editar" style="background:none;border:1px solid var(--borda);border-radius:5px;padding:3px 8px;font-size:10px;cursor:pointer;font-family:inherit;color:var(--chumbo)">Editar</button>
+          <button data-uid="${u.id}" data-action="resetar" style="background:none;border:1px solid #d97706;border-radius:5px;padding:3px 8px;font-size:10px;cursor:pointer;font-family:inherit;color:#d97706;margin-left:4px" title="Resetar senha para 1234">Resetar senha</button>
           ${u.ativo ? `<button data-uid="${u.id}" data-action="desativar" style="background:none;border:1px solid var(--err-b);border-radius:5px;padding:3px 8px;font-size:10px;cursor:pointer;font-family:inherit;color:var(--err);margin-left:4px">Desativar</button>` : ''}
         </td>
       </tr>`;
@@ -4889,11 +4957,28 @@ async function carregarUsuarios() {
         const u2 = wrap._usersMap[uid];
         if (!u2) return;
         if (btn.dataset.action === 'editar') editarUsuario(u2.id, u2.usuario, u2.nome, u2.perfil, u2.abas);
+        else if (btn.dataset.action === 'resetar') resetarSenhaUsuario(u2.id, u2.nome);
         else desativarUsuario(u2.id);
       });
     });
   } catch(e) {
     wrap.innerHTML = `<p style="color:var(--err);font-size:12px">Erro: ${e.message}</p>`;
+  }
+}
+
+async function resetarSenhaUsuario(id, nome) {
+  if (!confirm(`Resetar a senha de "${nome}" para 1234?\nO usuário será obrigado a trocar ao logar.`)) return;
+  try {
+    const r = await fetch('/api/usuarios', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: sessaoToken, id, resetar_senha: true })
+    });
+    const data = await r.json();
+    if (!r.ok) { alert('Erro: ' + (data.error || 'Falha ao resetar.')); return; }
+    alert(`Senha de "${nome}" resetada para 1234 com sucesso.`);
+  } catch(e) {
+    alert('Erro de conexão.');
   }
 }
 
