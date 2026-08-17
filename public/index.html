@@ -1599,23 +1599,6 @@ html.dark .z-info-row{border-color:var(--border-color)}
               <option value="Não">Não</option>
             </select>
         </div>
-        <div class="fg">
-          <label>Pedido <span class="lhint">(campo de opções no sistema — preencher manualmente)</span></label>
-          <select id="f_pedido">
-              <option value="">Selecione</option>
-              <option>Tutela de urgência</option>
-              <option>Liminar</option>
-              <option>Antecipação de tutela</option>
-              <option>Indenização por danos morais</option>
-              <option>Indenização por danos materiais</option>
-              <option>Repetição de indébito</option>
-              <option>Rescisão contratual</option>
-              <option>Cumprimento de obrigação de fazer</option>
-              <option>Declaração de inexistência de relação</option>
-              <option>Revisão de contrato</option>
-              <option>Repactuação de dívidas</option>
-            </select>
-        </div>
       </div>
     </div>
   </div>
@@ -3215,8 +3198,6 @@ function preencherFormulario(c) {
   set('f_causa_raiz', c.causa_raiz || '');
   elCausa.disabled = false;
   elCausa.classList.remove('locked');
-  // Pedido: campo de opções no sistema — sempre deixar em branco para preenchimento manual
-  document.getElementById('f_pedido').value = '';
   // Desconto: select Sim/Não
   const descontoEl = document.getElementById('f_desconto_conta');
   if (descontoEl && c.desconto_conta) {
@@ -3384,7 +3365,7 @@ function mostrarAlerta(tipo, msg) {
 
 function limparFormulario() {
   if (!confirm('Tem certeza que deseja limpar todos os campos? Esta ação não pode ser desfeita.')) return;
-  ['npu','comarca','data_ajuizamento','data_citacao','data_audiencia','valor_causa','vara_cartorio','numero_origem','rito','fase_processual','tipo_documento','objeto_principal','causa_raiz','pedido','desconto_conta','autor_nome','autor_cpf','advogado_nome','advogado_oab'].forEach(k => {
+  ['npu','comarca','data_ajuizamento','data_citacao','data_audiencia','valor_causa','vara_cartorio','numero_origem','rito','fase_processual','tipo_documento','objeto_principal','causa_raiz','desconto_conta','autor_nome','autor_cpf','advogado_nome','advogado_oab'].forEach(k => {
     const el = document.getElementById('f_' + k);
     if (el) { el.value = ''; el.className = el.tagName === 'SELECT' ? '' : ''; }
   });
@@ -3460,7 +3441,6 @@ function exportarCampos() {
     `Tipo de documento: ${document.getElementById('f_tipo_documento').value}`,
     `Objeto principal: ${document.getElementById('f_objeto_principal').value}`,
     `Causa raiz: ${document.getElementById('f_causa_raiz').value}`,
-    `Pedido (sistema): ${document.getElementById('f_pedido').value}`,
     `Pedidos selecionados: ${[..._pedidosSel].join(' | ')}`,
     `Desconto conta: ${document.getElementById('f_desconto_conta').value}`,
     '',
