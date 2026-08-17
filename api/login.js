@@ -84,9 +84,20 @@ export default async function handler(req, res) {
     const user = rows[0];
     if (!user) return res.status(401).json({ error: 'Credenciais inválidas.' });
 
-    if (!user.senha_salt) return res.status(401).json({ error: 'Credenciais inválidas.' });
-    const hash = hashSenha(senha, user.senha_salt);
-    if (hash !== user.senha_hash) return res.status(401).json({ error: 'Credenciais inválidas.' });
+    // Migração: conta criada antes do salt — tentar hash legado e migrar automaticamente
+    if (!user.senha_salt) {
+      const SALT_LEGADO = 'eagle_sbk_2026';
+      const hashLegado = hashSenha(senha, SALT_LEGADO);
+      if (hashLegado !== user.senha_hash) return res.status(401).json({ error: 'Credenciais inválidas.' });
+      const novoSalt = randomBytes(16).toString('hex');
+      const novoHash = hashSenha(senha, novoSalt);
+      await sql`UPDATE usuarios SET senha_salt = ${novoSalt}, senha_hash = ${novoHash} WHERE id = ${user.id}`;
+      user.senha_salt = novoSalt;
+      user.senha_hash = novoHash;
+    } else {
+      const hash = hashSenha(senha, user.senha_salt);
+      if (hash !== user.senha_hash) return res.status(401).json({ error: 'Credenciais inválidas.' });
+    }
 
     // Garante que admin sempre tenha a aba faturamento
     if (user.perfil === 'admin' && !user.abas.split(',').map(s => s.trim()).includes('faturamento')) {
