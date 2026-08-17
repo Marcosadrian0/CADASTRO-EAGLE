@@ -1670,6 +1670,23 @@ html.dark .z-info-row{border-color:var(--border-color)}
     </div>
   </div>
 
+  <!-- ⑥ PEDIDOS -->
+  <div class="scard">
+    <div class="scard-head">
+      <div class="scard-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+      <span class="scard-ttl">Pedidos</span>
+    </div>
+    <div class="scard-body">
+      <div style="margin-bottom:8px">
+        <input type="text" id="pedidosBusca" placeholder="Buscar pedido..." autocomplete="off"
+          oninput="pedidosFiltrar(this.value)"
+          style="width:100%;padding:8px 12px;border:1.5px solid var(--borda);border-radius:8px;font-size:12px;font-family:inherit;outline:none;box-sizing:border-box">
+      </div>
+      <div id="pedidosMultiList" style="max-height:240px;overflow-y:auto;border:1.5px solid var(--borda);border-radius:8px;background:var(--branco)"></div>
+      <div id="pedidosSelecionados" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:5px"></div>
+    </div>
+  </div>
+
   <!-- FOOTER -->
   <div class="footer">
     <button class="btn-clear" onclick="limparFormulario()">Limpar tudo</button>
@@ -3014,6 +3031,7 @@ function extrairCampos(txt, seg) {
   // Sempre em branco — campo de opções no sistema
   // (trabalhista: preencher manualmente)
   campos.pedido = '';
+  campos.pedidos_selecionados = [..._pedidosSel];
 
   // ── CACHE OAB: salvar campos estáveis descobertos ─────────────────────────
   // Só salva se tiver OAB identificado (chamada do fluxo normal, não batch)
@@ -3269,6 +3287,7 @@ function preencherFormulario(c) {
   if (alertas.length === 0) alertas.push({ tipo: 'ok', msg: 'Nenhuma inconsistência crítica detectada. Revise e valide os campos.' });
   renderAlertas(alertas);
   renderPedidosDetectados(textoPeticaoGlobal);
+  pedidosAutoSelecionarDetectados();
   setTimeout(atualizarConfiancaCampos, 100);
 }
 
@@ -3400,6 +3419,10 @@ function limparFormulario() {
   document.getElementById('alertasArea').innerHTML = '';
   const _pdWrap = document.getElementById('pedidosDetectadosWrap');
   if (_pdWrap) _pdWrap.style.display = 'none';
+  _pedidosSel = new Set();
+  if (document.getElementById('pedidosBusca')) document.getElementById('pedidosBusca').value = '';
+  pedidosRenderLista('');
+  pedidosRenderChips();
 }
 
 function exportarCampos() {
@@ -3437,7 +3460,8 @@ function exportarCampos() {
     `Tipo de documento: ${document.getElementById('f_tipo_documento').value}`,
     `Objeto principal: ${document.getElementById('f_objeto_principal').value}`,
     `Causa raiz: ${document.getElementById('f_causa_raiz').value}`,
-    `Pedido: ${document.getElementById('f_pedido').value}`,
+    `Pedido (sistema): ${document.getElementById('f_pedido').value}`,
+    `Pedidos selecionados: ${[..._pedidosSel].join(' | ')}`,
     `Desconto conta: ${document.getElementById('f_desconto_conta').value}`,
     '',
     '--- PARTES ---',
@@ -3545,6 +3569,81 @@ const CATALOGO_PEDIDOS = [
   ["Vale Alimentação", "vale[- ]alimentação|auxílio.{0,10}alimentação|cesta alimentação", "Médio"],
   ["Vale Transporte", "vale[- ]transporte", "Baixo"],
 ];
+
+// Lista oficial de pedidos (mesma ordem do sistema)
+const LISTA_PEDIDOS = [
+  "Acúmulo de função","Adicional de insalubridade","Adicional de Periculosidade","Adicional noturno",
+  "Ajustes de Dissídio Coletivo","Assédio Moral","Assédio Sexual","Ausência de registro na CTPS",
+  "Aviso Prévio Indenizado","Banco de Horas - Invalidade","Dano Existencial","Dano Material",
+  "Dano Moral","Descontos indevidos","Descumprimento de Normas Coletivas","Diferença salarial",
+  "Dispensa Discriminatória","Doença Ocupacional","Enquadramento como Bancário",
+  "Enquadramento como Financiario","Enquadramento como Telemarketing","Equiparação salarial",
+  "Estabilidade Gestante","Estabilidade Provisória","Estabilidade Provisória Acidentária","FGTS",
+  "Gratificação de Função","Gratuidade da justiça","Honorários de Sucumbência",
+  "Hora Extra Sobrejornada","Horas extras Interjornada","Horas extras intrajornada",
+  "Horas extras suplementar","Indenização","INDENIZAÇÃO DO ART. 479 DA CLT",
+  "Integração dos prêmios ao salário","Multa","Multa do 467","Multa do 477","Multa FGTS",
+  "Nulidade da dispensa em razão de acidente de trabalho","Nulidade da Rescisão do Contrato de Trabalho",
+  "Pagamento 13º","Pagamento de Comissões","Pagamento de título","Pagamento e verbas rescisórias",
+  "Pagamento férias","Participação dos lucros","Reconhecimento de vínculo de emprego",
+  "Reembolso do pagamento indenizado","Reflexo das Horas Extras nos descansos remunerados",
+  "Reflexo Horas Extras habituais e/ou DSR's não concedidos","Reintegração ao Trabalho",
+  "Rescisão de contrato","Rescisão Indireta","Responsabilidade Solidária","Responsabilidade Subsidiária",
+  "Retificação da CTPS","Reversão de justa causa","Saldo de Salário","Seguro Desemprego",
+  "Tutela/liminar","Unicidade Contratual","Vale Alimentação","Vale Transporte"
+];
+
+let _pedidosSel = new Set();
+
+function pedidosRenderLista(filtro) {
+  const el = document.getElementById('pedidosMultiList');
+  if (!el) return;
+  const q = (filtro || '').toLowerCase().trim();
+  const lista = q ? LISTA_PEDIDOS.filter(p => p.toLowerCase().includes(q)) : LISTA_PEDIDOS;
+  el.innerHTML = lista.map(p => {
+    const sel = _pedidosSel.has(p);
+    return `<div onclick="pedidosToggle(${JSON.stringify(p)})" style="display:flex;align-items:center;gap:8px;padding:7px 10px;cursor:pointer;font-size:12px;color:var(--texto);border-bottom:1px solid var(--borda-l);background:${sel ? 'var(--off)' : 'transparent'};transition:background .1s" onmouseover="this.style.background='var(--off)'" onmouseout="this.style.background='${sel ? 'var(--off)' : 'transparent'}'">
+      <div style="width:15px;height:15px;border-radius:4px;border:1.5px solid ${sel ? 'var(--ciano)' : 'var(--borda)'};background:${sel ? 'var(--ciano)' : 'transparent'};flex-shrink:0;display:flex;align-items:center;justify-content:center">
+        ${sel ? '<svg width="9" height="9" viewBox="0 0 12 12" fill="none" stroke="#fff" stroke-width="2.5"><polyline points="2,6 5,9 10,3"/></svg>' : ''}
+      </div>
+      ${p}
+    </div>`;
+  }).join('') || '<div style="padding:10px;font-size:11px;color:var(--chumbo);text-align:center">Nenhum pedido encontrado</div>';
+}
+
+function pedidosToggle(nome) {
+  if (_pedidosSel.has(nome)) _pedidosSel.delete(nome);
+  else _pedidosSel.add(nome);
+  pedidosRenderLista(document.getElementById('pedidosBusca')?.value || '');
+  pedidosRenderChips();
+}
+
+function pedidosRenderChips() {
+  const el = document.getElementById('pedidosSelecionados');
+  if (!el) return;
+  el.innerHTML = [..._pedidosSel].map(p => `
+    <span style="display:inline-flex;align-items:center;gap:5px;background:var(--ciano);color:#fff;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:600">
+      ${p}
+      <span onclick="pedidosToggle(${JSON.stringify(p)})" style="cursor:pointer;font-size:13px;line-height:1;opacity:.8">×</span>
+    </span>`).join('');
+}
+
+function pedidosFiltrar(v) { pedidosRenderLista(v); }
+
+function pedidosAutoSelecionarDetectados() {
+  if (!_pdResultados || _pdResultados.length === 0) return;
+  _pdResultados.filter(r => r.encontrado && r.confianca === 'Alto').forEach(r => {
+    if (LISTA_PEDIDOS.includes(r.categoria)) _pedidosSel.add(r.categoria);
+  });
+  pedidosRenderLista('');
+  pedidosRenderChips();
+}
+
+function pedidosInit() {
+  pedidosRenderLista('');
+}
+
+document.addEventListener('DOMContentLoaded', pedidosInit);
 
 function localizarPedidosInicial(texto) {
   return CATALOGO_PEDIDOS.map(([categoria, padrao, confianca]) => {
