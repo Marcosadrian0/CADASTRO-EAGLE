@@ -1235,6 +1235,12 @@ html.dark .z-info-row{border-color:var(--border-color)}
     <div id="alertasArea"></div>
   </div>
 
+  <!-- Pedidos detectados -->
+  <div class="sb-block" id="pedidosDetectadosWrap" style="display:none">
+    <div class="sb-label">Pedidos detectados na petição</div>
+    <div id="pedidosDetectadosArea"></div>
+  </div>
+
   <!-- Consulta DataJud -->
   <div class="sb-block" id="consultaWrap" style="display:none">
     <div class="sb-label">Consulta DataJud CNJ</div>
@@ -3233,6 +3239,7 @@ function preencherFormulario(c) {
   if (!c.advogado_oab) alertas.push({ tipo: 'warn', msg: 'OAB não encontrada no formato padrão — verifique e ajuste.' });
   if (alertas.length === 0) alertas.push({ tipo: 'ok', msg: 'Nenhuma inconsistência crítica detectada. Revise e valide os campos.' });
   renderAlertas(alertas);
+  renderPedidosDetectados(textoPeticaoGlobal);
   setTimeout(atualizarConfiancaCampos, 100);
 }
 
@@ -3362,6 +3369,8 @@ function limparFormulario() {
   document.getElementById('escritorioBadge').innerHTML = '<span class="esc-chip esc-nd">Aguardando análise</span>';
   document.getElementById('escritorioRegra').textContent = 'Carregue e analise a petição para determinar o escritório automaticamente.';
   document.getElementById('alertasArea').innerHTML = '';
+  const _pdWrap = document.getElementById('pedidosDetectadosWrap');
+  if (_pdWrap) _pdWrap.style.display = 'none';
 }
 
 function exportarCampos() {
@@ -3433,6 +3442,113 @@ function exportarCampos() {
   if (textoPeticaoGlobal && !processoIdBanco) {
     salvarEContabilizar();
   }
+}
+
+// =============================================
+// CATÁLOGO DE PEDIDOS — PETIÇÃO INICIAL TRABALHISTA
+// =============================================
+// Cada entrada: [categoria, padrão regex (string), confiança]
+// Confiança: "Alto" = aceite automático | "Médio" = revisar trecho | "Baixo" = sinalizar apenas
+const CATALOGO_PEDIDOS = [
+  ["Acúmulo de função", "acúmulo de função|acumulo de funcao|desvio de função|desvio funcional", "Baixo"],
+  ["Adicional de insalubridade", "insalubr", "Médio"],
+  ["Adicional de Periculosidade", "periculosidade", "Alto"],
+  ["Adicional noturno", "adicional noturno|hora noturna|trabalho noturno", "Alto"],
+  ["Ajustes de Dissídio Coletivo", "dissídio coletivo|dissidio coletivo", "Alto"],
+  ["Assédio Moral", "assédio moral|assedio moral", "Alto"],
+  ["Assédio Sexual", "assédio sexual|assedio sexual", "Alto"],
+  ["Ausência de registro na CTPS", "ausência de registro|CTPS não anotad|não registrad.{0,20}CTPS", "Médio"],
+  ["Aviso Prévio Indenizado", "aviso prévio indenizado|aviso previo indenizado", "Alto"],
+  ["Banco de Horas - Invalidade", '"?banco de horas"?.{0,120}(inválid|nul[ao])|invalidade.{0,60}banco de horas', "Alto"],
+  ["Dano Existencial", "dano existencial", "Alto"],
+  ["Dano Material", "dano material", "Alto"],
+  ["Dano Moral", "dano moral", "Alto"],
+  ["Descontos indevidos", "descontos? indevid", "Alto"],
+  ["Descumprimento de Normas Coletivas", "descumpr.{0,20}(norma|convenção|acordo) coletiv", "Médio"],
+  ["Diferença salarial", "diferença salarial|diferenças salariais|salário compatível", "Médio"],
+  ["Dispensa Discriminatória", "dispensa discriminatória", "Alto"],
+  ["Doença Ocupacional", "doença ocupacional", "Alto"],
+  ["Enquadramento como Bancário", "enquadr.{0,20}banc[aá]rio|categoria.{0,15}banc[aá]ri", "Alto"],
+  ["Enquadramento como Financiario", "enquadr.{0,20}financiári|condição de financiári|categoria.{0,15}financiári", "Alto"],
+  ["Enquadramento como Telemarketing", "enquadr.{0,20}telemarketing", "Alto"],
+  ["Equiparação salarial", "equiparação salarial", "Alto"],
+  ["Estabilidade Gestante", "estabilidade.{0,15}gestante|estabilidade gestacional", "Alto"],
+  ["Estabilidade Provisória", "estabilidade provisória(?!.{0,10}acidentária)", "Médio"],
+  ["Estabilidade Provisória Acidentária", "estabilidade provisória acidentária|estabilidade.{0,15}acidente", "Alto"],
+  ["FGTS", "\\bFGTS\\b", "Alto"],
+  ["Gratificação de Função", "gratificação de função", "Alto"],
+  ["Gratuidade da justiça", "gratuidade da justiça|justiça gratuita|assistência judiciária gratuita|hipossuficiência", "Alto"],
+  ["Honorários de Sucumbência", "honorários.{0,10}sucumbência|honorários advocatícios", "Alto"],
+  ["Hora Extra Sobrejornada", "sobrejornada", "Alto"],
+  ["Horas extras Interjornada", "interjornada", "Alto"],
+  ["Horas extras intrajornada", "intrajornada", "Alto"],
+  ["Horas extras suplementar", "horas extras? suplementar|sexta diária ou trigésima semanal|seis horas diárias.{0,15}trigésima", "Médio"],
+  ["Indenização", "indenização suplementar", "Baixo"],
+  ["Indenização do Art. 479 da CLT", "art(igo)?\\.?\\s*479", "Alto"],
+  ["Integração dos prêmios ao salário", "integração.{0,30}(prêmio|comiss)|prêmios?.{0,15}integra|sua integração nos", "Médio"],
+  ["Multa", "\\bmulta\\b(?!.{0,10}(467|477|FGTS))", "Baixo"],
+  ["Multa do 467", "art(igo)?\\.?\\s*467", "Alto"],
+  ["Multa do 477", "art(igo)?\\.?\\s*477|multa.{0,10}477", "Médio"],
+  ["Multa FGTS", "multa.{0,10}(FGTS|40%)", "Alto"],
+  ["Nulidade da dispensa em razão de acidente de trabalho", "nulidade da dispensa.{0,20}acidente", "Alto"],
+  ["Nulidade da Rescisão do Contrato de Trabalho", "nulidade da rescisão", "Alto"],
+  ["Pagamento 13º", "13[ºo°]\\s*sal[aá]rio", "Baixo"],
+  ["Pagamento de Comissões", "comiss(ão|ões)", "Alto"],
+  ["Pagamento de título", "pagamento de título", "Alto"],
+  ["Pagamento e verbas rescisórias", "verbas rescisórias", "Baixo"],
+  ["Pagamento férias", "\\bférias\\b(?!.{0,15}(proporcio|reflex|\\+))", "Baixo"],
+  ["Participação dos lucros", "participação nos lucros|PLR\\b", "Alto"],
+  ["Reconhecimento de vínculo de emprego", "vínculo (de )?empregatício|reconhecimento de vínculo|vínculo direto", "Alto"],
+  ["Reembolso do pagamento indenizado", "reembolso.{0,15}indenizado", "Alto"],
+  ["Reflexo das Horas Extras nos descansos remunerados", "horas extras.{0,60}descansos semanais remunerados", "Alto"],
+  ["Reflexo Horas Extras habituais e/ou DSR's não concedidos", "horas extras? habitua|DSR.{0,15}não concedid", "Alto"],
+  ["Reintegração ao Trabalho", "reintegra", "Alto"],
+  ["Rescisão de contrato", "rescisão de contrato|rescisão contratual", "Baixo"],
+  ["Rescisão Indireta", "rescisão indireta", "Alto"],
+  ["Responsabilidade Solidária", "responsabilidade solidári|solidariamente", "Alto"],
+  ["Responsabilidade Subsidiária", "responsabilidade subsidiári|subsidiariamente", "Alto"],
+  ["Retificação da CTPS", "anotação.{0,60}CTPS|retificação.{0,15}CTPS|anotar.{0,15}CTPS", "Alto"],
+  ["Reversão de justa causa", "revers[ãa]o de justa causa", "Alto"],
+  ["Saldo de Salário", "saldo de salário", "Alto"],
+  ["Seguro Desemprego", "seguro[- ]desemprego", "Alto"],
+  ["Tutela/liminar", "tutela (de urgência|antecipada)|liminar", "Alto"],
+  ["Unicidade Contratual", "unicidade contratual|contrato único|único contrato", "Alto"],
+  ["Vale Alimentação", "vale[- ]alimentação|auxílio.{0,10}alimentação|cesta alimentação", "Médio"],
+  ["Vale Transporte", "vale[- ]transporte", "Baixo"],
+];
+
+function localizarPedidosInicial(texto) {
+  return CATALOGO_PEDIDOS.map(([categoria, padrao, confianca]) => {
+    let m = null;
+    try { m = new RegExp(padrao, 'i').exec(texto); } catch(e) {}
+    return { categoria, encontrado: !!m, confianca, trecho: m ? m[0].trim().substring(0, 80) : '' };
+  });
+}
+
+function renderPedidosDetectados(texto) {
+  const wrap = document.getElementById('pedidosDetectadosWrap');
+  const area = document.getElementById('pedidosDetectadosArea');
+  if (!wrap || !area) return;
+  const resultados = localizarPedidosInicial(texto);
+  const encontrados = resultados.filter(r => r.encontrado);
+  if (encontrados.length === 0) { wrap.style.display = 'none'; return; }
+  const corConfianca = { 'Alto': '#16a34a', 'Médio': '#d97706', 'Baixo': '#9a3412' };
+  const bgConfianca  = { 'Alto': '#f0fdf4', 'Médio': '#fffbeb', 'Baixo': '#fff7ed' };
+  area.innerHTML = `
+    <div style="font-size:11px;color:var(--chumbo);margin-bottom:8px">
+      <strong style="color:var(--texto)">${encontrados.length}</strong> de ${resultados.length} categorias localizadas por correspondência textual.
+      Revise os de confiança Médio/Baixo antes de confirmar.
+    </div>
+    ${encontrados.map(r => `
+      <div style="display:flex;align-items:flex-start;gap:6px;padding:5px 0;border-bottom:1px solid var(--borda)">
+        <span style="flex-shrink:0;font-size:9px;font-weight:700;color:${corConfianca[r.confianca]};background:${bgConfianca[r.confianca]};border-radius:4px;padding:2px 5px;margin-top:1px">${r.confianca.toUpperCase()}</span>
+        <div style="min-width:0">
+          <div style="font-size:11px;font-weight:600;color:var(--texto);line-height:1.3">${r.categoria}</div>
+          ${r.trecho ? `<div style="font-size:10px;color:var(--chumbo);font-style:italic;margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.trecho.replace(/"/g,'&quot;')}">"${r.trecho}"</div>` : ''}
+        </div>
+      </div>`).join('')}
+  `;
+  wrap.style.display = 'block';
 }
 
 // =============================================
