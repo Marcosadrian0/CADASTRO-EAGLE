@@ -1260,7 +1260,13 @@ html.dark .z-info-row{border-color:var(--border-color)}
 
   <!-- Pedidos detectados -->
   <div class="sb-block" id="pedidosDetectadosWrap" style="display:none">
-    <div class="sb-label">Pedidos detectados na petição</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <div class="sb-label" style="margin-bottom:0">Pedidos na petição</div>
+      <div style="display:flex;gap:4px">
+        <button id="pdTabDetect" onclick="pdMudarAba('detectados')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px;border:1.5px solid var(--ciano);background:var(--ciano);color:#fff;cursor:pointer;font-family:inherit">Detectados</button>
+        <button id="pdTabTodos" onclick="pdMudarAba('todos')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px;border:1.5px solid var(--borda);background:transparent;color:var(--chumbo);cursor:pointer;font-family:inherit">Todos</button>
+      </div>
+    </div>
     <div id="pedidosDetectadosArea"></div>
   </div>
 
@@ -3548,30 +3554,59 @@ function localizarPedidosInicial(texto) {
   });
 }
 
-function renderPedidosDetectados(texto) {
-  const wrap = document.getElementById('pedidosDetectadosWrap');
+let _pdResultados = [];
+let _pdAbaAtual = 'detectados';
+
+function pdMudarAba(aba) {
+  _pdAbaAtual = aba;
+  const btnD = document.getElementById('pdTabDetect');
+  const btnT = document.getElementById('pdTabTodos');
+  if (btnD && btnT) {
+    btnD.style.background = aba === 'detectados' ? 'var(--ciano)' : 'transparent';
+    btnD.style.color = aba === 'detectados' ? '#fff' : 'var(--chumbo)';
+    btnD.style.borderColor = aba === 'detectados' ? 'var(--ciano)' : 'var(--borda)';
+    btnT.style.background = aba === 'todos' ? 'var(--ciano)' : 'transparent';
+    btnT.style.color = aba === 'todos' ? '#fff' : 'var(--chumbo)';
+    btnT.style.borderColor = aba === 'todos' ? 'var(--ciano)' : 'var(--borda)';
+  }
+  _pdRenderArea();
+}
+
+function _pdRenderArea() {
   const area = document.getElementById('pedidosDetectadosArea');
-  if (!wrap || !area) return;
-  const resultados = localizarPedidosInicial(texto);
-  const encontrados = resultados.filter(r => r.encontrado);
-  if (encontrados.length === 0) { wrap.style.display = 'none'; return; }
+  if (!area) return;
   const corConfianca = { 'Alto': '#16a34a', 'Médio': '#d97706', 'Baixo': '#9a3412' };
   const bgConfianca  = { 'Alto': '#f0fdf4', 'Médio': '#fffbeb', 'Baixo': '#fff7ed' };
+  const encontrados = _pdResultados.filter(r => r.encontrado);
+  const lista = _pdAbaAtual === 'detectados' ? encontrados : _pdResultados;
+  const resumo = _pdAbaAtual === 'detectados'
+    ? `<strong style="color:var(--texto)">${encontrados.length}</strong> de ${_pdResultados.length} categorias detectadas`
+    : `Todas as <strong style="color:var(--texto)">${_pdResultados.length}</strong> categorias do catálogo`;
   area.innerHTML = `
-    <div style="font-size:11px;color:var(--chumbo);margin-bottom:8px">
-      <strong style="color:var(--texto)">${encontrados.length}</strong> de ${resultados.length} categorias localizadas por correspondência textual.
-      Revise os de confiança Médio/Baixo antes de confirmar.
-    </div>
-    ${encontrados.map(r => `
-      <div style="display:flex;align-items:flex-start;gap:6px;padding:5px 0;border-bottom:1px solid var(--borda)">
-        <span style="flex-shrink:0;font-size:9px;font-weight:700;color:${corConfianca[r.confianca]};background:${bgConfianca[r.confianca]};border-radius:4px;padding:2px 5px;margin-top:1px">${r.confianca.toUpperCase()}</span>
+    <div style="font-size:10px;color:var(--chumbo);margin-bottom:8px">${resumo}. Revise Médio/Baixo antes de confirmar.</div>
+    ${lista.length === 0 ? '<div style="font-size:11px;color:var(--chumbo);text-align:center;padding:12px 0">Nenhum pedido detectado. Verifique se a petição foi carregada.</div>' : ''}
+    ${lista.map(r => `
+      <div style="display:flex;align-items:flex-start;gap:6px;padding:5px 0;border-bottom:1px solid var(--borda-l);opacity:${r.encontrado ? '1' : '0.45'}">
+        <span style="flex-shrink:0;font-size:9px;font-weight:700;color:${r.encontrado ? corConfianca[r.confianca] : '#9ca3af'};background:${r.encontrado ? bgConfianca[r.confianca] : '#f3f4f6'};border-radius:4px;padding:2px 5px;margin-top:1px">${r.encontrado ? r.confianca.toUpperCase() : 'NAO'}</span>
         <div style="min-width:0">
-          <div style="font-size:11px;font-weight:600;color:var(--texto);line-height:1.3">${r.categoria}</div>
+          <div style="font-size:11px;font-weight:${r.encontrado ? '600' : '400'};color:var(--texto);line-height:1.3">${r.categoria}</div>
           ${r.trecho ? `<div style="font-size:10px;color:var(--chumbo);font-style:italic;margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.trecho.replace(/"/g,'&quot;')}">"${r.trecho}"</div>` : ''}
         </div>
       </div>`).join('')}
   `;
+}
+
+function renderPedidosDetectados(texto) {
+  const wrap = document.getElementById('pedidosDetectadosWrap');
+  if (!wrap) return;
+  _pdResultados = localizarPedidosInicial(texto);
+  _pdAbaAtual = 'detectados';
+  const btnD = document.getElementById('pdTabDetect');
+  const btnT = document.getElementById('pdTabTodos');
+  if (btnD) { btnD.style.background = 'var(--ciano)'; btnD.style.color = '#fff'; btnD.style.borderColor = 'var(--ciano)'; }
+  if (btnT) { btnT.style.background = 'transparent'; btnT.style.color = 'var(--chumbo)'; btnT.style.borderColor = 'var(--borda)'; }
   wrap.style.display = 'block';
+  _pdRenderArea();
 }
 
 // =============================================
