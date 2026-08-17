@@ -45,7 +45,7 @@ async function initDB(sql) {
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, PATCH, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (ipBloqueado(req, res)) return;
@@ -66,6 +66,20 @@ export default async function handler(req, res) {
         INSERT INTO usuarios (usuario, senha_hash, senha_salt, senha_provisoria, nome, perfil, abas)
         VALUES ('marcos.oliveira', ${hash}, ${seedSalt}, true, 'Marcos Oliveira', 'admin', 'analise,acuracia,faturamento,usuarios')
       `;
+    }
+
+    // PATCH — troca de senha
+    if (req.method === 'PATCH') {
+      const { token, nova_senha } = req.body || {};
+      if (!token) return res.status(401).json({ error: 'Token obrigatório.' });
+      if (!nova_senha || nova_senha.length < 4) return res.status(400).json({ error: 'A nova senha deve ter ao menos 4 caracteres.' });
+      if (nova_senha === '1234') return res.status(400).json({ error: 'Escolha uma senha diferente da padrão.' });
+      const [sess] = await sql`SELECT usuario_id FROM sessoes WHERE token = ${token} AND expira_em > NOW()`;
+      if (!sess) return res.status(401).json({ error: 'Sessão inválida.' });
+      const salt = randomBytes(16).toString('hex');
+      const hash = hashSenha(nova_senha, salt);
+      await sql`UPDATE usuarios SET senha_hash = ${hash}, senha_salt = ${salt}, senha_provisoria = false WHERE id = ${sess.usuario_id}`;
+      return res.status(200).json({ ok: true });
     }
 
     // DELETE — logout

@@ -4550,7 +4550,7 @@ async function confirmarTrocaSenha() {
   btn.disabled = true;
   btn.textContent = 'Salvando...';
   try {
-    const r = await fetch('/api/trocar-senha', {
+    const r = await fetch('/api/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ token: sessaoToken, nova_senha: nova })
