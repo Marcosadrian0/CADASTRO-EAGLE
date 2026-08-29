@@ -5730,9 +5730,19 @@ function fatExcelDateToStr(v) {
     return `${dd}/${mm}/${v.getFullYear()}`;
   }
   if (typeof v === 'number') {
-    return fatExcelDateToStr(new Date(Math.round((v - 25569) * 86400 * 1000)));
+    // Converter serial Excel para data local sem deslocamento UTC (fuso Brasil UTC-3 causava recuo de 1 dia)
+    const ms = Math.round((v - 25569) * 86400 * 1000);
+    const d = new Date(ms);
+    const dd = String(d.getUTCDate()).padStart(2, '0');
+    const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
+    return `${dd}/${mm}/${d.getUTCFullYear()}`;
   }
-  return String(v).trim();
+  // String: normaliza separadores e garante DD/MM/AAAA
+  const s = String(v).trim();
+  // Formato AAAA-MM-DD (ISO)
+  const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) return `${iso[3]}/${iso[2]}/${iso[1]}`;
+  return s;
 }
 
 function fatAutoDetectCadastroCols(headers) {
@@ -5741,7 +5751,7 @@ function fatAutoDetectCadastroCols(headers) {
   return {
     processo: find(['numero do processo', 'processo', 'cnj']),
     pasta: find(['pasta']),
-    dataCadastro: find(['data de cadastro', 'data cadastro']),
+    dataCadastro: find(['data de cadastro', 'data cadastro', 'dt cadastro', 'dt. cadastro', 'datacadastro', 'data do cadastro', 'cadastrado em', 'data entrada', 'dt entrada']),
     cadastrante: find(['cadastrante']),
     escritorio: find(['escritorio responsavel', 'escritorio', 'responsavel']),
     justica: find(['justica'])
@@ -6951,6 +6961,7 @@ async function fatInit() {
       const headers = aoa[headerRowIdx];
       const cols = fatAutoDetectCadastroCols(headers);
       if (cols.processo === -1 || cols.cadastrante === -1) { fatShowToast('Não foi possível identificar as colunas. Verifique o cabeçalho.'); return; }
+      if (cols.dataCadastro === -1) fatShowToast('Aviso: coluna de data de cadastro nao encontrada. O faturamento por mes nao sera calculado corretamente. Verifique se o arquivo tem uma coluna "Data de cadastro".');
       const allowed = fatLoadCadastrantes();
       const allowedNorm = allowed.map(a => a.toLowerCase().trim());
       let raw = 0, novos = 0, duplicados = 0, excluidos = 0;
