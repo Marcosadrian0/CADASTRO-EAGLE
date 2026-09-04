@@ -24,13 +24,15 @@
 
   *{ box-sizing:border-box; }
 
-  body{
+  html,body{
     margin:0;
     padding:0;
     background:var(--off-white);
     font-family:'Plus Jakarta Sans','Calibri',sans-serif;
     font-weight:300;
     color:#111;
+    height:100%;
+    overflow-x:hidden;
   }
 
   .page{ max-width:100%; margin:0; padding:16px 20px 40px; }
@@ -364,7 +366,7 @@
   td[contenteditable="true"]{ cursor:text; }
   td[contenteditable="true"]:focus{ outline:2px solid var(--ciano); outline-offset:-2px; background:#F2FBFA; }
 
-  .table-wrap{ overflow-x:hidden; overflow-y:auto; max-height:72vh; -webkit-overflow-scrolling:touch; border-radius:12px; }
+  .table-wrap{ overflow:visible; border-radius:12px; }
 
   table{
     width:100%; min-width:0; table-layout:fixed; border-collapse:collapse;
@@ -406,11 +408,7 @@
   }
   input.prazo-input:focus{ outline:none; border-color:var(--ciano-escuro); }
 
-  .persist-note{
-    margin-top:16px; font-size:12px; color:var(--chumbo);
-    background:#F6F8FA; border-left:3px solid var(--ciano-escuro);
-    padding:10px 14px; border-radius:0 8px 8px 0;
-  }
+  .persist-note{ display:none; }
   footer{ margin-top:28px; font-size:12px; color:var(--chumbo); text-align:center; }
 
   @media print{
