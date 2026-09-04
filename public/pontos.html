@@ -33,18 +33,9 @@
     color:#111;
   }
 
-  .page{ max-width:1320px; margin:0 auto; padding:48px 40px 64px; }
+  .page{ max-width:100%; margin:0; padding:16px 20px 40px; }
 
-  header{
-    background:var(--verde-escuro);
-    color:var(--branco);
-    padding:36px 40px;
-    border-radius:16px;
-    margin-bottom:28px;
-    display:flex;
-    flex-direction:column;
-    gap:6px;
-  }
+  header{ display:none; }
   .brand{
     font-family:'Plus Jakarta Sans',sans-serif;
     font-weight:700;
@@ -58,21 +49,24 @@
   .subtitle{ font-weight:300; font-size:15px; color:var(--off-white); opacity:0.85; margin-top:4px; }
 
   /* ================= LAYOUT ================= */
-  .layout{ display:flex; gap:24px; align-items:flex-start; }
-  .main-col{ flex:1; min-width:0; }
+  .layout{ display:flex; gap:0; align-items:flex-start; flex-direction:row; }
+  .main-col{ flex:1; min-width:0; padding:0 20px 0 0; }
 
   /* ================= SIDEBAR (estilo dark, inspirado em app de navegação) ================= */
   .sidebar{
-    width:250px;
+    width:220px;
     flex-shrink:0;
+    order:-1;
     background:var(--sidebar-bg);
-    border-radius:16px;
-    padding:18px 14px;
+    border-radius:12px;
+    padding:16px 12px;
     display:flex;
     flex-direction:column;
     gap:2px;
     position:sticky;
-    top:20px;
+    top:10px;
+    max-height:calc(100vh - 20px);
+    overflow-y:auto;
     transition:width 0.15s ease;
   }
   .sidebar.collapsed{ width:64px; padding:18px 8px; }
@@ -207,8 +201,9 @@
 
   @media (max-width: 860px){
     .layout{ flex-direction:column; }
-    .sidebar{ width:100%; position:static; }
+    .sidebar{ width:100%; order:0; position:static; max-height:none; }
     .sidebar.collapsed{ width:100%; }
+    .main-col{ padding:0; }
   }
 
   /* ================= BUSCA ================= */
@@ -272,9 +267,9 @@
     background:transparent; border:none;
     color:var(--branco);
     font-family:'Plus Jakarta Sans',sans-serif;
-    font-weight:600; font-size:13px;
-    text-transform:uppercase; letter-spacing:0.4px;
-    width:100%;
+    font-weight:700; font-size:12px;
+    text-transform:uppercase; letter-spacing:0.5px;
+    width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
   }
   .col-title:focus{ outline:1px dashed rgba(255,255,255,0.6); }
   .col-sort-btn{
@@ -369,28 +364,31 @@
   td[contenteditable="true"]{ cursor:text; }
   td[contenteditable="true"]:focus{ outline:2px solid var(--ciano); outline-offset:-2px; background:#F2FBFA; }
 
-  .table-wrap{ overflow:auto; max-height:68vh; -webkit-overflow-scrolling:touch; border-radius:12px; }
+  .table-wrap{ overflow-x:hidden; overflow-y:auto; max-height:72vh; -webkit-overflow-scrolling:touch; border-radius:12px; }
 
   table{
-    width:100%; min-width:960px; border-collapse:collapse;
+    width:100%; min-width:0; table-layout:fixed; border-collapse:collapse;
     background:var(--branco); border-radius:12px;
     box-shadow:0 1px 3px rgba(2,54,49,0.08);
   }
   thead th{
     background:var(--verde-escuro); color:var(--branco);
-    font-weight:600; font-size:13px; text-align:left; padding:12px 14px;
-    text-transform:uppercase; letter-spacing:0.4px;
+    font-weight:700; font-size:12px; text-align:left; padding:13px 12px;
+    text-transform:uppercase; letter-spacing:0.5px;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
   }
   thead th:first-child{ border-top-left-radius:12px; }
   thead th:last-child{ border-top-right-radius:12px; }
 
-  tbody td{ padding:14px 16px; font-size:13.5px; font-weight:300; line-height:1.5; border-bottom:1px solid #E2E6EB; vertical-align:top; }
+  tbody td{ padding:11px 12px; font-size:13px; font-weight:300; line-height:1.5; border-bottom:1px solid #E2E6EB; vertical-align:top; word-wrap:break-word; overflow-wrap:break-word; }
   tbody tr:last-child td{ border-bottom:none; }
 
-  td.ponto{ font-weight:600; color:var(--verde-escuro); width:15%; }
-  td.obs, td.atuacao{ width:25%; color:#222; }
-  td.status{ width:13%; }
-  td.prazo{ width:12%; color:var(--chumbo); }
+  td.ponto{ font-weight:600; color:var(--verde-escuro); width:18%; }
+  td.obs, td.atuacao{ width:27%; color:#222; }
+  td.status{ width:14%; }
+  td.prazo{ width:10%; color:var(--chumbo); }
+  td.row-drag-cell{ width:28px !important; }
+  td.row-actions-cell{ width:56px !important; }
 
   select.status-select{
     appearance:none; -webkit-appearance:none;
