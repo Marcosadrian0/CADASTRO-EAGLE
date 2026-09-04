@@ -1,0 +1,1409 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SBK Legal Operations — Pontos Reclamados Durante o Ano — EAGLE</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap');
+
+  :root{
+    --verde-escuro:#023631;
+    --verde-profundo:#012824;
+    --ciano-escuro:#075056;
+    --off-white:#ECEFF3;
+    --verde-claro:#0A5A52;
+    --ciano:#2A7C79;
+    --chumbo:#4A545E;
+    --branco:#FFFFFF;
+    --sidebar-bg:#031E1B;
+    --sidebar-line:rgba(255,255,255,0.08);
+    --sidebar-text:rgba(255,255,255,0.85);
+    --sidebar-text-dim:rgba(255,255,255,0.42);
+  }
+
+  *{ box-sizing:border-box; }
+
+  body{
+    margin:0;
+    padding:0;
+    background:var(--off-white);
+    font-family:'Plus Jakarta Sans','Calibri',sans-serif;
+    font-weight:300;
+    color:#111;
+  }
+
+  .page{ max-width:1320px; margin:0 auto; padding:48px 40px 64px; }
+
+  header{
+    background:var(--verde-escuro);
+    color:var(--branco);
+    padding:36px 40px;
+    border-radius:16px;
+    margin-bottom:28px;
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+  }
+  .brand{
+    font-family:'Plus Jakarta Sans',sans-serif;
+    font-weight:700;
+    letter-spacing:1px;
+    font-size:14px;
+    text-transform:uppercase;
+    color:var(--ciano);
+    margin-bottom:8px;
+  }
+  h1{ font-weight:600; font-size:26px; margin:0; }
+  .subtitle{ font-weight:300; font-size:15px; color:var(--off-white); opacity:0.85; margin-top:4px; }
+
+  /* ================= LAYOUT ================= */
+  .layout{ display:flex; gap:24px; align-items:flex-start; }
+  .main-col{ flex:1; min-width:0; }
+
+  /* ================= SIDEBAR (estilo dark, inspirado em app de navegação) ================= */
+  .sidebar{
+    width:250px;
+    flex-shrink:0;
+    background:var(--sidebar-bg);
+    border-radius:16px;
+    padding:18px 14px;
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+    position:sticky;
+    top:20px;
+    transition:width 0.15s ease;
+  }
+  .sidebar.collapsed{ width:64px; padding:18px 8px; }
+  .sidebar.collapsed .sidebar-label,
+  .sidebar.collapsed .sidebar-title,
+  .sidebar.collapsed .sidebar-profile,
+  .sidebar.collapsed .sidebar-submenu,
+  .sidebar.collapsed #save-indicator,
+  .sidebar.collapsed #last-updated,
+  .sidebar.collapsed .sidebar-collapse-text{ display:none; }
+  .sidebar.collapsed .nav-item{ justify-content:center; }
+
+  .sidebar-brand-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:4px 6px 14px;
+  }
+  .sidebar-brand-mark{
+    display:flex;
+    gap:3px;
+    flex-shrink:0;
+  }
+  .sidebar-brand-mark span{
+    width:6px; height:22px;
+    border-radius:3px;
+    background:var(--ciano);
+  }
+  .sidebar-brand-mark span:nth-child(2){ background:rgba(255,255,255,0.5); }
+  .sidebar-brand-mark span:nth-child(3){ background:rgba(255,255,255,0.25); }
+  .sidebar-brand-text{ color:var(--branco); font-weight:700; font-size:14px; line-height:1.2; }
+
+  .sidebar-profile{
+    background:rgba(255,255,255,0.04);
+    border-radius:12px;
+    padding:12px;
+    margin-bottom:14px;
+  }
+  .sidebar-profile-title{ color:var(--branco); font-weight:600; font-size:13px; }
+  .sidebar-profile-sub{ color:var(--sidebar-text-dim); font-size:11.5px; margin-top:1px; }
+  .sidebar-pill{
+    display:inline-block;
+    margin-top:8px;
+    background:rgba(10,90,82,0.35);
+    color:#7FD9C9;
+    font-size:11px;
+    font-weight:600;
+    padding:4px 10px;
+    border-radius:20px;
+  }
+
+  .sidebar-title{
+    font-size:10.5px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:0.6px;
+    color:var(--sidebar-text-dim);
+    margin:14px 8px 4px;
+  }
+  .sidebar-title:first-of-type{ margin-top:4px; }
+
+  .nav-item{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    width:100%;
+    background:none;
+    border:none;
+    color:var(--sidebar-text);
+    font-family:'Plus Jakarta Sans',sans-serif;
+    font-weight:400;
+    font-size:13px;
+    text-align:left;
+    padding:9px 10px;
+    border-radius:9px;
+    cursor:pointer;
+  }
+  .nav-item:hover{ background:rgba(255,255,255,0.06); }
+  .nav-item:disabled{ color:rgba(255,255,255,0.25); cursor:not-allowed; }
+  .nav-item:disabled:hover{ background:none; }
+  .nav-item.nav-highlight{ background:rgba(255,255,255,0.08); color:var(--branco); font-weight:600; }
+  .nav-item.nav-danger{ color:#F0A5A0; }
+  .nav-icon{ width:16px; text-align:center; flex-shrink:0; font-size:14px; line-height:1; }
+  .nav-label{ flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .nav-chevron{ font-size:10px; color:var(--sidebar-text-dim); transition:transform 0.15s ease; }
+  .nav-item[aria-expanded="true"] .nav-chevron{ transform:rotate(90deg); }
+
+  .sidebar-submenu{ display:flex; flex-direction:column; gap:1px; padding:2px 0 4px 22px; }
+  .sidebar-submenu .nav-item{ font-size:12.5px; padding:7px 10px; }
+
+  .sidebar-divider{ height:1px; background:var(--sidebar-line); margin:10px 4px; }
+
+  .sidebar-print{
+    background:var(--ciano-escuro);
+    color:var(--branco);
+    border:none;
+    border-radius:9px;
+    padding:10px 12px;
+    font-family:'Plus Jakarta Sans',sans-serif;
+    font-weight:600;
+    font-size:13px;
+    cursor:pointer;
+    margin-bottom:10px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .sidebar-print:hover{ background:var(--verde-claro); }
+
+  #save-indicator, #last-updated{ font-size:11px; color:var(--sidebar-text-dim); line-height:1.5; padding:0 8px; }
+
+  .sidebar-footer{
+    margin-top:auto;
+    padding-top:12px;
+  }
+  .sidebar-collapse-btn{
+    width:100%;
+    background:rgba(255,255,255,0.04);
+    border:1px solid var(--sidebar-line);
+    color:var(--sidebar-text);
+    border-radius:9px;
+    padding:9px 10px;
+    font-family:'Plus Jakarta Sans',sans-serif;
+    font-size:12.5px;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+  }
+  .sidebar-collapse-btn:hover{ background:rgba(255,255,255,0.08); }
+
+  @media (max-width: 860px){
+    .layout{ flex-direction:column; }
+    .sidebar{ width:100%; position:static; }
+    .sidebar.collapsed{ width:100%; }
+  }
+
+  /* ================= BUSCA ================= */
+  .search-row{ display:flex; gap:10px; align-items:center; margin-bottom:18px; flex-wrap:wrap; }
+  #search-input{
+    flex:1; min-width:220px;
+    border:1.5px solid #D5DAE1;
+    border-radius:8px;
+    padding:10px 14px;
+    font-family:'Plus Jakarta Sans',sans-serif;
+    font-weight:300; font-size:14px;
+    background:var(--branco);
+  }
+  #search-input:focus{ outline:none; border-color:var(--ciano-escuro); }
+  #search-count{ font-size:12px; color:var(--chumbo); white-space:nowrap; }
+
+  /* ================= RESUMO POR STATUS (clicável = filtro) + gráfico ================= */
+  .summary-container{ display:flex; align-items:center; gap:20px; flex-wrap:wrap; margin-bottom:8px; }
+  .summary-row{ display:flex; gap:10px; flex-wrap:wrap; flex:1; margin-bottom:0; }
+  .summary-pill{
+    color:var(--branco);
+    font-size:12px;
+    font-weight:600;
+    padding:6px 14px;
+    border-radius:20px;
+    border:2px solid transparent;
+    cursor:pointer;
+    font-family:'Plus Jakarta Sans',sans-serif;
+  }
+  .summary-pill.ativo{ border-color:#111; box-shadow:0 0 0 2px rgba(0,0,0,0.15); }
+  .filter-hint{ font-size:11.5px; color:var(--chumbo); margin:0 0 16px; }
+
+  .donut-wrap{ position:relative; width:72px; height:72px; flex-shrink:0; }
+  .donut{ width:100%; height:100%; border-radius:50%; background:#D5DAE1; }
+  .donut-center{
+    position:absolute; inset:9px;
+    background:var(--off-white);
+    border-radius:50%;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+  }
+  .donut-total{ font-weight:700; font-size:15px; color:var(--verde-escuro); line-height:1; }
+  .donut-label{ font-size:8.5px; color:var(--chumbo); text-transform:uppercase; letter-spacing:0.3px; margin-top:1px; }
+
+  /* ================= LEGENDA (cores editáveis) ================= */
+  .legend{ display:flex; gap:24px; flex-wrap:wrap; margin-bottom:18px; font-size:13px; color:var(--chumbo); }
+  .legend span{ display:flex; align-items:center; gap:6px; }
+  input.legend-color{
+    -webkit-appearance:none; appearance:none;
+    width:16px; height:16px; padding:0;
+    border:1.5px solid rgba(0,0,0,0.15);
+    cursor:pointer;
+  }
+  input.legend-color::-webkit-color-swatch-wrapper{ padding:0; }
+  input.legend-color::-webkit-color-swatch{ border:none; border-radius:50%; }
+  input.legend-color::-moz-color-swatch{ border:none; border-radius:50%; }
+
+  /* ================= CABEÇALHO DE COLUNA ================= */
+  .col-header-wrap{ display:flex; align-items:center; gap:6px; }
+  .col-title{
+    flex:1; min-width:0;
+    background:transparent; border:none;
+    color:var(--branco);
+    font-family:'Plus Jakarta Sans',sans-serif;
+    font-weight:600; font-size:13px;
+    text-transform:uppercase; letter-spacing:0.4px;
+    width:100%;
+  }
+  .col-title:focus{ outline:1px dashed rgba(255,255,255,0.6); }
+  .col-sort-btn{
+    background:rgba(255,255,255,0.12); color:rgba(255,255,255,0.75);
+    border:none; border-radius:6px;
+    width:20px; height:20px; line-height:18px;
+    font-size:11px; cursor:pointer; flex-shrink:0;
+  }
+  .col-sort-btn:hover{ background:rgba(255,255,255,0.28); color:var(--branco); }
+  .col-sort-btn.col-sort-ativo{ background:var(--ciano); color:var(--branco); }
+
+  thead th{ position:sticky; top:0; z-index:5; }
+
+  /* ================= MODAIS (Excluir coluna / Organizar colunas) ================= */
+  .modal-overlay{
+    display:none;
+    position:fixed; inset:0;
+    background:rgba(1,40,36,0.55);
+    z-index:2000;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+  }
+  .modal-overlay.aberto{ display:flex; }
+  .modal-box{
+    background:var(--branco);
+    border-radius:14px;
+    width:100%;
+    max-width:420px;
+    max-height:80vh;
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+  }
+  .modal-header{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:16px 20px;
+    background:var(--verde-escuro);
+    color:var(--branco);
+  }
+  .modal-title{ font-weight:600; font-size:15px; }
+  .modal-close{
+    background:rgba(255,255,255,0.15); color:var(--branco);
+    border:none; border-radius:50%;
+    width:24px; height:24px; font-size:13px; cursor:pointer;
+  }
+  .modal-close:hover{ background:rgba(255,255,255,0.3); }
+  .modal-body{ padding:14px 16px; overflow-y:auto; }
+  .modal-hint{ font-size:12px; color:var(--chumbo); margin:0 4px 12px; }
+
+  .modal-list{ display:flex; flex-direction:column; gap:6px; }
+  .modal-list-item{
+    display:flex; align-items:center; gap:10px;
+    background:#F6F8FA;
+    border-radius:8px;
+    padding:9px 10px;
+  }
+  .modal-list-item .item-drag{ cursor:grab; color:var(--chumbo); font-size:14px; flex-shrink:0; }
+  .modal-list-item .item-label{ flex:1; font-size:13px; color:#222; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .modal-list-item.drag-over{ box-shadow:inset 0 0 0 2px var(--ciano); }
+  .modal-item-btn{
+    background:none; border:1px solid #E2E6EB;
+    border-radius:6px; padding:5px 10px;
+    font-family:'Plus Jakarta Sans',sans-serif; font-size:12px; font-weight:600;
+    cursor:pointer; color:#B0392B; flex-shrink:0;
+  }
+  .modal-item-btn:hover{ background:#FBEAE7; }
+  .modal-empty{ font-size:12.5px; color:var(--chumbo); padding:8px 4px; }
+
+  /* ================= LINHA: arrastar / duplicar / remover ================= */
+  td.row-drag-cell{ width:26px; text-align:center; color:var(--chumbo); }
+  .row-drag-handle{ cursor:grab; font-size:15px; user-select:none; }
+  td.row-actions-cell{ text-align:center; white-space:nowrap; width:64px; }
+  .row-duplicate, .row-remove{
+    background:transparent; border:1px solid #E2E6EB;
+    border-radius:50%; width:24px; height:24px;
+    font-size:12px; cursor:pointer; line-height:20px; margin:0 2px;
+  }
+  .row-duplicate{ color:var(--ciano-escuro); }
+  .row-duplicate:hover{ background:#EAF5F4; }
+  .row-remove{ color:#B0392B; }
+  .row-remove:hover{ background:#FBEAE7; }
+
+  td.extra-col{ color:#222; }
+  td.extra-col input{
+    width:100%; border:1px solid #D5DAE1; border-radius:8px; padding:7px 10px;
+    font-family:'Plus Jakarta Sans',sans-serif; font-weight:300; font-size:13px;
+    color:#222; background:var(--branco);
+  }
+  td.extra-col input:focus{ outline:none; border-color:var(--ciano-escuro); }
+
+  td[contenteditable="true"]{ cursor:text; }
+  td[contenteditable="true"]:focus{ outline:2px solid var(--ciano); outline-offset:-2px; background:#F2FBFA; }
+
+  .table-wrap{ overflow:auto; max-height:68vh; -webkit-overflow-scrolling:touch; border-radius:12px; }
+
+  table{
+    width:100%; min-width:960px; border-collapse:collapse;
+    background:var(--branco); border-radius:12px;
+    box-shadow:0 1px 3px rgba(2,54,49,0.08);
+  }
+  thead th{
+    background:var(--verde-escuro); color:var(--branco);
+    font-weight:600; font-size:13px; text-align:left; padding:12px 14px;
+    text-transform:uppercase; letter-spacing:0.4px;
+  }
+  thead th:first-child{ border-top-left-radius:12px; }
+  thead th:last-child{ border-top-right-radius:12px; }
+
+  tbody td{ padding:14px 16px; font-size:13.5px; font-weight:300; line-height:1.5; border-bottom:1px solid #E2E6EB; vertical-align:top; }
+  tbody tr:last-child td{ border-bottom:none; }
+
+  td.ponto{ font-weight:600; color:var(--verde-escuro); width:15%; }
+  td.obs, td.atuacao{ width:25%; color:#222; }
+  td.status{ width:13%; }
+  td.prazo{ width:12%; color:var(--chumbo); }
+
+  select.status-select{
+    appearance:none; -webkit-appearance:none;
+    border:none; border-radius:20px; padding:6px 30px 6px 14px;
+    font-family:'Plus Jakarta Sans',sans-serif; font-size:12px; font-weight:600;
+    color:var(--branco); cursor:pointer;
+    background-repeat:no-repeat; background-position:right 10px center; background-size:10px;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'><path d='M0 0l5 6 5-6z' fill='white'/></svg>");
+  }
+
+  input.prazo-input{
+    width:100%; border:1px solid #D5DAE1; border-radius:8px; padding:7px 10px;
+    font-family:'Plus Jakarta Sans',sans-serif; font-weight:300; font-size:13px;
+    color:var(--chumbo); background:var(--branco);
+  }
+  input.prazo-input:focus{ outline:none; border-color:var(--ciano-escuro); }
+
+  .persist-note{
+    margin-top:16px; font-size:12px; color:var(--chumbo);
+    background:#F6F8FA; border-left:3px solid var(--ciano-escuro);
+    padding:10px 14px; border-radius:0 8px 8px 0;
+  }
+  footer{ margin-top:28px; font-size:12px; color:var(--chumbo); text-align:center; }
+
+  @media print{
+    body{ background:var(--branco); }
+    .sidebar, .search-row, .persist-note, .modal-overlay, .filter-hint, .donut-wrap{ display:none !important; }
+    .page{ padding:0; max-width:100%; }
+    .layout{ display:block; }
+    header{ border-radius:0; }
+    table{ box-shadow:none; min-width:0; }
+    .table-wrap{ overflow:visible; }
+    thead th{ position:static; }
+    .row-drag-cell, .row-actions-cell{ display:none; }
+    .col-sort-btn{ display:none; }
+    select.status-select{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    input.prazo-input{ border:none; padding:0; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <div class="brand">SBK Legal Operations</div>
+    <h1>Pontos Reclamados Durante o Ano — EAGLE</h1>
+    <div class="subtitle">Alinhamento entre reclamações recebidas, atuação realizada, status e prazo</div>
+  </header>
+
+  <div class="layout">
+
+    <div class="main-col">
+
+      <div class="search-row">
+        <input type="text" id="search-input" placeholder="Pesquisar em ponto, observação, atuação, status, prazo...">
+        <span id="search-count"></span>
+      </div>
+
+      <div class="summary-container">
+        <div class="summary-row" id="status-summary"></div>
+        <div class="donut-wrap">
+          <div class="donut" id="status-donut"></div>
+          <div class="donut-center">
+            <div class="donut-total" id="donut-total">0</div>
+            <div class="donut-label">pontos</div>
+          </div>
+        </div>
+      </div>
+      <div class="filter-hint">Clique em um ou mais status acima para filtrar. Clique de novo para remover o filtro daquele status.</div>
+
+      <div class="legend" id="legend"></div>
+
+      <div class="table-wrap">
+        <table id="tabela-pontos">
+          <thead><tr id="header-row"></tr></thead>
+          <tbody id="tabela-corpo"></tbody>
+        </table>
+      </div>
+
+      <div class="persist-note">
+        As edições ficam salvas automaticamente neste navegador, neste computador. Se você trocar de navegador, de máquina, ou limpar os dados de navegação, essas edições se perdem. Use "Exportar dados (backup)" de vez em quando para guardar um arquivo de segurança que pode ser recarregado com "Importar dados" em qualquer navegador.
+      </div>
+
+      <footer>SBK Legal Operations — Documento interno de acompanhamento — EAGLE</footer>
+    </div>
+
+    <div class="sidebar" id="sidebar">
+      <div class="sidebar-brand-row">
+        <div class="sidebar-brand-mark"><span></span><span></span><span></span></div>
+        <div class="sidebar-brand-text">SBK Pontos<br>Reclamados</div>
+      </div>
+
+      <div class="sidebar-profile">
+        <div class="sidebar-profile-title">EAGLE</div>
+        <div class="sidebar-profile-sub">Painel de acompanhamento</div>
+        <div class="sidebar-pill" id="sidebar-total-pill">0 pontos cadastrados</div>
+      </div>
+
+      <button class="sidebar-print" onclick="window.print()">
+        <span class="nav-icon">⭳</span><span class="sidebar-label">Exportar em PDF / Imprimir</span>
+      </button>
+
+      <div class="sidebar-title">Ações</div>
+      <button class="nav-item" id="add-row"><span class="nav-icon">+</span><span class="nav-label sidebar-label">Ponto reclamado</span></button>
+      <button class="nav-item" id="add-col"><span class="nav-icon">+</span><span class="nav-label sidebar-label">Coluna</span></button>
+      <button class="nav-item" id="add-status"><span class="nav-icon">+</span><span class="nav-label sidebar-label">Opção de status</span></button>
+      <button class="nav-item" id="undo-action" disabled><span class="nav-icon">↺</span><span class="nav-label sidebar-label">Desfazer última exclusão</span></button>
+
+      <div class="sidebar-title">Ajustar tabela</div>
+      <button class="nav-item" id="ajustar-tabela-toggle" aria-expanded="false">
+        <span class="nav-icon">⚙</span><span class="nav-label sidebar-label">Ajustar tabela</span><span class="nav-chevron sidebar-label">▸</span>
+      </button>
+      <div class="sidebar-submenu sidebar-label" id="ajustar-tabela-submenu" style="display:none;">
+        <button class="nav-item" id="abrir-modal-excluir-coluna"><span class="nav-icon">×</span><span class="nav-label">Excluir coluna</span></button>
+        <button class="nav-item" id="abrir-modal-organizar-colunas"><span class="nav-icon">⇅</span><span class="nav-label">Organizar colunas</span></button>
+      </div>
+
+      <div class="sidebar-title">Dados</div>
+      <button class="nav-item" id="export-data"><span class="nav-icon">⭳</span><span class="nav-label sidebar-label">Exportar dados (backup)</span></button>
+      <button class="nav-item" id="import-data"><span class="nav-icon">⭱</span><span class="nav-label sidebar-label">Importar dados</span></button>
+      <button class="nav-item nav-danger" id="reset-data"><span class="nav-icon">↺</span><span class="nav-label sidebar-label">Restaurar versão original</span></button>
+      <input type="file" id="import-file-input" accept="application/json" style="display:none;">
+
+      <div class="sidebar-title">Status</div>
+      <div id="save-indicator"></div>
+      <div id="last-updated"></div>
+
+      <div class="sidebar-footer">
+        <button class="sidebar-collapse-btn" id="sidebar-collapse-btn">
+          <span id="sidebar-collapse-icon">←</span><span class="sidebar-collapse-text">Recolher</span>
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ---- Modal: Excluir coluna ---- -->
+<div class="modal-overlay" id="modal-excluir-coluna">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span class="modal-title">Excluir coluna</span>
+      <button class="modal-close" data-fechar-modal>×</button>
+    </div>
+    <div class="modal-body">
+      <p class="modal-hint">Escolha qual coluna excluir. Os dados dela em todas as linhas serão apagados (dá para desfazer logo em seguida).</p>
+      <div class="modal-list" id="lista-excluir-coluna"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ---- Modal: Organizar colunas ---- -->
+<div class="modal-overlay" id="modal-organizar-colunas">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span class="modal-title">Organizar colunas</span>
+      <button class="modal-close" data-fechar-modal>×</button>
+    </div>
+    <div class="modal-body">
+      <p class="modal-hint">Arraste pelo ícone para mudar a ordem das colunas na tabela.</p>
+      <div class="modal-list" id="lista-organizar-colunas"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const STORAGE_KEY = "sbk_pontos_reclamados_eagle_v2";
+  const STORAGE_KEY_ANTIGO = "sbk_pontos_reclamados_eagle_v1";
+
+  const DEFAULT_STATUS_OPTIONS = [
+    { value:"pendente", label:"Pendente", color:"#D64545" },
+    { value:"em_andamento", label:"Em Andamento", color:"#D9A404" },
+    { value:"concluido", label:"Concluído", color:"#0A5A52" }
+  ];
+
+  const COLOR_PALETTE = ["#075056","#4A545E","#0E4442","#023631","#B0392B","#7A6A2E","#5A4A8E"];
+
+  const DEFAULT_COLUMNS = [
+    { id:"ponto",   label:"Ponto Reclamado",             type:"contenteditable" },
+    { id:"obs",     label:"Observação da Reclamação",    type:"contenteditable" },
+    { id:"atuacao", label:"Pontos de Atuação",           type:"contenteditable" },
+    { id:"status",  label:"Status",                      type:"status" },
+    { id:"prazo",   label:"Prazo de Atuação",            type:"text", placeholder:"Ex.: 30/09/2026" }
+  ];
+
+  const BASE_CLASS_IDS = ["ponto","obs","atuacao","status","prazo"];
+
+  const DADOS_ORIGINAIS = {
+    columns: DEFAULT_COLUMNS.map(c => ({...c})),
+    statusOptions: DEFAULT_STATUS_OPTIONS.map(o => ({...o})),
+    rows: [
+      { values:{ ponto:"Objeto Principal", obs:"Cadastro realizado com o objeto principal errado.", atuacao:"Implantação de melhorias no cadastro para aprimorar a busca do objeto principal.", status:"pendente", prazo:"A definir" } },
+      { values:{ ponto:"Escritório", obs:"Cadastro realizado com o escritório errado.", atuacao:"Ajuste de regras para que o cadastro siga com o escritório correto.", status:"concluido", prazo:"—" } },
+      { values:{ ponto:"Casos de 2ª Instância como Principal", obs:"Casos de segunda instância sendo marcados no sistema como principal.", atuacao:"Ajuste para que casos dessa natureza não sejam marcados como principal no sistema.", status:"concluido", prazo:"—" } },
+      { values:{ ponto:"Casos de 2ª Instância com Dados Divergentes da Origem", obs:"Escritório e informações divergentes do processo de origem.", atuacao:"Todos os casos com origem cadastrada passam a ter as informações espelhadas (autor, objeto principal e escritório).", status:"concluido", prazo:"—" } },
+      { values:{ ponto:"Autor — Acentuação e Minúsculas", obs:"Casos com nome do autor cadastrado com acento e letras minúsculas.", atuacao:"Ajuste em andamento para que todos os autores subam em letra maiúscula e sem acentuação.", status:"pendente", prazo:"A definir" } },
+      { values:{ ponto:"Réu Primário", obs:"Réu primário cadastrado como outra empresa, fora do grupo EAGLE.", atuacao:"Ajuste em andamento para que o primeiro réu cadastrado seja sempre uma empresa do grupo EAGLE.", status:"pendente", prazo:"A definir" } },
+      { values:{ ponto:"Duplicidade de Cadastro", obs:"Casos cadastrados em duplicidade no sistema.", atuacao:"Problema identificado na API, que gerava gargalo e duplicidade. Resolvido em tratativa direta com os desenvolvedores da IILEX.", status:"concluido", prazo:"—" } },
+      { values:{ ponto:"Segredo de Justiça", obs:"Casos em segredo de justiça eram cadastrados sem informações.", atuacao:"Casos passam a ficar em standby até a obtenção das informações do processo; sem o mínimo de dados, o caso permanece parado.", status:"concluido", prazo:"—" } },
+      { values:{ ponto:"Escritório em Branco", obs:"Campo escritório cadastrado em branco.", atuacao:"Erro identificado diretamente no sistema IILEX, resolvido em atuação conjunta com os desenvolvedores da IILEX.", status:"concluido", prazo:"—" } },
+      { values:{ ponto:"Limite de Requisições da API", obs:"Limite de requisições da API impactando o cadastro de casos.", atuacao:"Ajuste nas requisições via API, corrigindo os problemas de cadastro decorrentes do limite.", status:"concluido", prazo:"—" } }
+    ]
+  };
+
+  const tbody = document.getElementById("tabela-corpo");
+  const headerRow = document.getElementById("header-row");
+  const saveIndicator = document.getElementById("save-indicator");
+  const lastUpdatedEl = document.getElementById("last-updated");
+  const legendEl = document.getElementById("legend");
+  const summaryEl = document.getElementById("status-summary");
+  const undoBtn = document.getElementById("undo-action");
+  const sidebarTotalPill = document.getElementById("sidebar-total-pill");
+
+  let columns = DEFAULT_COLUMNS.map(c => ({...c}));
+  let statusOptions = DEFAULT_STATUS_OPTIONS.map(o => ({...o}));
+  let rowUidSeq = 0;
+  let ultimaAcaoDesfazer = null;
+  let dragRowSourceUid = null;
+  let statusFiltrados = new Set();
+  let sortState = { colId: null, dir: "asc" };
+
+  function corParaValor(valor){
+    const opt = statusOptions.find(o => o.value === valor);
+    return opt ? opt.color : "#4A545E";
+  }
+
+  function hexParaRgba(hex, alpha){
+    let h = (hex || "").replace("#", "");
+    if(h.length === 3) h = h.split("").map(function(c){ return c + c; }).join("");
+    const num = parseInt(h, 16);
+    if(isNaN(num)) return "transparent";
+    const r = (num >> 16) & 255, g = (num >> 8) & 255, b = num & 255;
+    return "rgba(" + r + "," + g + "," + b + "," + alpha + ")";
+  }
+
+  function atualizarCorLinha(tr){
+    const sel = tr.querySelector(".status-select");
+    tr.style.background = sel ? hexParaRgba(corParaValor(sel.value), 0.12) : "";
+  }
+
+  function atualizarCoresLinhas(){
+    tbody.querySelectorAll("tr").forEach(atualizarCorLinha);
+  }
+
+  function renderLegend(){
+    legendEl.innerHTML = "";
+    statusOptions.forEach(function(opt){
+      const span = document.createElement("span");
+      const colorInput = document.createElement("input");
+      colorInput.type = "color";
+      colorInput.className = "legend-color";
+      colorInput.value = opt.color;
+      colorInput.title = "Clique para trocar a cor de \"" + opt.label + "\"";
+      colorInput.addEventListener("input", function(){
+        opt.color = colorInput.value;
+        atualizarSelectsExistentes();
+        atualizarResumo();
+      });
+      colorInput.addEventListener("change", function(){
+        opt.color = colorInput.value;
+        atualizarSelectsExistentes();
+        atualizarResumo();
+        saveState();
+      });
+      span.appendChild(colorInput);
+      span.appendChild(document.createTextNode(" " + opt.label));
+      legendEl.appendChild(span);
+    });
+  }
+
+  function atualizarDonut(){
+    const donutEl = document.getElementById("status-donut");
+    const totalEl = document.getElementById("donut-total");
+    if(!donutEl || !totalEl) return;
+    const contagem = {};
+    statusOptions.forEach(function(o){ contagem[o.value] = 0; });
+    let total = 0;
+    tbody.querySelectorAll(".status-select").forEach(function(sel){
+      if(contagem.hasOwnProperty(sel.value)){ contagem[sel.value]++; total++; }
+    });
+    totalEl.textContent = total;
+    if(total === 0){ donutEl.style.background = "#D5DAE1"; return; }
+    let acumulado = 0;
+    const partes = [];
+    statusOptions.forEach(function(o){
+      if(!contagem[o.value]) return;
+      const inicio = (acumulado / total) * 360;
+      acumulado += contagem[o.value];
+      const fim = (acumulado / total) * 360;
+      partes.push(o.color + " " + inicio.toFixed(2) + "deg " + fim.toFixed(2) + "deg");
+    });
+    donutEl.style.background = "conic-gradient(" + partes.join(", ") + ")";
+  }
+
+  function atualizarResumo(){
+    const contagem = {};
+    statusOptions.forEach(function(o){ contagem[o.value] = 0; });
+    tbody.querySelectorAll(".status-select").forEach(function(sel){
+      if(contagem.hasOwnProperty(sel.value)) contagem[sel.value]++;
+    });
+    summaryEl.innerHTML = "";
+    statusOptions.forEach(function(o){
+      const pill = document.createElement("button");
+      pill.type = "button";
+      pill.className = "summary-pill" + (statusFiltrados.has(o.value) ? " ativo" : "");
+      pill.style.background = o.color;
+      pill.textContent = o.label + ": " + contagem[o.value];
+      pill.title = "Clique para filtrar por \"" + o.label + "\"";
+      pill.addEventListener("click", function(){
+        if(statusFiltrados.has(o.value)) statusFiltrados.delete(o.value);
+        else statusFiltrados.add(o.value);
+        atualizarResumo();
+        aplicarFiltro();
+      });
+      summaryEl.appendChild(pill);
+    });
+    if(sidebarTotalPill){
+      const total = tbody.querySelectorAll("tr").length;
+      sidebarTotalPill.textContent = total + (total === 1 ? " ponto cadastrado" : " pontos cadastrados");
+    }
+    atualizarDonut();
+    atualizarCoresLinhas();
+  }
+
+  function preencherOptionsSelect(select, valorAtual){
+    select.innerHTML = "";
+    statusOptions.forEach(function(opt){
+      const optionEl = document.createElement("option");
+      optionEl.value = opt.value;
+      optionEl.textContent = opt.label;
+      if(opt.value === valorAtual) optionEl.selected = true;
+      select.appendChild(optionEl);
+    });
+  }
+
+  function criarSelectStatus(valor){
+    const select = document.createElement("select");
+    select.className = "status-select";
+    if(!statusOptions.some(o => o.value === valor)) valor = statusOptions[0].value;
+    preencherOptionsSelect(select, valor);
+    select.style.backgroundColor = corParaValor(valor);
+    select.addEventListener("change", function(){
+      select.style.backgroundColor = corParaValor(select.value);
+      atualizarResumo();
+      aplicarFiltro();
+      saveState();
+    });
+    return select;
+  }
+
+  function atualizarSelectsExistentes(){
+    document.querySelectorAll(".status-select").forEach(function(select){
+      const valorAtual = select.value;
+      preencherOptionsSelect(select, statusOptions.some(o => o.value === valorAtual) ? valorAtual : statusOptions[0].value);
+      select.style.backgroundColor = corParaValor(select.value);
+    });
+  }
+
+  function criarInputTexto(valor, classe, placeholder){
+    const input = document.createElement("input");
+    input.type = "text";
+    if(classe) input.className = classe;
+    if(placeholder) input.placeholder = placeholder;
+    input.value = valor || "";
+    input.addEventListener("input", function(){ saveState(); aplicarFiltro(); });
+    return input;
+  }
+
+  function classeParaColuna(col){
+    return BASE_CLASS_IDS.indexOf(col.id) !== -1 ? col.id : "extra-col";
+  }
+
+  function criarCelula(col, valor){
+    const td = document.createElement("td");
+    td.dataset.colId = col.id;
+    td.className = classeParaColuna(col);
+    if(col.type === "contenteditable"){
+      td.contentEditable = "true";
+      td.textContent = valor || "";
+    } else if(col.type === "status"){
+      td.appendChild(criarSelectStatus(valor || statusOptions[0].value));
+    } else {
+      const classeInput = col.id === "prazo" ? "prazo-input" : null;
+      td.appendChild(criarInputTexto(valor || "", classeInput, col.placeholder || ""));
+    }
+    return td;
+  }
+
+  function lerValoresDaLinha(tr){
+    const values = {};
+    columns.forEach(function(col){
+      const celula = tr.querySelector('[data-col-id="' + col.id + '"]');
+      if(!celula){ values[col.id] = ""; return; }
+      if(col.type === "contenteditable") values[col.id] = celula.textContent;
+      else if(col.type === "status"){ const sel = celula.querySelector("select"); values[col.id] = sel ? sel.value : ""; }
+      else { const inp = celula.querySelector("input"); values[col.id] = inp ? inp.value : ""; }
+    });
+    return values;
+  }
+
+  function criarLinha(rowValues){
+    const tr = document.createElement("tr");
+    tr.dataset.rowUid = "row_" + (++rowUidSeq);
+
+    const tdDrag = document.createElement("td");
+    tdDrag.className = "row-drag-cell";
+    const handleDrag = document.createElement("span");
+    handleDrag.className = "row-drag-handle";
+    handleDrag.draggable = true;
+    handleDrag.title = "Arrastar para reordenar";
+    handleDrag.textContent = "⠿";
+    tdDrag.appendChild(handleDrag);
+    tr.appendChild(tdDrag);
+
+    columns.forEach(function(col){ tr.appendChild(criarCelula(col, rowValues[col.id])); });
+
+    const tdActions = document.createElement("td");
+    tdActions.className = "row-actions-cell";
+
+    const btnDuplicar = document.createElement("button");
+    btnDuplicar.className = "row-duplicate";
+    btnDuplicar.type = "button";
+    btnDuplicar.title = "Duplicar linha";
+    btnDuplicar.textContent = "⧉";
+    tdActions.appendChild(btnDuplicar);
+
+    const btnRemove = document.createElement("button");
+    btnRemove.className = "row-remove";
+    btnRemove.type = "button";
+    btnRemove.title = "Remover linha";
+    btnRemove.textContent = "×";
+    tdActions.appendChild(btnRemove);
+
+    tr.appendChild(tdActions);
+    return tr;
+  }
+
+  function valorOrdenavel(tr, col){
+    const celula = tr.querySelector('[data-col-id="' + col.id + '"]');
+    if(!celula) return "";
+    if(col.type === "status"){
+      const sel = celula.querySelector("select");
+      const idx = statusOptions.findIndex(function(o){ return o.value === (sel ? sel.value : ""); });
+      return idx === -1 ? 999 : idx;
+    }
+    if(col.type === "contenteditable") return celula.textContent.trim().toLowerCase();
+    const inp = celula.querySelector("input");
+    return (inp ? inp.value : "").trim().toLowerCase();
+  }
+
+  function atualizarIconesOrdenacao(){
+    headerRow.querySelectorAll(".col-sort-btn").forEach(function(btn){
+      const th = btn.closest("th");
+      const colId = th ? th.dataset.colId : null;
+      if(sortState.colId && colId === sortState.colId){
+        btn.textContent = sortState.dir === "asc" ? "↑" : "↓";
+        btn.classList.add("col-sort-ativo");
+      } else {
+        btn.textContent = "⇅";
+        btn.classList.remove("col-sort-ativo");
+      }
+    });
+  }
+
+  function ordenarPorColuna(colId){
+    const col = columns.find(function(c){ return c.id === colId; });
+    if(!col) return;
+    if(sortState.colId === colId) sortState.dir = (sortState.dir === "asc") ? "desc" : "asc";
+    else { sortState.colId = colId; sortState.dir = "asc"; }
+
+    const linhas = Array.from(tbody.querySelectorAll("tr"));
+    linhas.sort(function(a, b){
+      const va = valorOrdenavel(a, col);
+      const vb = valorOrdenavel(b, col);
+      if(va < vb) return sortState.dir === "asc" ? -1 : 1;
+      if(va > vb) return sortState.dir === "asc" ? 1 : -1;
+      return 0;
+    });
+    linhas.forEach(function(tr){ tbody.appendChild(tr); });
+    atualizarIconesOrdenacao();
+    saveState();
+  }
+
+  function criarColunaHeader(col){
+    const th = document.createElement("th");
+    th.dataset.colId = col.id;
+
+    const wrap = document.createElement("div");
+    wrap.className = "col-header-wrap";
+
+    const titleInput = document.createElement("input");
+    titleInput.className = "col-title";
+    titleInput.value = col.label || "";
+    titleInput.addEventListener("input", function(){ col.label = titleInput.value; saveState(); });
+
+    const sortBtn = document.createElement("button");
+    sortBtn.type = "button";
+    sortBtn.className = "col-sort-btn";
+    sortBtn.title = "Ordenar por esta coluna";
+    sortBtn.textContent = "⇅";
+    sortBtn.addEventListener("click", function(e){
+      e.stopPropagation();
+      ordenarPorColuna(col.id);
+    });
+
+    wrap.appendChild(titleInput);
+    wrap.appendChild(sortBtn);
+    th.appendChild(wrap);
+    return th;
+  }
+
+  function renderHeader(){
+    headerRow.innerHTML = "";
+    const thDrag = document.createElement("th");
+    thDrag.style.width = "26px";
+    headerRow.appendChild(thDrag);
+    columns.forEach(function(col){ headerRow.appendChild(criarColunaHeader(col)); });
+    const thActions = document.createElement("th");
+    thActions.style.width = "64px";
+    headerRow.appendChild(thActions);
+    atualizarIconesOrdenacao();
+  }
+
+  function snapshotColuna(colId){
+    const colDef = columns.find(function(c){ return c.id === colId; });
+    if(!colDef) return null;
+    const valoresPorLinha = Array.from(tbody.querySelectorAll("tr")).map(function(tr){
+      const celula = tr.querySelector('[data-col-id="' + colId + '"]');
+      if(!celula) return "";
+      if(colDef.type === "contenteditable") return celula.textContent;
+      if(colDef.type === "status"){ const sel = celula.querySelector("select"); return sel ? sel.value : ""; }
+      const inp = celula.querySelector("input"); return inp ? inp.value : "";
+    });
+    return { colDef:{...colDef}, valoresPorLinha };
+  }
+
+  function removerColuna(colId){
+    if(columns.length <= 1){
+      alert("É necessário manter ao menos uma coluna na tabela.");
+      return;
+    }
+    const idx = columns.findIndex(function(c){ return c.id === colId; });
+    if(idx === -1) return;
+
+    const snap = snapshotColuna(colId);
+    ultimaAcaoDesfazer = { tipo:"coluna", indice: idx, colDef: snap.colDef, valoresPorLinha: snap.valoresPorLinha };
+    atualizarBotaoDesfazer();
+
+    if(sortState.colId === colId) sortState = { colId:null, dir:"asc" };
+
+    columns.splice(idx, 1);
+    renderHeader();
+    document.querySelectorAll("#tabela-corpo tr").forEach(function(tr){
+      const celula = tr.querySelector('[data-col-id="' + colId + '"]');
+      if(celula) celula.remove();
+    });
+    atualizarResumo();
+    saveState();
+  }
+
+  function reconstruirOrdemLinhas(){
+    document.querySelectorAll("#tabela-corpo tr").forEach(function(tr){
+      const dragCell = tr.querySelector(".row-drag-cell");
+      const actionsCell = tr.querySelector(".row-actions-cell");
+      const celulasPorId = {};
+      tr.querySelectorAll("[data-col-id]").forEach(function(td){ celulasPorId[td.dataset.colId] = td; });
+      tr.innerHTML = "";
+      if(dragCell) tr.appendChild(dragCell);
+      columns.forEach(function(col){ if(celulasPorId[col.id]) tr.appendChild(celulasPorId[col.id]); });
+      if(actionsCell) tr.appendChild(actionsCell);
+    });
+  }
+
+  function moverColunaParaIndice(colId, novoIndex){
+    const idxAtual = columns.findIndex(function(c){ return c.id === colId; });
+    if(idxAtual === -1) return;
+    const item = columns.splice(idxAtual, 1)[0];
+    columns.splice(novoIndex, 0, item);
+    renderHeader();
+    reconstruirOrdemLinhas();
+    saveState();
+  }
+
+  function atualizarBotaoDesfazer(){ undoBtn.disabled = !ultimaAcaoDesfazer; }
+
+  function renderTable(state){
+    statusOptions = (state.statusOptions && state.statusOptions.length) ? state.statusOptions.map(o => ({...o})) : DEFAULT_STATUS_OPTIONS.map(o => ({...o}));
+    columns = (state.columns && state.columns.length) ? state.columns.map(c => ({...c})) : DEFAULT_COLUMNS.map(c => ({...c}));
+
+    renderLegend();
+    sortState = { colId:null, dir:"asc" };
+    renderHeader();
+
+    tbody.innerHTML = "";
+    (state.rows || []).forEach(function(row){ tbody.appendChild(criarLinha(row.values || {})); });
+
+    ultimaAcaoDesfazer = null;
+    statusFiltrados = new Set();
+    atualizarBotaoDesfazer();
+    atualizarResumo();
+    aplicarFiltro();
+  }
+
+  function getState(){
+    const rows = Array.from(tbody.querySelectorAll("tr")).map(function(tr){ return { values: lerValoresDaLinha(tr) }; });
+    return { columns: columns.map(c => ({...c})), statusOptions: statusOptions.map(o => ({...o})), rows };
+  }
+
+  let saveTimeout = null;
+  function saveState(){
+    try{
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(getState()));
+      if(saveIndicator) saveIndicator.textContent = "Alterações salvas neste navegador";
+      if(lastUpdatedEl) lastUpdatedEl.textContent = "Última atualização: " + new Date().toLocaleString("pt-BR");
+      clearTimeout(saveTimeout);
+      saveTimeout = setTimeout(function(){ if(saveIndicator) saveIndicator.textContent = ""; }, 2000);
+    }catch(e){
+      if(saveIndicator) saveIndicator.textContent = "Não foi possível salvar (armazenamento indisponível)";
+    }
+  }
+
+  function migrarFormatoAntigo(antigo){
+    const colunasExtras = Array.isArray(antigo.columns) ? antigo.columns : [];
+    const colunasNovas = DEFAULT_COLUMNS.map(c => ({...c})).concat(
+      colunasExtras.map(function(titulo, idx){ return { id:"col_legacy_" + idx, label:titulo, type:"text", placeholder:"" }; })
+    );
+    const linhasNovas = (antigo.rows || []).map(function(r){
+      const values = { ponto:r.ponto || "", obs:r.obs || "", atuacao:r.atuacao || "", status:r.status || "pendente", prazo:r.prazo || "" };
+      (r.extras || []).forEach(function(val, idx){ values["col_legacy_" + idx] = val; });
+      return { values };
+    });
+    return {
+      columns: colunasNovas,
+      statusOptions: (antigo.statusOptions && antigo.statusOptions.length) ? antigo.statusOptions : DEFAULT_STATUS_OPTIONS.map(o => ({...o})),
+      rows: linhasNovas
+    };
+  }
+
+  function carregarEstadoInicial(){
+    try{
+      const salvoNovo = localStorage.getItem(STORAGE_KEY);
+      if(salvoNovo) return JSON.parse(salvoNovo);
+      const salvoAntigo = localStorage.getItem(STORAGE_KEY_ANTIGO);
+      if(salvoAntigo) return migrarFormatoAntigo(JSON.parse(salvoAntigo));
+    }catch(e){ /* ignora e usa o padrão */ }
+    return DADOS_ORIGINAIS;
+  }
+
+  // ---- busca + filtro por status (combinados) ----
+  function textoDaLinha(tr){
+    let texto = "";
+    columns.forEach(function(col){
+      const celula = tr.querySelector('[data-col-id="' + col.id + '"]');
+      if(!celula) return;
+      if(col.type === "status"){
+        const sel = celula.querySelector("select");
+        const opt = statusOptions.find(function(o){ return o.value === (sel ? sel.value : ""); });
+        texto += " " + (opt ? opt.label : "");
+      } else if(col.type === "contenteditable"){
+        texto += " " + celula.textContent;
+      } else {
+        const inp = celula.querySelector("input");
+        texto += " " + (inp ? inp.value : "");
+      }
+    });
+    return texto.toLowerCase();
+  }
+
+  function aplicarFiltro(){
+    const termo = document.getElementById("search-input").value.trim().toLowerCase();
+    const linhas = Array.from(tbody.querySelectorAll("tr"));
+    let visiveis = 0;
+    linhas.forEach(function(tr){
+      const bateTexto = !termo || textoDaLinha(tr).indexOf(termo) !== -1;
+      let bateStatus = true;
+      if(statusFiltrados.size > 0){
+        const sel = tr.querySelector(".status-select");
+        bateStatus = sel && statusFiltrados.has(sel.value);
+      }
+      const bate = bateTexto && bateStatus;
+      tr.style.display = bate ? "" : "none";
+      if(bate) visiveis++;
+    });
+    const contador = document.getElementById("search-count");
+    const algumFiltroAtivo = !!termo || statusFiltrados.size > 0;
+    contador.textContent = algumFiltroAtivo ? (visiveis + " de " + linhas.length + " linha(s)") : "";
+  }
+
+  document.getElementById("search-input").addEventListener("input", aplicarFiltro);
+
+  // ================= MODAIS: infraestrutura genérica =================
+  function abrirModal(id){ document.getElementById(id).classList.add("aberto"); }
+  function fecharModal(id){ document.getElementById(id).classList.remove("aberto"); }
+
+  document.querySelectorAll("[data-fechar-modal]").forEach(function(btn){
+    btn.addEventListener("click", function(){ btn.closest(".modal-overlay").classList.remove("aberto"); });
+  });
+  document.querySelectorAll(".modal-overlay").forEach(function(overlay){
+    overlay.addEventListener("click", function(e){ if(e.target === overlay) overlay.classList.remove("aberto"); });
+  });
+
+  // ---- Modal: Excluir coluna ----
+  function renderModalExcluirColuna(){
+    const lista = document.getElementById("lista-excluir-coluna");
+    lista.innerHTML = "";
+    if(columns.length === 0){ lista.innerHTML = '<div class="modal-empty">Nenhuma coluna disponível.</div>'; return; }
+    columns.forEach(function(col){
+      const item = document.createElement("div");
+      item.className = "modal-list-item";
+      const label = document.createElement("span");
+      label.className = "item-label";
+      label.textContent = col.label || "(sem nome)";
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "modal-item-btn";
+      btn.textContent = "Excluir";
+      btn.disabled = columns.length <= 1;
+      btn.addEventListener("click", function(){
+        removerColuna(col.id);
+        renderModalExcluirColuna();
+      });
+      item.appendChild(label);
+      item.appendChild(btn);
+      lista.appendChild(item);
+    });
+  }
+
+  document.getElementById("abrir-modal-excluir-coluna").addEventListener("click", function(){
+    renderModalExcluirColuna();
+    abrirModal("modal-excluir-coluna");
+  });
+
+  // ---- Modal: Organizar colunas (lista arrastável) ----
+  let dragColSourceId = null;
+
+  function renderModalOrganizarColunas(){
+    const lista = document.getElementById("lista-organizar-colunas");
+    lista.innerHTML = "";
+    columns.forEach(function(col){
+      const item = document.createElement("div");
+      item.className = "modal-list-item";
+      item.dataset.colId = col.id;
+
+      const handle = document.createElement("span");
+      handle.className = "item-drag";
+      handle.draggable = true;
+      handle.title = "Arrastar para reordenar";
+      handle.textContent = "⠿";
+
+      const label = document.createElement("span");
+      label.className = "item-label";
+      label.textContent = col.label || "(sem nome)";
+
+      item.appendChild(handle);
+      item.appendChild(label);
+      lista.appendChild(item);
+    });
+  }
+
+  document.getElementById("abrir-modal-organizar-colunas").addEventListener("click", function(){
+    renderModalOrganizarColunas();
+    abrirModal("modal-organizar-colunas");
+  });
+
+  document.getElementById("lista-organizar-colunas").addEventListener("dragstart", function(e){
+    const handle = e.target.closest(".item-drag");
+    if(!handle) return;
+    dragColSourceId = handle.closest(".modal-list-item").dataset.colId;
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", dragColSourceId);
+  });
+  document.getElementById("lista-organizar-colunas").addEventListener("dragover", function(e){
+    const item = e.target.closest(".modal-list-item");
+    if(item) e.preventDefault();
+  });
+  document.getElementById("lista-organizar-colunas").addEventListener("drop", function(e){
+    const item = e.target.closest(".modal-list-item");
+    if(!item || !dragColSourceId) return;
+    e.preventDefault();
+    const destinoId = item.dataset.colId;
+    if(destinoId && destinoId !== dragColSourceId){
+      const novoIndex = columns.findIndex(function(c){ return c.id === destinoId; });
+      moverColunaParaIndice(dragColSourceId, novoIndex);
+      renderModalOrganizarColunas();
+    }
+    dragColSourceId = null;
+  });
+
+  renderTable(carregarEstadoInicial());
+
+  // Edição de texto nas células (ponto, observação, atuação)
+  document.getElementById("tabela-pontos").addEventListener("input", function(e){
+    if(e.target.matches('[contenteditable="true"]')){ saveState(); aplicarFiltro(); }
+  });
+
+  // Duplicar / remover linha
+  tbody.addEventListener("click", function(e){
+    if(e.target.classList.contains("row-duplicate")){
+      const tr = e.target.closest("tr");
+      const valores = lerValoresDaLinha(tr);
+      const novaLinha = criarLinha(valores);
+      tr.parentNode.insertBefore(novaLinha, tr.nextSibling);
+      atualizarResumo();
+      saveState();
+      aplicarFiltro();
+    }
+    if(e.target.classList.contains("row-remove")){
+      const tr = e.target.closest("tr");
+      const celulaPonto = tr.querySelector('[data-col-id="ponto"]');
+      const descricao = (celulaPonto && celulaPonto.textContent.trim()) ? '"' + celulaPonto.textContent.trim() + '"' : "esta linha";
+      if(!confirm("Excluir " + descricao + "? Você pode desfazer logo em seguida pelo botão \"Desfazer última exclusão\".")) return;
+
+      const indice = Array.from(tbody.children).indexOf(tr);
+      ultimaAcaoDesfazer = { tipo:"row", indice, values: lerValoresDaLinha(tr) };
+      atualizarBotaoDesfazer();
+
+      tr.remove();
+      atualizarResumo();
+      saveState();
+      aplicarFiltro();
+    }
+  });
+
+  // Arrastar linhas para reordenar
+  tbody.addEventListener("dragstart", function(e){
+    const handle = e.target.closest(".row-drag-handle");
+    if(!handle) return;
+    const tr = handle.closest("tr");
+    dragRowSourceUid = tr.dataset.rowUid;
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", dragRowSourceUid);
+  });
+  tbody.addEventListener("dragover", function(e){ if(dragRowSourceUid) e.preventDefault(); });
+  tbody.addEventListener("drop", function(e){
+    if(!dragRowSourceUid) return;
+    e.preventDefault();
+    const targetTr = e.target.closest("tr");
+    const sourceTr = tbody.querySelector('[data-row-uid="' + dragRowSourceUid + '"]');
+    if(!targetTr || !sourceTr || targetTr === sourceTr){ dragRowSourceUid = null; return; }
+    const rect = targetTr.getBoundingClientRect();
+    const antes = (e.clientY - rect.top) < rect.height / 2;
+    if(antes) tbody.insertBefore(sourceTr, targetTr);
+    else tbody.insertBefore(sourceTr, targetTr.nextSibling);
+    dragRowSourceUid = null;
+    saveState();
+  });
+
+  // Desfazer última exclusão (linha ou coluna)
+  undoBtn.addEventListener("click", function(){
+    if(!ultimaAcaoDesfazer) return;
+
+    if(ultimaAcaoDesfazer.tipo === "row"){
+      const novaLinha = criarLinha(ultimaAcaoDesfazer.values);
+      const linhas = tbody.querySelectorAll("tr");
+      if(ultimaAcaoDesfazer.indice >= linhas.length) tbody.appendChild(novaLinha);
+      else tbody.insertBefore(novaLinha, linhas[ultimaAcaoDesfazer.indice]);
+    } else if(ultimaAcaoDesfazer.tipo === "coluna"){
+      columns.splice(ultimaAcaoDesfazer.indice, 0, ultimaAcaoDesfazer.colDef);
+      renderHeader();
+      const linhas = Array.from(tbody.querySelectorAll("tr"));
+      linhas.forEach(function(tr, i){
+        const valor = ultimaAcaoDesfazer.valoresPorLinha[i] || "";
+        const novaCelula = criarCelula(ultimaAcaoDesfazer.colDef, valor);
+        const colunaSeguinte = columns[ultimaAcaoDesfazer.indice + 1];
+        const refCel = colunaSeguinte ? tr.querySelector('[data-col-id="' + colunaSeguinte.id + '"]') : tr.querySelector(".row-actions-cell");
+        tr.insertBefore(novaCelula, refCel);
+      });
+    }
+
+    ultimaAcaoDesfazer = null;
+    atualizarBotaoDesfazer();
+    atualizarResumo();
+    saveState();
+    aplicarFiltro();
+  });
+
+  // Adicionar nova linha
+  document.getElementById("add-row").addEventListener("click", function(){
+    const values = {};
+    columns.forEach(function(col){ values[col.id] = (col.type === "status") ? statusOptions[0].value : ""; });
+    if(values.hasOwnProperty("ponto")) values.ponto = "Novo ponto reclamado";
+    const novaLinha = criarLinha(values);
+    tbody.appendChild(novaLinha);
+    const primeiroEditavel = novaLinha.querySelector('[contenteditable="true"], input, select');
+    if(primeiroEditavel) primeiroEditavel.focus();
+    atualizarResumo();
+    saveState();
+    aplicarFiltro();
+  });
+
+  // Adicionar nova coluna
+  document.getElementById("add-col").addEventListener("click", function(){
+    const novaCol = { id:"col_" + Date.now(), label:"Nova Coluna", type:"text", placeholder:"" };
+    columns.push(novaCol);
+    const th = criarColunaHeader(novaCol);
+    headerRow.insertBefore(th, headerRow.lastElementChild);
+    document.querySelectorAll("#tabela-corpo tr").forEach(function(tr){
+      const td = criarCelula(novaCol, "");
+      tr.insertBefore(td, tr.querySelector(".row-actions-cell"));
+    });
+    const titleInput = th.querySelector(".col-title");
+    titleInput.focus();
+    titleInput.select();
+    saveState();
+  });
+
+  // Adicionar nova opção de status
+  document.getElementById("add-status").addEventListener("click", function(){
+    const nomeDigitado = prompt("Nome da nova opção de status (ex.: Em Verificação, Bloqueado, Aguardando Cliente):");
+    if(!nomeDigitado || !nomeDigitado.trim()) return;
+    const label = nomeDigitado.trim();
+    const value = "status_" + label.toLowerCase()
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "") + "_" + Date.now();
+    const corSugerida = COLOR_PALETTE[statusOptions.length % COLOR_PALETTE.length];
+
+    const colorInput = document.createElement("input");
+    colorInput.type = "color";
+    colorInput.value = corSugerida;
+    colorInput.style.position = "fixed";
+    colorInput.style.opacity = "0";
+    colorInput.style.pointerEvents = "none";
+    document.body.appendChild(colorInput);
+
+    let finalizado = false;
+    function finalizarComCor(cor){
+      if(finalizado) return;
+      finalizado = true;
+      statusOptions.push({ value, label, color: cor });
+      renderLegend();
+      atualizarSelectsExistentes();
+      atualizarResumo();
+      saveState();
+      colorInput.remove();
+    }
+
+    colorInput.addEventListener("change", function(){ finalizarComCor(colorInput.value); });
+    colorInput.addEventListener("blur", function(){ setTimeout(function(){ finalizarComCor(colorInput.value); }, 250); });
+    colorInput.click();
+  });
+
+  // Exportar dados (backup em .json)
+  document.getElementById("export-data").addEventListener("click", function(){
+    const dados = getState();
+    const blob = new Blob([JSON.stringify(dados, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const agora = new Date();
+    const carimbo = agora.toISOString().slice(0,19).replace(/[:T]/g, "-");
+    a.href = url;
+    a.download = "pontos_reclamados_eagle_backup_" + carimbo + ".json";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  });
+
+  // Importar dados
+  const importFileInput = document.getElementById("import-file-input");
+  document.getElementById("import-data").addEventListener("click", function(){
+    importFileInput.value = "";
+    importFileInput.click();
+  });
+  importFileInput.addEventListener("change", function(){
+    const arquivo = importFileInput.files[0];
+    if(!arquivo) return;
+    const reader = new FileReader();
+    reader.onload = function(){
+      try{
+        const dados = JSON.parse(reader.result);
+        if(!dados || !Array.isArray(dados.rows)){
+          alert("Este arquivo não parece ser um backup válido desta tabela.");
+          return;
+        }
+        if(confirm("Importar este backup vai substituir todos os dados atuais da tabela (não salvos serão perdidos). Deseja continuar?")){
+          renderTable(dados);
+          saveState();
+        }
+      }catch(e){
+        alert("Não foi possível ler este arquivo. Verifique se é um .json de backup gerado por esta mesma tabela.");
+      }
+    };
+    reader.readAsText(arquivo);
+  });
+
+  // Restaurar versão original
+  document.getElementById("reset-data").addEventListener("click", function(){
+    if(confirm("Isso vai apagar as edições salvas neste navegador (linhas, colunas e opções de status) e voltar à versão original da tabela. Deseja continuar?")){
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(STORAGE_KEY_ANTIGO);
+      renderTable(DADOS_ORIGINAIS);
+      saveState();
+    }
+  });
+
+  // Expandir/recolher submenu "Ajustar tabela"
+  const ajustarToggle = document.getElementById("ajustar-tabela-toggle");
+  const ajustarSubmenu = document.getElementById("ajustar-tabela-submenu");
+  ajustarToggle.addEventListener("click", function(){
+    const aberto = ajustarSubmenu.style.display !== "none";
+    ajustarSubmenu.style.display = aberto ? "none" : "flex";
+    ajustarToggle.setAttribute("aria-expanded", aberto ? "false" : "true");
+  });
+
+  // Recolher/expandir painel lateral
+  const sidebarEl = document.getElementById("sidebar");
+  const collapseBtn = document.getElementById("sidebar-collapse-btn");
+  const collapseIcon = document.getElementById("sidebar-collapse-icon");
+  collapseBtn.addEventListener("click", function(){
+    const recolhido = sidebarEl.classList.toggle("collapsed");
+    collapseIcon.textContent = recolhido ? "→" : "←";
+    collapseBtn.title = recolhido ? "Expandir painel" : "Recolher painel";
+  });
+</script>
+</body>
+</html>

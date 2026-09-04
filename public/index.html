@@ -457,36 +457,7 @@ textarea{resize:vertical;min-height:52px}
     #dashPrintBtn, #dashMesSelect, #dashMesLabel { display:none !important; }
   }
 
-/* ZURICH */
-.zurich-wrap{padding:28px 32px;max-width:1400px;margin:0 auto}
-.zurich-cols{display:flex;gap:20px;margin-bottom:20px;align-items:flex-start}
-.zurich-col-left{flex:1;min-width:0}
-.zurich-col-right{flex:1;min-width:0}
-.z-result-card{background:var(--branco);border:1px solid var(--borda-l);border-radius:var(--rlg);padding:18px;box-shadow:var(--shadow);min-height:120px}
-.z-result-placeholder{font-size:12px;color:var(--chumbo);padding:20px 0;text-align:center}
-.z-info-row{display:flex;gap:8px;font-size:12px;padding:5px 0;border-bottom:1px solid var(--borda-l)}
-.z-info-row:last-child{border-bottom:none}
-.z-info-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;color:var(--chumbo);width:140px;flex-shrink:0;padding-top:1px}
-.z-info-val{color:var(--text);font-weight:600}
-.z-alert{background:var(--err-bg);border:1px solid var(--err-b);border-radius:var(--r);padding:10px 12px;font-size:11px;color:var(--err);margin-top:8px}
-.z-warn{background:var(--amb-bg);border:1px solid var(--amb-b);border-radius:var(--r);padding:10px 12px;font-size:11px;color:var(--amb);margin-top:8px}
-.z-badge-orange{display:inline-block;background:#FFF0E0;border:1px solid #F4A44A;border-radius:20px;padding:2px 10px;font-size:11px;font-weight:600;color:#92400E}
-.z-rule-chip{display:inline-block;background:var(--auto-bg);border:1px solid var(--auto-b);border-radius:4px;padding:2px 7px;font-size:10px;font-weight:600;color:var(--ciano-med);margin-right:4px;margin-bottom:2px}
-.z-rule-motivo{font-size:10px;color:var(--chumbo);margin-top:2px;margin-bottom:6px}
-.z-section-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--chumbo);margin:12px 0 6px}
-.benner-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px 14px}
-.benner-field{display:flex;flex-direction:column;gap:4px}
-.benner-field label{font-size:10px;font-weight:600;color:var(--chumbo);text-transform:uppercase;letter-spacing:.45px}
-.benner-field-full{grid-column:1/-1}
-.z-btn-row{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
-.z-btn-primary{padding:9px 18px;background:var(--verde);color:#fff;border:none;border-radius:var(--r);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px;transition:background .15s}
-.z-btn-primary:hover{background:var(--ciano-med)}
-.z-btn-ghost{padding:9px 18px;background:none;color:var(--chumbo);border:1.5px solid var(--borda);border-radius:var(--r);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s}
-.z-btn-ghost:hover{border-color:var(--ciano);color:var(--verde)}
-.z-radio-group{display:flex;gap:14px;align-items:center;padding-top:6px}
-.z-radio-group label{font-size:12px;font-weight:400;display:flex;align-items:center;gap:5px;cursor:pointer;text-transform:none;letter-spacing:0}
-html.dark .z-result-card{background:var(--surface);border-color:var(--border-color)}
-html.dark .z-info-row{border-color:var(--border-color)}
+#panel-pontos iframe{width:100%;height:calc(100vh - 96px);border:none;display:block}
 </style>
 </head>
 <body>
@@ -543,11 +514,7 @@ html.dark .z-info-row{border-color:var(--border-color)}
     <div class="cards-sym"><span></span><span></span><span></span></div>
     <span class="brand-txt">SBK</span>
     <div class="brand-div"></div>
-    <div style="display:flex;gap:3px;align-items:center;background:rgba(0,0,0,.18);border-radius:8px;padding:3px">
-      <span style="padding:3px 10px;border-radius:6px;font-size:11px;font-weight:600;color:#fff;background:rgba(255,255,255,.2)">Eagle</span>
-      <a href="/zurich.html" style="padding:3px 10px;border-radius:6px;font-size:11px;font-weight:600;color:rgba(255,255,255,.6);text-decoration:none;transition:all .12s" onmouseover="this.style.color='#fff';this.style.background='rgba(255,255,255,.12)'" onmouseout="this.style.color='rgba(255,255,255,.6)';this.style.background='transparent'">Zurich</a>
-      <a href="/agibank.html" style="padding:3px 10px;border-radius:6px;font-size:11px;font-weight:600;color:rgba(255,255,255,.6);text-decoration:none;transition:all .12s" onmouseover="this.style.color='#fff';this.style.background='rgba(255,255,255,.12)'" onmouseout="this.style.color='rgba(255,255,255,.6)';this.style.background='transparent'">Agibank</a>
-    </div>
+    <span style="padding:3px 10px;border-radius:6px;font-size:11px;font-weight:600;color:#fff;background:rgba(255,255,255,.2)">Eagle</span>
   </div>
   <div class="top-actions">
     <button class="tbtn tbtn-ghost" onclick="limparFormulario()">
@@ -581,12 +548,6 @@ html.dark .z-info-row{border-color:var(--border-color)}
         <button onclick="baixarBackupJSON();fecharUserMenu()" id="menuBtnBackup" style="width:100%;padding:10px 14px;border:none;background:none;text-align:left;font-size:12px;color:#1a2421;cursor:pointer;font-family:inherit;display:none" onmouseover="this.style.background='var(--off)'" onmouseout="this.style.background='none'">
           Backup de dados (.json)
         </button>
-        <a href="/zurich.html" target="_blank" id="menuBtnZurich" style="width:100%;padding:10px 14px;border:none;background:none;text-align:left;font-size:12px;color:#1a2421;cursor:pointer;font-family:inherit;display:block;text-decoration:none" onmouseover="this.style.background='var(--off)'" onmouseout="this.style.background='none'">
-          Acessar Zurich
-        </a>
-        <a href="/agibank.html" target="_blank" id="menuBtnAgibank" style="width:100%;padding:10px 14px;border:none;background:none;text-align:left;font-size:12px;color:#1a2421;cursor:pointer;font-family:inherit;display:block;text-decoration:none" onmouseover="this.style.background='var(--off)'" onmouseout="this.style.background='none'">
-          Acessar Agibank
-        </a>
         <button onclick="fazerLogout()" style="width:100%;padding:10px 14px;border:none;background:none;text-align:left;font-size:12px;color:var(--err);cursor:pointer;font-family:inherit;border-top:1px solid var(--borda-l)" onmouseover="this.style.background='var(--err-bg)'" onmouseout="this.style.background='none'">
           Sair da conta
         </button>
@@ -619,6 +580,12 @@ html.dark .z-info-row{border-color:var(--border-color)}
   <button class="tab-btn" id="tab-faturamento" onclick="mudarAba('faturamento')" style="display:none">Faturamento</button>
   <button class="tab-btn" id="tab-dashboard" onclick="mudarAba('dashboard')" style="display:none">Dashboard</button>
   <button class="tab-btn" id="tab-monitor" onclick="mudarAba('monitor')" style="display:none">Monitor API</button>
+  <button class="tab-btn" id="tab-pontos" onclick="mudarAba('pontos')" style="display:none">Pontos Reclamados</button>
+</div>
+
+<!-- ABA PONTOS RECLAMADOS -->
+<div class="tab-panel" id="panel-pontos">
+  <iframe src="/pontos.html" id="iframePontos" title="Pontos Reclamados EAGLE"></iframe>
 </div>
 
 <!-- ABA MONITOR API -->
@@ -4586,6 +4553,7 @@ function aplicarSessao(user) {
   document.getElementById('tab-faturamento').style.display = abas.includes('faturamento') ? '' : 'none';
   document.getElementById('tab-dashboard').style.display = abas.includes('dashboard') ? '' : 'none';
   document.getElementById('tab-monitor').style.display = abas.includes('monitor') || abas.includes('faturamento') ? '' : 'none';
+  document.getElementById('tab-pontos').style.display = '';
   // tab-usuarios sempre oculto — acesso via dropdown do usuário
   if (abas.includes('usuarios')) {
     document.getElementById('menuBtnUsuarios').style.display = 'block';
@@ -7678,8 +7646,8 @@ async function dashRender(mkOverride) {
       )}
     </div>
 
-    <!-- Linha 5 — Painel operacional: Monitor + Agibank -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+    <!-- Linha 5 — Painel operacional: Monitor API -->
+    <div style="display:grid;grid-template-columns:1fr;gap:14px;margin-bottom:14px">
       ${(() => {
         const mon = typeof _monResult !== 'undefined' && _monResult;
         if (!mon) return dashCard('Monitor API', '<p style="font-size:11px;color:var(--chumbo);text-align:center;padding:20px 0">Carregue a planilha na aba Monitor para ver os dados.</p>', null);
@@ -7699,7 +7667,6 @@ async function dashRender(mkOverride) {
           totalMon + ' processos analisados'
         );
       })()}
-      <div id="dashAgiCard">${dashCard('Agibank — historico', '<p style="font-size:11px;color:var(--chumbo);text-align:center;padding:20px 0">Carregando...</p>', null)}</div>
     </div>
 
     <!-- Linha 6 — Faturamento resumo -->
@@ -7724,49 +7691,6 @@ async function dashRender(mkOverride) {
   // Listener do seletor de mês
   document.getElementById('dashMesSelect')?.addEventListener('change', e => dashRender(e.target.value));
 
-  // Carregar historico Agibank do IDB sbk_agi (mesmo origin, banco separado)
-  const agiCardEl = document.getElementById('dashAgiCard');
-  if (agiCardEl) {
-    (async () => {
-      try {
-        const agiDb = await new Promise((res, rej) => {
-          const r = indexedDB.open('sbk_agi', 1);
-          r.onupgradeneeded = e => e.target.result.createObjectStore('kv');
-          r.onsuccess = e => res(e.target.result);
-          r.onerror = () => rej();
-        });
-        const agiHist = await new Promise((res, rej) => {
-          const tx = agiDb.transaction('kv', 'readonly');
-          const req = tx.objectStore('kv').get('agibank:historico');
-          req.onsuccess = () => res(req.result || []);
-          req.onerror = () => rej();
-        });
-        if (!agiHist.length) {
-          agiCardEl.innerHTML = dashCard('Agibank — historico', '<p style="font-size:11px;color:var(--chumbo);text-align:center;padding:20px 0">Nenhum caso analisado. Acesse o ambiente Agibank para comecar.</p>', null);
-        } else {
-          const favoraveis = agiHist.filter(h => h.subsidios === 'Favoraveis' || (h.resultado||'').includes('DEFESA')).length;
-          const desfav = agiHist.length - favoraveis;
-          const mediaAcc = Math.round(agiHist.reduce((s,h) => s + (h.acuracia||0), 0) / agiHist.length);
-          const ultimos = agiHist.slice(0,3);
-          agiCardEl.innerHTML = dashCard('Agibank — ' + agiHist.length + ' casos',
-            '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:6px 0;margin-bottom:8px">'
-            + '<div style="text-align:center"><div style="font-size:22px;font-weight:700;color:var(--vok)">' + favoraveis + '</div><div style="font-size:9px;color:var(--chumbo);text-transform:uppercase;letter-spacing:.3px">Defesa</div></div>'
-            + '<div style="text-align:center"><div style="font-size:22px;font-weight:700;color:var(--err)">' + desfav + '</div><div style="font-size:9px;color:var(--chumbo);text-transform:uppercase;letter-spacing:.3px">Acordo</div></div>'
-            + '<div style="text-align:center"><div style="font-size:22px;font-weight:700;color:var(--ciano-med)">' + mediaAcc + '%</div><div style="font-size:9px;color:var(--chumbo);text-transform:uppercase;letter-spacing:.3px">Media auto</div></div>'
-            + '</div>'
-            + '<div style="font-size:9.5px;font-weight:700;color:var(--chumbo);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px">Ultimos casos</div>'
-            + ultimos.map(h => '<div style="display:flex;justify-content:space-between;font-size:10px;padding:3px 0;border-bottom:1px solid var(--borda-l)">'
-                + '<span style="color:var(--verde);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:55%">' + h.processo + '</span>'
-                + '<span style="color:' + ((h.subsidios==='Favoraveis'||(h.resultado||'').includes('DEFESA'))?'var(--vok)':'var(--err)') + ';font-weight:600;flex-shrink:0">' + (h.resultado||h.subsidios||'—') + '</span>'
-                + '</div>').join(''),
-            'Media de automatizacao: ' + mediaAcc + '%'
-          );
-        }
-      } catch(e) {
-        agiCardEl.innerHTML = dashCard('Agibank — historico', '<p style="font-size:11px;color:var(--chumbo);text-align:center;padding:20px 0">Historico indisponivel. Acesse o ambiente Agibank primeiro.</p>', null);
-      }
-    })();
-  }
 }
 
 // =====================================================================
