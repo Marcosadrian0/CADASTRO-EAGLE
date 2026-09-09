@@ -529,6 +529,13 @@ textarea{resize:vertical;min-height:52px}
     <button id="btnDarkMode" onclick="toggleDarkMode()" title="Alternar tema claro/escuro">
       <span id="darkModeIco">&#9790;</span>
     </button>
+    <div id="globalBasesWrap" style="display:none;position:relative">
+      <button onclick="basesAbrirModal()" style="display:flex;align-items:center;gap:6px;padding:5px 12px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:7px;font-size:11px;font-weight:600;color:#fff;cursor:pointer;font-family:inherit" title="Central de Bases — importe todos os arquivos de uma vez">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+        Bases
+        <span id="basesStatusBadge" style="background:#dc2626;color:#fff;font-size:9px;font-weight:700;padding:1px 6px;border-radius:9px;min-width:16px;text-align:center;transition:background .3s">0/4</span>
+      </button>
+    </div>
     <div id="userMenuWrap" style="position:relative;display:none">
       <button class="tbtn tbtn-ghost" id="btnUserMenu" onclick="toggleUserMenu()" style="gap:7px">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
@@ -608,6 +615,37 @@ textarea{resize:vertical;min-height:52px}
   </div>
 
   <div id="qualStatusBar" style="display:none;font-size:11px;padding:8px 14px;border-radius:8px;margin-bottom:16px;background:var(--off);border:1px solid var(--borda-l);color:var(--chumbo)"></div>
+
+  <!-- Card resumo geral -->
+  <div id="qualResumoGeral" style="display:none;margin-bottom:20px;padding:16px 20px;border-radius:12px;border:1.5px solid var(--borda);background:var(--surface)">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+      <div style="display:flex;gap:20px;flex-wrap:wrap">
+        <div style="text-align:center">
+          <div id="qualResTotal" style="font-size:28px;font-weight:800;color:var(--verde)">0</div>
+          <div style="font-size:9px;text-transform:uppercase;letter-spacing:.4px;color:var(--chumbo)">Registros</div>
+        </div>
+        <div style="width:1px;background:var(--borda-l)"></div>
+        <div style="text-align:center">
+          <div id="qualResOcorrencias" style="font-size:28px;font-weight:800">0</div>
+          <div style="font-size:9px;text-transform:uppercase;letter-spacing:.4px;color:var(--chumbo)">Ocorrencias</div>
+        </div>
+        <div style="width:1px;background:var(--borda-l)"></div>
+        <div style="text-align:center">
+          <div id="qualResRegras" style="font-size:28px;font-weight:800;color:#b45309">0</div>
+          <div style="font-size:9px;text-transform:uppercase;letter-spacing:.4px;color:var(--chumbo)">Regras alertando</div>
+        </div>
+        <div style="width:1px;background:var(--borda-l)"></div>
+        <div style="text-align:center">
+          <div id="qualResSaude" style="font-size:28px;font-weight:800">—</div>
+          <div style="font-size:9px;text-transform:uppercase;letter-spacing:.4px;color:var(--chumbo)">Saude geral</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button onclick="qualExportarConsolidado()" style="padding:7px 14px;border:1.5px solid var(--borda);border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;background:#fff;color:var(--chumbo);font-family:inherit">Exportar tudo (.xlsx)</button>
+        <button onclick="qualVerHistorico()" style="padding:7px 14px;border:1.5px solid var(--borda);border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;background:#fff;color:var(--chumbo);font-family:inherit">Historico</button>
+      </div>
+    </div>
+  </div>
 
   <!-- Cards das regras fixas + customizadas -->
   <div id="qualCards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:16px;margin-bottom:28px">
@@ -695,6 +733,87 @@ textarea{resize:vertical;min-height:52px}
   </div>
 </div>
 
+
+<!-- MODAL CENTRAL DE BASES -->
+<div class="fat-modal" id="basesModal" onclick="if(event.target===this)basesFecharModal()">
+  <div class="fat-modal-box" style="max-width:620px">
+    <div class="fat-modal-hdr">
+      <div>
+        <div class="fat-modal-ttl">Central de Bases</div>
+        <div style="font-size:10px;color:var(--chumbo);margin-top:2px">Importe os arquivos uma vez e eles ficam disponíveis em todas as abas automaticamente</div>
+      </div>
+      <button class="fat-modal-close" onclick="basesFecharModal()">&#xd7;</button>
+    </div>
+
+    <!-- Status resumo -->
+    <div id="basesStatusResumo" style="display:flex;gap:8px;flex-wrap:wrap;padding:12px 20px;border-bottom:1px solid var(--borda-l)"></div>
+
+    <!-- Zonas de upload -->
+    <div style="padding:16px 20px;display:flex;flex-direction:column;gap:12px">
+
+      <div class="fat-card" style="margin:0;padding:14px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+          <div>
+            <div style="font-size:12px;font-weight:700;color:var(--verde)">Base iiLex — Cadastro</div>
+            <div style="font-size:10px;color:var(--chumbo);margin-top:1px">Exportação do iiLex com processos cadastrados. Alimenta Faturamento e Qualidade.</div>
+            <div id="basesStatusIilex" style="font-size:10px;color:var(--chumbo);margin-top:4px;font-style:italic">Nenhum arquivo carregado</div>
+          </div>
+          <label style="display:flex;align-items:center;gap:6px;padding:7px 14px;border:1.5px dashed var(--borda);border-radius:8px;cursor:pointer;font-size:11px;font-weight:600;color:var(--chumbo);background:var(--off);white-space:nowrap;flex-shrink:0">
+            Selecionar
+            <input type="file" id="basesFileCadastro" accept=".xlsx,.xls" style="display:none" onchange="basesProxyCadastro(this)">
+          </label>
+        </div>
+      </div>
+
+      <div class="fat-card" style="margin:0;padding:14px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+          <div>
+            <div style="font-size:12px;font-weight:700;color:var(--verde)">Captura Diária</div>
+            <div style="font-size:10px;color:var(--chumbo);margin-top:1px">Arquivos diários de captura. Pode selecionar vários de uma vez.</div>
+            <div id="basesStatusCaptura" style="font-size:10px;color:var(--chumbo);margin-top:4px;font-style:italic">Nenhum arquivo carregado</div>
+          </div>
+          <label style="display:flex;align-items:center;gap:6px;padding:7px 14px;border:1.5px dashed var(--borda);border-radius:8px;cursor:pointer;font-size:11px;font-weight:600;color:var(--chumbo);background:var(--off);white-space:nowrap;flex-shrink:0">
+            Selecionar
+            <input type="file" id="basesFileCaptura" accept=".xlsx,.xls" multiple style="display:none" onchange="basesProxyCaptura(this)">
+          </label>
+        </div>
+      </div>
+
+      <div class="fat-card" style="margin:0;padding:14px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+          <div>
+            <div style="font-size:12px;font-weight:700;color:var(--verde)">Captura DJE</div>
+            <div style="font-size:10px;color:var(--chumbo);margin-top:1px">Arquivos diários do DJE. Pode selecionar vários de uma vez.</div>
+            <div id="basesStatusDje" style="font-size:10px;color:var(--chumbo);margin-top:4px;font-style:italic">Nenhum arquivo carregado</div>
+          </div>
+          <label style="display:flex;align-items:center;gap:6px;padding:7px 14px;border:1.5px dashed var(--borda);border-radius:8px;cursor:pointer;font-size:11px;font-weight:600;color:var(--chumbo);background:var(--off);white-space:nowrap;flex-shrink:0">
+            Selecionar
+            <input type="file" id="basesFileDje" accept=".xlsx,.xls" multiple style="display:none" onchange="basesProxyDje(this)">
+          </label>
+        </div>
+      </div>
+
+      <div class="fat-card" style="margin:0;padding:14px;border-color:#93c5fd;background:#eff6ff">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+          <div>
+            <div style="font-size:12px;font-weight:700;color:#1d4ed8">Base do Sistema — Qualidade</div>
+            <div style="font-size:10px;color:var(--chumbo);margin-top:1px">Exportação completa do sistema. Usada pela aba Qualidade de Cadastro para analise das regras.</div>
+            <div id="basesStatusSistema" style="font-size:10px;color:var(--chumbo);margin-top:4px;font-style:italic">Nenhum arquivo carregado</div>
+          </div>
+          <label style="display:flex;align-items:center;gap:6px;padding:7px 14px;border:1.5px dashed #93c5fd;border-radius:8px;cursor:pointer;font-size:11px;font-weight:600;color:#1d4ed8;background:#fff;white-space:nowrap;flex-shrink:0">
+            Selecionar
+            <input type="file" id="basesFileSistema" accept=".csv,.xlsx,.xls" style="display:none" onchange="basesProxySistema(this)">
+          </label>
+        </div>
+      </div>
+
+    </div>
+
+    <div style="padding:0 20px 16px;display:flex;justify-content:flex-end">
+      <button onclick="basesFecharModal()" style="padding:8px 20px;background:var(--verde);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Concluir</button>
+    </div>
+  </div>
+</div>
 
 <!-- ABA ACURÁCIA -->
 <div class="tab-panel" id="panel-acuracia">
@@ -4548,6 +4667,8 @@ function aplicarSessao(user) {
   // Pré-carregar regras customizadas para aplicação durante análise
   regrasCarregar();
   document.getElementById('userMenuWrap').style.display = 'block';
+  document.getElementById('globalBasesWrap').style.display = '';
+  basesAtualizarStatus();
   document.getElementById('topUserName').textContent = user.nome;
   document.getElementById('menuUserNome').textContent = user.nome;
   document.getElementById('menuUserPerfil').textContent = user.perfil === 'admin' ? 'Administrador' : 'Operador';
@@ -4663,6 +4784,7 @@ async function fazerLogout() {
   if (token) fetch('/api/login', { method: 'DELETE', headers: {'Content-Type':'application/json'}, body: JSON.stringify({token}) }).catch(()=>{});
   document.getElementById('btnLogout').style.display = 'none';
   document.getElementById('userMenuWrap').style.display = 'none';
+  document.getElementById('globalBasesWrap').style.display = 'none';
   document.getElementById('topUserName').textContent = '';
   const banner = document.getElementById('session-expiry-banner');
   if (banner) banner.style.display = 'none';
@@ -8386,11 +8508,64 @@ const QUAL_REGRAS_FIXAS = [
     nome: 'Classificacao por NPU',
     descricao: 'Distribuicao dos processos por tipo (Estadual / Federal / Trabalhista)',
     cor: 'azul',
-    informativo: true,  // nao conta como pendencia, apenas exibe distribuicao
+    informativo: true,
     testar: (row, cols) => {
       const col = qualDetectarColuna(cols, ['processo','npu','numerodoprocesso','numero_processo']);
       if (!col) return false;
       return !!qualTipoNPU(row[col] || '');
+    }
+  },
+  {
+    id: 'polo_passivo_vazio',
+    nome: 'Polo Passivo Vazio',
+    descricao: 'Processos sem parte passiva (reu) cadastrada',
+    cor: 'amarelo',
+    testar: (row, cols) => {
+      const col = qualDetectarColuna(cols, ['polopassivo','polo_passivo','reu','parte_passiva','partepassiva','adverso','adversario']);
+      if (!col) return false;
+      const v = String(row[col] || '').trim();
+      return !v;
+    }
+  },
+  {
+    id: 'data_npu_inconsistente',
+    nome: 'Data inconsistente com NPU',
+    descricao: 'Ano no NPU diverge do ano de distribuicao registrado',
+    cor: 'vermelho',
+    testar: (row, cols) => {
+      const colNpu  = qualDetectarColuna(cols, ['processo','npu','numerodoprocesso','numero_processo']);
+      const colData = qualDetectarColuna(cols, ['datadistribuicao','data_distribuicao','dtdistribuicao','data_entrada','dtentrada','dataentrada','distribuicao']);
+      if (!colNpu || !colData) return false;
+      const npu  = String(row[colNpu]  || '').replace(/\s/g,'');
+      const data = String(row[colData] || '').trim();
+      // Extrai ano do NPU: NNNNNNN-DD.AAAA.J.TT.OOOO
+      const m = npu.match(/^\d{7}-\d{2}\.(\d{4})\.\d\.\d{2}\.\d{4}$/);
+      if (!m || !data) return false;
+      const anoNpu  = parseInt(m[1]);
+      // Extrai ano da data (suporta DD/MM/YYYY e YYYY-MM-DD e variantes)
+      const mData = data.match(/(\d{4})/g);
+      if (!mData) return false;
+      const anoData = parseInt(mData.find(a => parseInt(a) >= 1990 && parseInt(a) <= 2099) || '0');
+      return anoData > 0 && anoNpu !== anoData;
+    }
+  },
+  {
+    id: 'vara_incompativel',
+    nome: 'Vara incompativel com Justica',
+    descricao: 'Tipo de vara diverge do tipo de justica indicado pelo NPU',
+    cor: 'roxo',
+    testar: (row, cols) => {
+      const colNpu  = qualDetectarColuna(cols, ['processo','npu','numerodoprocesso','numero_processo']);
+      const colVara = qualDetectarColuna(cols, ['vara','tribunal','orgaojulgador','orgao_julgador']);
+      if (!colNpu || !colVara) return false;
+      const tipo = qualTipoNPU(row[colNpu] || '');
+      if (!tipo || tipo === 'Outro') return false;
+      const vara = String(row[colVara] || '').toLowerCase();
+      if (!vara) return false;
+      if (tipo === 'Trabalhista' && (vara.includes('federal') || vara.includes('estadual') || vara.includes('civel') || vara.includes('cível'))) return true;
+      if (tipo === 'Federal'     && (vara.includes('trabalh') || vara.includes('estadual'))) return true;
+      if (tipo === 'Estadual'    && (vara.includes('trabalh') || vara.includes('federal'))) return true;
+      return false;
     }
   }
 ];
@@ -8428,7 +8603,7 @@ function qualStatus(msg, erro) {
   el.style.color = erro ? 'var(--err,#dc2626)' : 'var(--chumbo)';
 }
 
-async function qualCarregarBase(file) {
+async function qualCarregarBase(file, abaIndex) {
   if (!file) return;
   qualStatus('Lendo arquivo...');
   try {
@@ -8446,22 +8621,59 @@ async function qualCarregarBase(file) {
         headers.forEach((h, j) => { obj[h] = (parts[j] || '').replace(/^"|"$/g,'').trim(); });
         rows.push(obj);
       }
+      _qualNomeArquivo = file.name;
+      _qualAbas = null;
     } else {
       if (typeof XLSX === 'undefined') { qualStatus('Biblioteca XLSX nao disponivel.', true); return; }
       const buf = await file.arrayBuffer();
       const wb = XLSX.read(buf, { type: 'array' });
-      const ws = wb.Sheets[wb.SheetNames[0]];
+      _qualAbas = wb.SheetNames;
+      _qualNomeArquivo = file.name;
+      _qualWb = wb;
+      // Se tem multiplas abas e nao foi especificada qual, perguntar
+      if (wb.SheetNames.length > 1 && abaIndex === undefined) {
+        qualStatus('Arquivo com ' + wb.SheetNames.length + ' abas. Selecione qual usar.');
+        qualMostrarSeletorAba();
+        return;
+      }
+      const idx = abaIndex !== undefined ? abaIndex : 0;
+      const ws = wb.Sheets[wb.SheetNames[idx]];
       rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
       _qualColunas = rows.length ? Object.keys(rows[0]) : [];
     }
     _qualBase = rows;
-    qualStatus('Base carregada: ' + rows.length + ' registros. Clique em Analisar.');
-    // Atualiza hint de colunas no modal de regra
+    qualStatus('Base carregada: ' + rows.length + ' registros (' + file.name + '). Clique em Analisar.');
     const hint = document.getElementById('qualRegraColunaHint');
     if (hint) hint.textContent = 'Colunas disponiveis: ' + _qualColunas.slice(0,12).join(', ') + (_qualColunas.length > 12 ? '...' : '');
   } catch(e) {
     qualStatus('Erro ao ler arquivo: ' + e.message, true);
   }
+}
+
+let _qualAbas = null, _qualWb = null, _qualNomeArquivo = '';
+
+function qualMostrarSeletorAba() {
+  if (!_qualAbas || !_qualAbas.length) return;
+  const cont = document.getElementById('qualCards');
+  cont.innerHTML = `<div style="grid-column:1/-1">
+    <div class="fat-card" style="border-color:#93c5fd;background:#eff6ff">
+      <div class="fat-card-ttl" style="color:#1d4ed8">Selecione a aba do arquivo</div>
+      <div class="fat-card-sub">O arquivo tem multiplas abas. Escolha qual contem os dados de processos:</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px">
+        ${_qualAbas.map((nome,i) => `<button onclick="qualSelecionarAba(${i})" style="padding:8px 16px;border:1.5px solid #93c5fd;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;background:#fff;color:#1d4ed8;font-family:inherit">${nome}</button>`).join('')}
+      </div>
+    </div>
+  </div>`;
+}
+
+async function qualSelecionarAba(idx) {
+  if (!_qualWb) return;
+  const ws = _qualWb.Sheets[_qualWb.SheetNames[idx]];
+  const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+  _qualColunas = rows.length ? Object.keys(rows[0]) : [];
+  _qualBase = rows;
+  qualStatus('Aba "' + _qualWb.SheetNames[idx] + '" carregada: ' + rows.length + ' registros. Clique em Analisar.');
+  qualRenderCards();
 }
 
 function qualSplitCSV(line, sep) {
@@ -8494,12 +8706,78 @@ function qualAnalisar() {
   });
 
   qualRenderCards();
-  const total = Object.values(_qualResultados).filter((_, i) => {
-    const key = Object.keys(_qualResultados)[i];
-    const fixa = QUAL_REGRAS_FIXAS.find(r => r.id === key);
-    return !fixa || !fixa.informativo;
-  }).reduce((s, arr) => s + arr.length, 0);
-  qualStatus('Analise concluida: ' + total + ' ocorrencias encontradas em ' + _qualBase.length + ' registros.');
+
+  const pendencias = QUAL_REGRAS_FIXAS.filter(r => !r.informativo && (_qualResultados[r.id]||[]).length > 0);
+  const total = pendencias.reduce((s, r) => s + (_qualResultados[r.id]||[]).length, 0);
+
+  // Detecta quais regras nao encontraram as colunas esperadas
+  const avisos = qualDetectarColunasAusentes();
+
+  // Salva no historico
+  qualSalvarHistorico({ total, registros: _qualBase.length, pendencias: pendencias.length, arquivo: _qualNomeArquivo || '' });
+
+  let msg = 'Analise concluida: ' + total + ' ocorrencias em ' + _qualBase.length + ' registros.';
+  if (avisos.length) msg += ' AVISO: colunas nao encontradas para: ' + avisos.join(', ') + '.';
+  qualStatus(msg, avisos.length > 0);
+}
+
+function qualDetectarColunasAusentes() {
+  const ausentes = [];
+  const checks = [
+    { regra: 'cpf_zerado',           palavras: ['cpf'],         label: 'CPF' },
+    { regra: 'cnpj_zerado',          palavras: ['cnpj'],        label: 'CNPJ' },
+    { regra: 'trabalhista_escritorio', palavras: ['escritorio','escritório'], label: 'Escritorio' },
+    { regra: 'trabalhista_responsavel', palavras: ['responsavelexterno','responsavel_externo'], label: 'Responsavel Externo' },
+    { regra: 'polo_passivo_vazio',   palavras: ['polopassivo','polo_passivo','reu'], label: 'Polo Passivo' },
+    { regra: 'data_npu_inconsistente', palavras: ['datadistribuicao','data_distribuicao','distribuicao'], label: 'Data Distribuicao' },
+  ];
+  checks.forEach(({ regra, palavras, label }) => {
+    if (!qualDetectarColuna(_qualColunas, palavras)) ausentes.push(label);
+  });
+  return ausentes;
+}
+
+function qualSalvarHistorico(entrada) {
+  try {
+    const hist = JSON.parse(localStorage.getItem('qual:historico') || '[]');
+    hist.unshift({ ...entrada, data: new Date().toISOString() });
+    localStorage.setItem('qual:historico', JSON.stringify(hist.slice(0, 30)));
+  } catch {}
+}
+
+function qualExportarConsolidado() {
+  if (!_qualBase || !Object.keys(_qualResultados).length) { alert('Execute a analise primeiro.'); return; }
+  if (typeof XLSX === 'undefined') { alert('Biblioteca XLSX nao disponivel.'); return; }
+  const wb = XLSX.utils.book_new();
+  const cols = _qualColunas.length ? _qualColunas : (_qualBase.length ? Object.keys(_qualBase[0]) : []);
+
+  QUAL_REGRAS_FIXAS.forEach(regra => {
+    const rows = _qualResultados[regra.id] || [];
+    if (!rows.length) return;
+    const colsAba = regra.informativo ? ['Tipo NPU', ...cols] : cols;
+    const colNpu = qualDetectarColuna(_qualColunas, ['processo','npu','numerodoprocesso','numero_processo']);
+    const linhas = [colsAba, ...rows.map(row => {
+      if (regra.informativo) {
+        const tipo = colNpu ? qualTipoNPU(row[colNpu]||'') || 'Sem NPU' : 'Sem NPU';
+        return [tipo, ...cols.map(c => row[c]||'')];
+      }
+      return cols.map(c => row[c]||'');
+    })];
+    const ws = XLSX.utils.aoa_to_sheet(linhas);
+    XLSX.utils.book_append_sheet(wb, ws, regra.nome.slice(0,31));
+  });
+
+  const regrasCustom = qualCarregarRegrasCustom();
+  regrasCustom.forEach(rc => {
+    const rows = _qualResultados['custom_' + rc.id] || [];
+    if (!rows.length) return;
+    const linhas = [cols, ...rows.map(row => cols.map(c => row[c]||''))];
+    const ws = XLSX.utils.aoa_to_sheet(linhas);
+    XLSX.utils.book_append_sheet(wb, ws, rc.nome.slice(0,31));
+  });
+
+  if (wb.SheetNames.length === 0) { alert('Nenhuma ocorrencia para exportar.'); return; }
+  XLSX.writeFile(wb, 'qualidade_cadastro_completo.xlsx');
 }
 
 function qualAplicarRegraCustom(row, rc) {
@@ -8512,6 +8790,22 @@ function qualAplicarRegraCustom(row, rc) {
 }
 
 function qualRenderCards() {
+  // Atualiza card de resumo geral
+  const pendencias = QUAL_REGRAS_FIXAS.filter(r => !r.informativo && (_qualResultados[r.id]||[]).length > 0);
+  const totalOco = pendencias.reduce((s,r) => s + (_qualResultados[r.id]||[]).length, 0);
+  const totalReg = (_qualBase||[]).length;
+  const pctLimpo = totalReg > 0 ? Math.round((1 - totalOco / totalReg) * 100) : 100;
+  const corSaude = pctLimpo >= 95 ? '#16a34a' : pctLimpo >= 80 ? '#d97706' : '#dc2626';
+  const resumoEl = document.getElementById('qualResumoGeral');
+  if (resumoEl) {
+    resumoEl.style.display = '';
+    const set = (id, v, cor) => { const el = document.getElementById(id); if (el) { el.textContent = v; if (cor) el.style.color = cor; } };
+    set('qualResTotal', totalReg.toLocaleString('pt-BR'));
+    set('qualResOcorrencias', totalOco.toLocaleString('pt-BR'), totalOco === 0 ? '#16a34a' : '#dc2626');
+    set('qualResRegras', pendencias.length, pendencias.length === 0 ? '#16a34a' : '#b45309');
+    set('qualResSaude', pctLimpo + '%', corSaude);
+  }
+
   const cont = document.getElementById('qualCards');
   const regrasCustom = qualCarregarRegrasCustom();
   let html = '';
@@ -8628,7 +8922,6 @@ function qualAbrirModal(ruleKey) {
   const ttl = document.getElementById('qualModalTtl');
   const body = document.getElementById('qualModalBody');
 
-  // Identifica nome da regra
   const fixa = QUAL_REGRAS_FIXAS.find(r => r.id === ruleKey);
   const regrasCustom = qualCarregarRegrasCustom();
   const custom = regrasCustom.find(r => 'custom_' + r.id === ruleKey);
@@ -8644,7 +8937,7 @@ function qualAbrirModal(ruleKey) {
   } else if (fixa && fixa.informativo) {
     body.innerHTML = qualRenderModalNPU();
   } else {
-    body.innerHTML = qualRenderTabela(rows);
+    body.innerHTML = qualRenderTabelaComFiltros(rows);
   }
 
   modal.classList.add('open');
@@ -8710,6 +9003,51 @@ function qualRenderTabela(rows) {
   if (rows.length > 500) html += `<tr><td colspan="${colsExib.length}" style="padding:8px 10px;font-size:10px;color:var(--chumbo);font-style:italic">Exibindo 500 de ${rows.length} registros. Use Exportar para ver todos.</td></tr>`;
   html += '</tbody></table>';
   return html;
+}
+
+function qualRenderTabelaComFiltros(rowsAll) {
+  if (!rowsAll || !rowsAll.length) return '<p style="font-size:12px;color:var(--chumbo);padding:16px 0">Nenhuma ocorrencia.</p>';
+  const colNpu = qualDetectarColuna(_qualColunas, ['processo','npu','numerodoprocesso','numero_processo']);
+
+  // Verifica se ha distribuicao NPU significativa
+  let distTipos = null;
+  if (colNpu) {
+    const tipos = {};
+    rowsAll.forEach(row => {
+      const t = qualTipoNPU(row[colNpu]||'') || 'Sem NPU';
+      tipos[t] = (tipos[t]||0) + 1;
+    });
+    if (Object.keys(tipos).length > 1) distTipos = tipos;
+  }
+
+  let filtroHtml = '';
+  if (distTipos) {
+    filtroHtml = `<div style="display:flex;gap:6px;flex-wrap:wrap;padding:10px 0;border-bottom:1px solid var(--borda-l);margin-bottom:4px">
+      <button onclick="qualFiltrarModalTipo(null)" id="qualFiltroTipoTodos" style="padding:4px 12px;border-radius:20px;border:1.5px solid var(--verde);background:var(--verde);color:#fff;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit">Todos (${rowsAll.length})</button>
+      ${Object.entries(distTipos).map(([tipo,qtd])=>`<button onclick="qualFiltrarModalTipo('${tipo}')" class="qualFiltroTipoBtn" data-tipo="${tipo}" style="padding:4px 12px;border-radius:20px;border:1.5px solid var(--borda);background:transparent;color:var(--chumbo);font-size:10px;font-weight:600;cursor:pointer;font-family:inherit">${tipo} (${qtd})</button>`).join('')}
+    </div>`;
+  }
+
+  window._qualModalRowsAll = rowsAll;
+  return filtroHtml + `<div id="qualModalTabela">${qualRenderTabela(rowsAll)}</div>`;
+}
+
+function qualFiltrarModalTipo(tipo) {
+  const rows = tipo ? (window._qualModalRowsAll||[]).filter(row => {
+    const colNpu = qualDetectarColuna(_qualColunas, ['processo','npu','numerodoprocesso','numero_processo']);
+    return colNpu && qualTipoNPU(row[colNpu]||'') === tipo;
+  }) : (window._qualModalRowsAll||[]);
+  const tabDiv = document.getElementById('qualModalTabela');
+  if (tabDiv) tabDiv.innerHTML = qualRenderTabela(rows);
+  // Atualiza botoes de filtro
+  document.getElementById('qualFiltroTipoTodos')?.style && (document.getElementById('qualFiltroTipoTodos').style.background = tipo ? 'transparent' : 'var(--verde)');
+  document.getElementById('qualFiltroTipoTodos')?.style && (document.getElementById('qualFiltroTipoTodos').style.color = tipo ? 'var(--chumbo)' : '#fff');
+  document.querySelectorAll('.qualFiltroTipoBtn').forEach(btn => {
+    const ativo = btn.dataset.tipo === tipo;
+    btn.style.background = ativo ? 'var(--verde)' : 'transparent';
+    btn.style.color = ativo ? '#fff' : 'var(--chumbo)';
+    btn.style.borderColor = ativo ? 'var(--verde)' : 'var(--borda)';
+  });
 }
 
 function qualFecharModal() {
@@ -8836,9 +9174,161 @@ function qualFecharModalRegra() {
   document.getElementById('qualModalRegra').classList.remove('open');
 }
 
+function qualVerHistorico() {
+  try {
+    const hist = JSON.parse(localStorage.getItem('qual:historico') || '[]');
+    const modal = document.getElementById('qualModal');
+    document.getElementById('qualModalTtl').textContent = 'Historico de analises';
+    _qualModalKey = null;
+    if (!hist.length) {
+      document.getElementById('qualModalBody').innerHTML = '<p style="padding:20px;color:var(--chumbo);font-size:12px">Nenhuma analise registrada ainda.</p>';
+    } else {
+      let html = `<table style="width:100%;border-collapse:collapse;font-size:11px">
+        <thead><tr style="border-bottom:2px solid var(--borda)">
+          <th style="text-align:left;padding:6px 10px;color:var(--chumbo)">Data</th>
+          <th style="text-align:left;padding:6px 10px;color:var(--chumbo)">Arquivo</th>
+          <th style="text-align:right;padding:6px 10px;color:var(--chumbo)">Registros</th>
+          <th style="text-align:right;padding:6px 10px;color:var(--chumbo)">Ocorrencias</th>
+          <th style="text-align:right;padding:6px 10px;color:var(--chumbo)">Regras alertando</th>
+        </tr></thead><tbody>`;
+      hist.forEach(h => {
+        const dt = new Date(h.data).toLocaleDateString('pt-BR') + ' ' + new Date(h.data).toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'});
+        const corOco = h.total === 0 ? '#16a34a' : '#dc2626';
+        html += `<tr style="border-bottom:1px solid var(--borda-l)">
+          <td style="padding:6px 10px;font-size:10px;color:var(--chumbo)">${dt}</td>
+          <td style="padding:6px 10px;font-size:10px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${h.arquivo || '-'}</td>
+          <td style="padding:6px 10px;text-align:right;font-weight:700">${(h.registros||0).toLocaleString('pt-BR')}</td>
+          <td style="padding:6px 10px;text-align:right;font-weight:700;color:${corOco}">${(h.total||0).toLocaleString('pt-BR')}</td>
+          <td style="padding:6px 10px;text-align:right">${h.pendencias||0}</td>
+        </tr>`;
+      });
+      html += '</tbody></table>';
+      document.getElementById('qualModalBody').innerHTML = html;
+    }
+    modal.classList.add('open');
+  } catch {}
+}
+
 function qualInicializar() {
   qualRenderRegrasLista();
   if (_qualBase && Object.keys(_qualResultados).length) qualRenderCards();
+}
+
+// =====================================================================
+// CENTRAL DE BASES
+// =====================================================================
+
+const _basesCarregadas = { iilex: false, captura: false, dje: false, sistema: false };
+
+function basesAbrirModal() {
+  basesAtualizarStatus();
+  document.getElementById('basesModal').classList.add('open');
+}
+function basesFecharModal() {
+  document.getElementById('basesModal').classList.remove('open');
+}
+
+function basesAtualizarStatus() {
+  // Verifica o que já está carregado
+  _basesCarregadas.iilex   = !!(typeof fatCadastroConsolidado !== 'undefined' && fatCadastroConsolidado && (fatCadastroConsolidado.rows||[]).length > 0);
+  _basesCarregadas.captura = !!(typeof fatCadastroConsolidado !== 'undefined' && fatCadastroConsolidado && (fatCadastroConsolidado.uploads||[]).length > 0);
+  _basesCarregadas.dje     = !!(typeof fatCadastroConsolidado !== 'undefined' && fatCadastroConsolidado && (fatCadastroConsolidado.djeRows||[]).length > 0);
+  _basesCarregadas.sistema = !!(_qualBase && _qualBase.length > 0);
+
+  const total = Object.values(_basesCarregadas).filter(Boolean).length;
+  const badge = document.getElementById('basesStatusBadge');
+  if (badge) {
+    badge.textContent = total + '/4';
+    badge.style.background = total === 4 ? '#16a34a' : total >= 2 ? '#d97706' : '#dc2626';
+  }
+
+  // Atualiza status dentro do modal
+  const setStatus = (id, carregado, msg) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = msg;
+    el.style.color = carregado ? '#16a34a' : 'var(--chumbo)';
+    el.style.fontStyle = carregado ? 'normal' : 'italic';
+    el.style.fontWeight = carregado ? '600' : 'normal';
+  };
+
+  const iilexRows = (typeof fatCadastroConsolidado !== 'undefined' && fatCadastroConsolidado) ? (fatCadastroConsolidado.rows||[]).length : 0;
+  const captRows  = (typeof fatCadastroConsolidado !== 'undefined' && fatCadastroConsolidado) ? (fatCadastroConsolidado.capturaRows||[]).length : 0;
+  const djeRows   = (typeof fatCadastroConsolidado !== 'undefined' && fatCadastroConsolidado) ? (fatCadastroConsolidado.djeRows||[]).length : 0;
+  const qualRows  = _qualBase ? _qualBase.length : 0;
+
+  setStatus('basesStatusIilex',   _basesCarregadas.iilex,   _basesCarregadas.iilex   ? iilexRows + ' registros carregados' : 'Nenhum arquivo carregado');
+  setStatus('basesStatusCaptura', _basesCarregadas.captura, _basesCarregadas.captura ? captRows  + ' registros de captura' : 'Nenhum arquivo carregado');
+  setStatus('basesStatusDje',     _basesCarregadas.dje,     _basesCarregadas.dje     ? djeRows   + ' registros DJE'       : 'Nenhum arquivo carregado');
+  setStatus('basesStatusSistema', _basesCarregadas.sistema, _basesCarregadas.sistema ? qualRows  + ' registros carregados' : 'Nenhum arquivo carregado');
+
+  // Resumo no modal
+  const resumo = document.getElementById('basesStatusResumo');
+  if (resumo) {
+    const items = [
+      { label: 'iiLex', ok: _basesCarregadas.iilex },
+      { label: 'Captura', ok: _basesCarregadas.captura },
+      { label: 'DJE', ok: _basesCarregadas.dje },
+      { label: 'Sistema', ok: _basesCarregadas.sistema },
+    ];
+    resumo.innerHTML = items.map(it => `
+      <div style="display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;background:${it.ok?'#dcfce7':'#f1f5f9'};border:1px solid ${it.ok?'#86efac':'#e2e8f0'}">
+        <span style="width:7px;height:7px;border-radius:50%;background:${it.ok?'#16a34a':'#cbd5e1'};display:inline-block"></span>
+        <span style="font-size:10px;font-weight:600;color:${it.ok?'#166534':'var(--chumbo)'}">${it.label}</span>
+      </div>`).join('');
+  }
+}
+
+// Proxy: delega ao handler existente do Faturamento (iiLex)
+async function basesProxyCadastro(input) {
+  const file = input.files[0];
+  if (!file) return;
+  // Injeta o arquivo no input do Faturamento e dispara o evento
+  const fatInput = document.getElementById('fatFileCadastro');
+  if (fatInput) {
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    fatInput.files = dt.files;
+    fatInput.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+  // Atualiza status apos um delay para o handler processar
+  setTimeout(() => { basesAtualizarStatus(); input.value = ''; }, 2500);
+}
+
+async function basesProxyCaptura(input) {
+  const files = Array.from(input.files);
+  if (!files.length) return;
+  const fatInput = document.getElementById('fatFileCaptura');
+  if (fatInput) {
+    const dt = new DataTransfer();
+    files.forEach(f => dt.items.add(f));
+    fatInput.files = dt.files;
+    fatInput.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+  setTimeout(() => { basesAtualizarStatus(); input.value = ''; }, 3000);
+}
+
+async function basesProxyDje(input) {
+  const files = Array.from(input.files);
+  if (!files.length) return;
+  const fatInput = document.getElementById('fatFileDje');
+  if (fatInput) {
+    const dt = new DataTransfer();
+    files.forEach(f => dt.items.add(f));
+    fatInput.files = dt.files;
+    fatInput.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+  setTimeout(() => { basesAtualizarStatus(); input.value = ''; }, 3000);
+}
+
+async function basesProxySistema(input) {
+  const file = input.files[0];
+  if (!file) return;
+  await qualCarregarBase(file);
+  basesAtualizarStatus();
+  input.value = '';
+  // Se estiver na aba qualidade, re-renderiza
+  if (document.getElementById('panel-monitor')?.classList.contains('active')) qualAnalisar();
 }
 
 // legado - mantido para compatibilidade com dashboard
