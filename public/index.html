@@ -580,7 +580,7 @@ textarea{resize:vertical;min-height:52px}
   <button class="tab-btn" id="tab-usuarios" onclick="mudarAba('usuarios')" style="display:none">Usuários</button>
   <button class="tab-btn" id="tab-faturamento" onclick="mudarAba('faturamento')" style="display:none">Faturamento</button>
   <button class="tab-btn" id="tab-dashboard" onclick="mudarAba('dashboard')" style="display:none">Dashboard</button>
-  <button class="tab-btn" id="tab-monitor" onclick="mudarAba('monitor')" style="display:none">Monitor API</button>
+  <button class="tab-btn" id="tab-monitor" onclick="mudarAba('monitor')" style="display:none">Qualidade de Cadastro</button>
   <button class="tab-btn" id="tab-pontos" onclick="mudarAba('pontos')" style="display:none">Pontos Reclamados</button>
 </div>
 
@@ -589,105 +589,108 @@ textarea{resize:vertical;min-height:52px}
   <iframe src="/pontos.html" id="iframePontos" title="Pontos Reclamados EAGLE"></iframe>
 </div>
 
-<!-- ABA MONITOR API -->
+<!-- ABA QUALIDADE DE CADASTRO -->
 <div class="tab-panel" id="panel-monitor">
 <div style="max-width:1100px;margin:0 auto;padding:24px 0">
 
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:12px">
     <div>
-      <div style="font-size:18px;font-weight:700;color:var(--verde)">Monitor API</div>
-      <div style="font-size:12px;color:var(--chumbo);margin-top:2px">Acompanhamento de erros e status de cadastro via API Eagle</div>
+      <div style="font-size:18px;font-weight:700;color:var(--verde)">Qualidade de Cadastro</div>
+      <div style="font-size:12px;color:var(--chumbo);margin-top:2px">Analise automatica das regras de qualidade sobre a base exportada do sistema</div>
     </div>
-    <div style="display:flex;gap:10px;flex-wrap:wrap">
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
       <label style="display:flex;align-items:center;gap:6px;padding:7px 14px;border:1.5px dashed var(--borda);border-radius:8px;cursor:pointer;font-size:12px;color:var(--chumbo);background:var(--off)">
-        <span style="font-size:16px">📋</span> Base de erros (.xlsx)
-        <input type="file" id="monInputErros" accept=".xlsx,.xls" style="display:none" onchange="monCarregarErros(this.files[0])">
+        Base do sistema (.csv / .xlsx)
+        <input type="file" id="qualInputBase" accept=".csv,.xlsx,.xls" style="display:none" onchange="qualCarregarBase(this.files[0])">
       </label>
-      <label style="display:flex;align-items:center;gap:6px;padding:7px 14px;border:1.5px dashed var(--borda);border-radius:8px;cursor:pointer;font-size:12px;color:var(--chumbo);background:var(--off)">
-        <span style="font-size:16px">🗂️</span> Base do sistema (.csv)
-        <input type="file" id="monInputSistema" accept=".csv" style="display:none" onchange="monCarregarSistema(this.files[0])">
-      </label>
-      <label style="display:flex;align-items:center;gap:6px;padding:7px 14px;border:1.5px solid #a5b4fc;border-radius:8px;cursor:pointer;font-size:12px;color:#7c3aed;background:#f5f3ff;font-weight:600" title="Importe a planilha exportada com a coluna pasta iilex preenchida — IDs com pasta serao marcados como resolvidos e movidos para cadastrados no Faturamento">
-        Importar marcacoes (.xlsx)
-        <input type="file" id="monInputMarcacoes" accept=".xlsx,.xls" style="display:none" onchange="monImportarMarcacoes(this.files[0])">
-      </label>
-      <button onclick="monProcessar()" style="padding:8px 18px;background:var(--verde);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">Processar</button>
+      <button onclick="qualAnalisar()" style="padding:8px 18px;background:var(--verde);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">Analisar</button>
     </div>
   </div>
 
-  <div id="monStatusBar" style="display:none;font-size:11px;padding:8px 14px;border-radius:8px;margin-bottom:16px;background:var(--off);border:1px solid var(--borda-l);color:var(--chumbo)"></div>
+  <div id="qualStatusBar" style="display:none;font-size:11px;padding:8px 14px;border-radius:8px;margin-bottom:16px;background:var(--off);border:1px solid var(--borda-l);color:var(--chumbo)"></div>
 
-  <!-- Filtro de data -->
-  <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:10px 14px;background:var(--surface);border:1px solid var(--borda-l);border-radius:10px;flex-wrap:wrap">
-    <span style="font-size:11px;font-weight:600;color:var(--chumbo);text-transform:uppercase;letter-spacing:.4px">Filtrar por data</span>
-    <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--chumbo)">
-      <label>De</label>
-      <input type="date" id="monDataDe" style="padding:4px 8px;border:1.5px solid var(--borda);border-radius:6px;font-family:inherit;font-size:11px;outline:none" onchange="monAplicarFiltroData()">
-    </div>
-    <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--chumbo)">
-      <label>Ate</label>
-      <input type="date" id="monDataAte" style="padding:4px 8px;border:1.5px solid var(--borda);border-radius:6px;font-family:inherit;font-size:11px;outline:none" onchange="monAplicarFiltroData()">
-    </div>
-    <button onclick="monLimparFiltroData()" style="padding:4px 10px;border:1.5px solid var(--borda);border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;background:transparent;color:var(--chumbo)">Limpar filtro</button>
-    <span id="monFiltroDataInfo" style="font-size:10px;color:var(--chumbo);font-style:italic"></span>
+  <!-- Cards das regras fixas + customizadas -->
+  <div id="qualCards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:16px;margin-bottom:28px">
+    <div style="grid-column:1/-1;font-size:12px;color:var(--chumbo);padding:40px 0;text-align:center;opacity:.6">Importe a base e clique em Analisar para ver os resultados.</div>
   </div>
 
-  <!-- KPI cards -->
-  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px" id="monKpiGrid">
-    <div class="fat-kpi" style="cursor:pointer;border-color:#cbd5e1;background:#f8fafc" onclick="monAbrirModal('total')">
-      <div class="fat-kpi-val" id="monKpiTotal" style="color:var(--chumbo)">—</div>
-      <div class="fat-kpi-lbl">IDs processados</div>
-      <div style="font-size:9px;color:var(--chumbo);margin-top:4px;opacity:.7">clique para ver</div>
+  <!-- Painel de regras configuradas -->
+  <div class="fat-card" style="margin-bottom:0">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+      <div>
+        <div class="fat-card-ttl" style="margin:0">Regras configuradas</div>
+        <div class="fat-card-sub" style="margin-top:2px">Adicione regras personalizadas que serao aplicadas a cada analise</div>
+      </div>
+      <button onclick="qualAbrirNovaRegra()" style="padding:7px 14px;background:var(--verde);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">+ Nova regra</button>
     </div>
-    <div class="fat-kpi" style="cursor:pointer;border-color:#86efac;background:#f0fdf4" onclick="monAbrirModal('cadastrados')">
-      <div class="fat-kpi-val" id="monKpiCadastrados" style="color:#16a34a">—</div>
-      <div class="fat-kpi-lbl">Ja cadastrados</div>
-      <div style="font-size:9px;color:#16a34a;margin-top:4px;opacity:.8">clique para ver</div>
-    </div>
-    <div class="fat-kpi" style="cursor:pointer;border-color:#fca5a5;background:#fef2f2" onclick="monAbrirModal('naocadastrados')">
-      <div class="fat-kpi-val" id="monKpiNao" style="color:#dc2626">—</div>
-      <div class="fat-kpi-lbl">Nao cadastrados</div>
-      <div style="font-size:9px;color:#dc2626;margin-top:4px;opacity:.8">clique para ver</div>
-    </div>
-    <div class="fat-kpi" style="cursor:pointer;border-color:#fde68a;background:#fffbeb" onclick="monAbrirModal('semcorrespondencia')">
-      <div class="fat-kpi-val" id="monKpiSemCorr" style="color:#b45309">—</div>
-      <div class="fat-kpi-lbl">Sem correspondencia</div>
-      <div style="font-size:9px;color:#b45309;margin-top:4px;opacity:.8">clique para ver</div>
-    </div>
-    <div class="fat-kpi" id="monCardResolvidos" style="display:none;cursor:pointer;border-color:#a5b4fc;background:#f5f3ff" onclick="monAbrirModal('resolvidos')">
-      <div class="fat-kpi-val" id="monKpiResolvidos" style="color:#7c3aed">0</div>
-      <div class="fat-kpi-lbl">Resolvidos</div>
-      <div style="font-size:9px;color:#7c3aed;margin-top:4px;opacity:.8">clique para ver</div>
-    </div>
-  </div>
-
-  <!-- Grafico de categorias de erro -->
-  <div class="fat-card" style="margin-bottom:18px">
-    <div class="fat-card-ttl">Distribuicao de erros por categoria</div>
-    <div class="fat-card-sub">Erros consolidados por ID (cada ID contabilizado uma vez)</div>
-    <div id="monGraficoCategorias" style="margin-top:12px">
-      <p style="font-size:12px;color:var(--chumbo);opacity:.6">Importe e processe as bases para visualizar.</p>
+    <div id="qualRegrasLista">
+      <p style="font-size:12px;color:var(--chumbo);opacity:.6">Nenhuma regra customizada configurada.</p>
     </div>
   </div>
 
 </div>
 </div>
 
-<!-- MODAIS MONITOR API -->
-<div class="fat-modal" id="monModal" onclick="if(event.target===this)document.getElementById('monModal').classList.remove('open')">
-  <div class="fat-modal-box" style="max-width:820px">
+<!-- MODAL QUALIDADE - DETALHE DA REGRA -->
+<div class="fat-modal" id="qualModal" onclick="if(event.target===this)qualFecharModal()">
+  <div class="fat-modal-box" style="max-width:900px">
     <div class="fat-modal-hdr">
-      <div class="fat-modal-ttl" id="monModalTtl">Detalhes</div>
+      <div class="fat-modal-ttl" id="qualModalTtl">Detalhes</div>
       <div style="display:flex;gap:8px;align-items:center">
-        <button class="fat-btn fat-btn-ghost" style="font-size:11px;padding:6px 12px" id="monModalExportBtn" onclick="monExportar()">Exportar (.xlsx)</button>
-        <select id="monFiltroCategoria" onchange="monAplicarFiltro()" style="font-size:11px;padding:5px 8px;border:1px solid var(--borda);border-radius:6px;display:none">
-          <option value="">Todas as categorias</option>
-        </select>
-        <button class="fat-modal-close" onclick="document.getElementById('monModal').classList.remove('open')">&#xd7;</button>
+        <button class="fat-btn fat-btn-ghost" style="font-size:11px;padding:6px 12px" onclick="qualExportarModal()">Exportar (.xlsx)</button>
+        <button class="fat-modal-close" onclick="qualFecharModal()">&#xd7;</button>
       </div>
     </div>
-    <div id="monModalBody" style="max-height:540px;overflow-y:auto">
+    <div id="qualModalBody" style="max-height:540px;overflow-y:auto">
       <p style="font-size:12px;color:var(--chumbo)">Carregando...</p>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL NOVA REGRA CUSTOMIZADA -->
+<div class="fat-modal" id="qualModalRegra" onclick="if(event.target===this)qualFecharModalRegra()">
+  <div class="fat-modal-box" style="max-width:480px">
+    <div class="fat-modal-hdr">
+      <div class="fat-modal-ttl" id="qualModalRegraTtl">Nova regra de qualidade</div>
+      <button class="fat-modal-close" onclick="qualFecharModalRegra()">&#xd7;</button>
+    </div>
+    <div style="padding:20px;display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <label style="font-size:11px;font-weight:600;color:var(--chumbo)">Nome da regra</label>
+        <input id="qualRegraNome" type="text" placeholder="Ex: Email vazio" style="padding:8px 10px;border:1.5px solid var(--borda);border-radius:7px;font-size:12px;font-family:inherit;outline:none">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <label style="font-size:11px;font-weight:600;color:var(--chumbo)">Coluna da base</label>
+        <input id="qualRegraColuna" type="text" placeholder="Nome exato da coluna no arquivo importado" style="padding:8px 10px;border:1.5px solid var(--borda);border-radius:7px;font-size:12px;font-family:inherit;outline:none">
+        <span id="qualRegraColunaHint" style="font-size:10px;color:var(--chumbo);opacity:.7"></span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <label style="font-size:11px;font-weight:600;color:var(--chumbo)">Condicao</label>
+        <select id="qualRegraTipo" style="padding:8px 10px;border:1.5px solid var(--borda);border-radius:7px;font-size:12px;font-family:inherit;outline:none;background:#fff" onchange="qualTipoRegraChange()">
+          <option value="vazio">Valor vazio ou zerado</option>
+          <option value="diferente">Diferente de</option>
+          <option value="igual">Igual a</option>
+          <option value="contem">Nao contem</option>
+        </select>
+      </div>
+      <div id="qualRegraValorWrap" style="display:flex;flex-direction:column;gap:4px;display:none">
+        <label style="font-size:11px;font-weight:600;color:var(--chumbo)">Valor de referencia</label>
+        <input id="qualRegraValor" type="text" placeholder="Valor esperado" style="padding:8px 10px;border:1.5px solid var(--borda);border-radius:7px;font-size:12px;font-family:inherit;outline:none">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <label style="font-size:11px;font-weight:600;color:var(--chumbo)">Cor do card</label>
+        <div style="display:flex;gap:8px">
+          <label style="display:flex;align-items:center;gap:5px;font-size:11px;cursor:pointer"><input type="radio" name="qualRegraCor" value="vermelho" checked> Vermelho</label>
+          <label style="display:flex;align-items:center;gap:5px;font-size:11px;cursor:pointer"><input type="radio" name="qualRegraCor" value="amarelo"> Amarelo</label>
+          <label style="display:flex;align-items:center;gap:5px;font-size:11px;cursor:pointer"><input type="radio" name="qualRegraCor" value="azul"> Azul</label>
+          <label style="display:flex;align-items:center;gap:5px;font-size:11px;cursor:pointer"><input type="radio" name="qualRegraCor" value="roxo"> Roxo</label>
+        </div>
+      </div>
+      <input type="hidden" id="qualRegraEditId">
+      <div style="display:flex;gap:8px;justify-content:flex-end;padding-top:4px">
+        <button onclick="qualFecharModalRegra()" style="padding:7px 16px;border:1.5px solid var(--borda);border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;background:transparent;font-family:inherit;color:var(--chumbo)">Cancelar</button>
+        <button onclick="qualSalvarRegra()" style="padding:7px 16px;background:var(--verde);color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Salvar regra</button>
+      </div>
     </div>
   </div>
 </div>
@@ -4714,7 +4717,7 @@ function mudarAba(aba) {
   if (aba === 'usuarios') carregarUsuarios();
   if (aba === 'faturamento') fatInit();
   if (aba === 'dashboard') dashRender();
-  if (aba === 'monitor') { monCarregarResolvidos().then(() => monRestaurarIDB()); }
+  if (aba === 'monitor') { qualInicializar(); }
 }
 
 // ── ABA ACURÁCIA ──────────────────────────────────────────────────────────────
@@ -7647,25 +7650,22 @@ async function dashRender(mkOverride) {
       )}
     </div>
 
-    <!-- Linha 5 — Painel operacional: Monitor API -->
+    <!-- Linha 5 — Qualidade de Cadastro -->
     <div style="display:grid;grid-template-columns:1fr;gap:14px;margin-bottom:14px">
       ${(() => {
-        const mon = typeof _monResult !== 'undefined' && _monResult;
-        if (!mon) return dashCard('Monitor API', '<p style="font-size:11px;color:var(--chumbo);text-align:center;padding:20px 0">Carregue a planilha na aba Monitor para ver os dados.</p>', null);
-        const totalMon = (mon.cadastrados?.length||0) + (mon.naoCadastrados?.length||0) + (mon.semCorrespondencia?.length||0);
-        const resolv = typeof _monResolvidos !== 'undefined' ? _monResolvidos.size : 0;
-        const naoCad = mon.naoCadastrados?.length||0;
-        const pctCad = totalMon > 0 ? Math.round(((mon.cadastrados?.length||0)/totalMon)*100) : 0;
-        const corPct = pctCad >= 80 ? '#16a34a' : pctCad >= 60 ? '#d97706' : '#dc2626';
-        return dashCard('Monitor API',
-          '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:6px 0">'
-          + '<div style="text-align:center"><div style="font-size:22px;font-weight:700;color:var(--verde)">' + (mon.cadastrados?.length||0) + '</div><div style="font-size:9px;color:var(--chumbo);text-transform:uppercase;letter-spacing:.3px">Cadastrados</div></div>'
-          + '<div style="text-align:center"><div style="font-size:22px;font-weight:700;color:var(--err)">' + naoCad + '</div><div style="font-size:9px;color:var(--chumbo);text-transform:uppercase;letter-spacing:.3px">Pendentes</div></div>'
-          + '<div style="text-align:center"><div style="font-size:22px;font-weight:700;color:#2e7fc2">' + resolv + '</div><div style="font-size:9px;color:var(--chumbo);text-transform:uppercase;letter-spacing:.3px">Resolvidos</div></div>'
+        const mon = typeof _qualResultados !== 'undefined' && Object.keys(_qualResultados||{}).length;
+        if (!mon) return dashCard('Qualidade de Cadastro', '<p style="font-size:11px;color:var(--chumbo);text-align:center;padding:20px 0">Importe a base na aba Qualidade de Cadastro para ver os dados.</p>', null);
+        const totalMon = (_qualBase||[]).length;
+        const regrasPendentes = QUAL_REGRAS_FIXAS.filter(r => !r.informativo && (_qualResultados[r.id]||[]).length > 0);
+        const totalOcorrencias = regrasPendentes.reduce((s,r) => s + (_qualResultados[r.id]||[]).length, 0);
+        const corTotal = totalOcorrencias === 0 ? '#16a34a' : totalOcorrencias < 10 ? '#d97706' : '#dc2626';
+        return dashCard('Qualidade de Cadastro',
+          '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;padding:6px 0">'
+          + '<div style="text-align:center"><div style="font-size:22px;font-weight:700;color:' + corTotal + '">' + totalOcorrencias + '</div><div style="font-size:9px;color:var(--chumbo);text-transform:uppercase;letter-spacing:.3px">Ocorrencias</div></div>'
+          + '<div style="text-align:center"><div style="font-size:22px;font-weight:700;color:#1d4ed8">' + regrasPendentes.length + '/' + QUAL_REGRAS_FIXAS.filter(r=>!r.informativo).length + '</div><div style="font-size:9px;color:var(--chumbo);text-transform:uppercase;letter-spacing:.3px">Regras com pendencia</div></div>'
           + '</div>'
-          + '<div style="margin-top:8px"><div style="display:flex;justify-content:space-between;font-size:9px;color:var(--chumbo);margin-bottom:3px"><span>Taxa de cadastro</span><span style="font-weight:700;color:' + corPct + '">' + pctCad + '%</span></div>'
-          + '<div style="height:5px;background:var(--borda-l);border-radius:99px;overflow:hidden"><div style="height:100%;width:' + pctCad + '%;background:' + corPct + ';border-radius:99px"></div></div></div>',
-          totalMon + ' processos analisados'
+          + (regrasPendentes.length ? '<div style="margin-top:8px">' + regrasPendentes.map(r => '<div style="font-size:10px;color:#dc2626;padding:2px 0">' + r.nome + ': ' + (_qualResultados[r.id]||[]).length + '</div>').join('') + '</div>' : '<div style="font-size:10px;color:#16a34a;margin-top:8px;font-weight:600">Todos os registros dentro do padrao</div>'),
+          totalMon + ' registros analisados'
         );
       })()}
     </div>
@@ -8306,12 +8306,543 @@ document.addEventListener('DOMContentLoaded', () => {
 // MONITOR API
 // =====================================================================
 
-let _monErrosRaw  = null;   // dados brutos do xlsx de erros
-let _monSistema   = null;   // dados brutos do csv do sistema
-let _monResult    = null;   // resultado processado
-let _monModalKey  = null;   // chave do modal aberto
-let _monResolvidos = new Set(); // IDs marcados como resolvidos (persistido no IDB)
+// =====================================================================
+// QUALIDADE DE CADASTRO
+// =====================================================================
 
+let _qualBase        = null;   // linhas da base importada [{col:val,...}]
+let _qualColunas     = [];     // nomes das colunas detectadas
+let _qualResultados  = {};     // {ruleKey: [rows]}
+let _qualModalKey    = null;   // regra aberta no modal
+let _qualRegraEditId = null;   // id da regra sendo editada
+
+// Paleta de cores por estilo de card
+const QUAL_CORES = {
+  vermelho: { borda:'#fca5a5', bg:'#fef2f2', val:'#dc2626', badge:'#fee2e2', badgeTxt:'#991b1b' },
+  amarelo:  { borda:'#fde68a', bg:'#fffbeb', val:'#b45309', badge:'#fef3c7', badgeTxt:'#92400e' },
+  azul:     { borda:'#93c5fd', bg:'#eff6ff', val:'#1d4ed8', badge:'#dbeafe', badgeTxt:'#1e40af' },
+  roxo:     { borda:'#a5b4fc', bg:'#f5f3ff', val:'#7c3aed', badge:'#ede9fe', badgeTxt:'#5b21b6' },
+  verde:    { borda:'#86efac', bg:'#f0fdf4', val:'#16a34a', badge:'#dcfce7', badgeTxt:'#166534' },
+};
+
+// Regras fixas do sistema
+const QUAL_REGRAS_FIXAS = [
+  {
+    id: 'cpf_zerado',
+    nome: 'CPF Zerado',
+    descricao: 'CPF preenchido com zeros ou vazio',
+    cor: 'vermelho',
+    testar: (row, cols) => {
+      const col = qualDetectarColuna(cols, ['cpf']);
+      if (!col) return false;
+      const v = String(row[col] || '').replace(/[\.\-\s]/g,'').replace(/^0+$/, '0');
+      return !v || v === '0' || v === '00000000000' || v === '';
+    }
+  },
+  {
+    id: 'cnpj_zerado',
+    nome: 'CNPJ Zerado',
+    descricao: 'CNPJ preenchido com zeros ou vazio',
+    cor: 'amarelo',
+    testar: (row, cols) => {
+      const col = qualDetectarColuna(cols, ['cnpj']);
+      if (!col) return false;
+      const v = String(row[col] || '').replace(/[\.\-\/\s]/g,'').replace(/^0+$/, '0');
+      return !v || v === '0' || v === '00000000000000' || v === '';
+    }
+  },
+  {
+    id: 'trabalhista_escritorio',
+    nome: 'Trabalhista: Escritorio divergente',
+    descricao: 'Casos trabalhistas com escritorio diferente de "De Bellis"',
+    cor: 'roxo',
+    testar: (row, cols) => {
+      const colNpu = qualDetectarColuna(cols, ['processo','npu','numerodoprocesso','numero_processo']);
+      const colEsc = qualDetectarColuna(cols, ['escritorio','escritório','office']);
+      if (!colNpu || !colEsc) return false;
+      const tipo = qualTipoNPU(row[colNpu] || '');
+      if (tipo !== 'Trabalhista') return false;
+      const esc = String(row[colEsc] || '').toLowerCase().trim();
+      return !esc.includes('de bellis') && !esc.includes('debellis');
+    }
+  },
+  {
+    id: 'trabalhista_responsavel',
+    nome: 'Trabalhista: Responsavel Externo divergente',
+    descricao: 'Casos trabalhistas com responsavel externo diferente de "Controladoria De Bellis"',
+    cor: 'roxo',
+    testar: (row, cols) => {
+      const colNpu = qualDetectarColuna(cols, ['processo','npu','numerodoprocesso','numero_processo']);
+      const colResp = qualDetectarColuna(cols, ['responsavelexterno','responsavel_externo','responsavel externo','resp_externo','responsavel']);
+      if (!colNpu || !colResp) return false;
+      const tipo = qualTipoNPU(row[colNpu] || '');
+      if (tipo !== 'Trabalhista') return false;
+      const resp = String(row[colResp] || '').toLowerCase().trim();
+      return !resp.includes('controladoria de bellis') && !resp.includes('controladoria debellis');
+    }
+  },
+  {
+    id: 'npu_classificacao',
+    nome: 'Classificacao por NPU',
+    descricao: 'Distribuicao dos processos por tipo (Estadual / Federal / Trabalhista)',
+    cor: 'azul',
+    informativo: true,  // nao conta como pendencia, apenas exibe distribuicao
+    testar: (row, cols) => {
+      const col = qualDetectarColuna(cols, ['processo','npu','numerodoprocesso','numero_processo']);
+      if (!col) return false;
+      return !!qualTipoNPU(row[col] || '');
+    }
+  }
+];
+
+function qualTipoNPU(npu) {
+  const limpo = String(npu).replace(/\s/g,'');
+  const m = limpo.match(/^\d{7}-\d{2}\.\d{4}\.(\d)\.\d{2}\.\d{4}$/);
+  if (!m) return null;
+  if (m[1] === '4') return 'Federal';
+  if (m[1] === '5') return 'Trabalhista';
+  if (m[1] === '8') return 'Estadual';
+  return 'Outro';
+}
+
+function qualDetectarColuna(cols, palavrasChave) {
+  return cols.find(c => {
+    const cn = c.toLowerCase().replace(/[_\s\/\-\.]/g,'');
+    return palavrasChave.some(p => cn.includes(p.replace(/[_\s]/g,'')));
+  });
+}
+
+function qualCarregarRegrasCustom() {
+  try { return JSON.parse(localStorage.getItem('qual:regras') || '[]'); } catch { return []; }
+}
+function qualSalvarRegrasCustom(arr) {
+  localStorage.setItem('qual:regras', JSON.stringify(arr));
+}
+
+function qualStatus(msg, erro) {
+  const el = document.getElementById('qualStatusBar');
+  el.style.display = 'block';
+  el.textContent = msg;
+  el.style.background = erro ? 'var(--err-bg,#fef2f2)' : 'var(--off)';
+  el.style.borderColor = erro ? 'var(--err-b,#fca5a5)' : 'var(--borda-l)';
+  el.style.color = erro ? 'var(--err,#dc2626)' : 'var(--chumbo)';
+}
+
+async function qualCarregarBase(file) {
+  if (!file) return;
+  qualStatus('Lendo arquivo...');
+  try {
+    let rows = [];
+    if (file.name.endsWith('.csv')) {
+      const text = await file.text();
+      const lines = text.split(/\r?\n/);
+      const sep = lines[0].includes(';') ? ';' : ',';
+      const headers = lines[0].split(sep).map(h => h.replace(/^"|"$/g,'').trim());
+      _qualColunas = headers;
+      for (let i = 1; i < lines.length; i++) {
+        const parts = qualSplitCSV(lines[i], sep);
+        if (parts.length < 2) continue;
+        const obj = {};
+        headers.forEach((h, j) => { obj[h] = (parts[j] || '').replace(/^"|"$/g,'').trim(); });
+        rows.push(obj);
+      }
+    } else {
+      if (typeof XLSX === 'undefined') { qualStatus('Biblioteca XLSX nao disponivel.', true); return; }
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(buf, { type: 'array' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+      _qualColunas = rows.length ? Object.keys(rows[0]) : [];
+    }
+    _qualBase = rows;
+    qualStatus('Base carregada: ' + rows.length + ' registros. Clique em Analisar.');
+    // Atualiza hint de colunas no modal de regra
+    const hint = document.getElementById('qualRegraColunaHint');
+    if (hint) hint.textContent = 'Colunas disponiveis: ' + _qualColunas.slice(0,12).join(', ') + (_qualColunas.length > 12 ? '...' : '');
+  } catch(e) {
+    qualStatus('Erro ao ler arquivo: ' + e.message, true);
+  }
+}
+
+function qualSplitCSV(line, sep) {
+  const result = [];
+  let cur = '', inq = false;
+  for (let i = 0; i < line.length; i++) {
+    if (line[i] === '"') { inq = !inq; }
+    else if (line[i] === sep && !inq) { result.push(cur); cur = ''; }
+    else { cur += line[i]; }
+  }
+  result.push(cur);
+  return result;
+}
+
+function qualAnalisar() {
+  if (!_qualBase || !_qualBase.length) { qualStatus('Importe a base do sistema primeiro.', true); return; }
+  qualStatus('Analisando ' + _qualBase.length + ' registros...');
+
+  const regrasCustom = qualCarregarRegrasCustom();
+  _qualResultados = {};
+
+  // Regras fixas
+  QUAL_REGRAS_FIXAS.forEach(regra => {
+    _qualResultados[regra.id] = _qualBase.filter(row => regra.testar(row, _qualColunas));
+  });
+
+  // Regras customizadas
+  regrasCustom.forEach(rc => {
+    _qualResultados['custom_' + rc.id] = _qualBase.filter(row => qualAplicarRegraCustom(row, rc));
+  });
+
+  qualRenderCards();
+  const total = Object.values(_qualResultados).filter((_, i) => {
+    const key = Object.keys(_qualResultados)[i];
+    const fixa = QUAL_REGRAS_FIXAS.find(r => r.id === key);
+    return !fixa || !fixa.informativo;
+  }).reduce((s, arr) => s + arr.length, 0);
+  qualStatus('Analise concluida: ' + total + ' ocorrencias encontradas em ' + _qualBase.length + ' registros.');
+}
+
+function qualAplicarRegraCustom(row, rc) {
+  const v = String(row[rc.coluna] || '').trim();
+  if (rc.tipo === 'vazio') return !v || /^0+$/.test(v.replace(/[\.\-\/\s]/g,''));
+  if (rc.tipo === 'diferente') return v.toLowerCase() !== String(rc.valor||'').toLowerCase().trim();
+  if (rc.tipo === 'igual') return v.toLowerCase() === String(rc.valor||'').toLowerCase().trim();
+  if (rc.tipo === 'contem') return !v.toLowerCase().includes(String(rc.valor||'').toLowerCase().trim());
+  return false;
+}
+
+function qualRenderCards() {
+  const cont = document.getElementById('qualCards');
+  const regrasCustom = qualCarregarRegrasCustom();
+  let html = '';
+
+  QUAL_REGRAS_FIXAS.forEach(regra => {
+    const rows = _qualResultados[regra.id] || [];
+    const cor = QUAL_CORES[regra.cor] || QUAL_CORES.vermelho;
+    if (regra.informativo) {
+      // Card especial de distribuicao NPU
+      const colNpu = qualDetectarColuna(_qualColunas, ['processo','npu','numerodoprocesso','numero_processo']);
+      const dist = { Federal: 0, Trabalhista: 0, Estadual: 0, Outro: 0, 'Sem NPU': 0 };
+      (_qualBase||[]).forEach(row => {
+        const t = colNpu ? qualTipoNPU(row[colNpu] || '') : null;
+        if (!t) dist['Sem NPU']++;
+        else dist[t] = (dist[t] || 0) + 1;
+      });
+      const total = (_qualBase||[]).length;
+      html += `<div class="fat-card" style="border:1.5px solid ${cor.borda};background:${cor.bg};cursor:default">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px">
+          <div>
+            <div style="font-size:13px;font-weight:700;color:var(--verde)">${regra.nome}</div>
+            <div style="font-size:10px;color:var(--chumbo);margin-top:2px">${regra.descricao}</div>
+          </div>
+          <span style="background:${cor.badge};color:${cor.badgeTxt};font-size:9px;font-weight:700;padding:2px 8px;border-radius:10px;white-space:nowrap">INFORMATIVO</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+          ${Object.entries(dist).filter(([,v])=>v>0).map(([tipo,qtd])=>`
+            <div style="background:rgba(255,255,255,.6);border-radius:6px;padding:6px 8px;display:flex;justify-content:space-between;align-items:center">
+              <span style="font-size:11px;color:var(--chumbo)">${tipo}</span>
+              <span style="font-size:14px;font-weight:700;color:${cor.val}">${qtd}</span>
+            </div>`).join('')}
+        </div>
+        <div style="margin-top:10px">
+          <button onclick="qualAbrirModal('${regra.id}')" style="width:100%;padding:6px;border:1.5px solid ${cor.borda};border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;background:transparent;color:${cor.val};font-family:inherit">Ver detalhes</button>
+        </div>
+      </div>`;
+      return;
+    }
+    const pct = _qualBase && _qualBase.length ? Math.round(rows.length / _qualBase.length * 100) : 0;
+    html += `<div class="fat-card" style="border:1.5px solid ${cor.borda};background:${cor.bg};cursor:pointer" onclick="qualAbrirModal('${regra.id}')">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px">
+        <div>
+          <div style="font-size:13px;font-weight:700;color:var(--verde)">${regra.nome}</div>
+          <div style="font-size:10px;color:var(--chumbo);margin-top:2px">${regra.descricao}</div>
+        </div>
+        ${rows.length === 0
+          ? `<span style="background:#dcfce7;color:#166534;font-size:9px;font-weight:700;padding:2px 8px;border-radius:10px;white-space:nowrap">OK</span>`
+          : `<span style="background:${cor.badge};color:${cor.badgeTxt};font-size:9px;font-weight:700;padding:2px 8px;border-radius:10px;white-space:nowrap">PENDENTE</span>`}
+      </div>
+      <div style="font-size:36px;font-weight:800;color:${rows.length===0?'#16a34a':cor.val};line-height:1;margin-bottom:4px">${rows.length}</div>
+      <div style="font-size:10px;color:var(--chumbo)">${pct}% dos registros</div>
+      <div style="margin-top:10px;display:flex;gap:6px">
+        <button onclick="event.stopPropagation();qualAbrirModal('${regra.id}')" style="flex:1;padding:6px;border:1.5px solid ${cor.borda};border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;background:transparent;color:${cor.val};font-family:inherit">Ver casos</button>
+        <button onclick="event.stopPropagation();qualExportarDireto('${regra.id}')" style="padding:6px 10px;border:1.5px solid ${cor.borda};border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;background:transparent;color:${cor.val};font-family:inherit" title="Exportar Excel">xls</button>
+      </div>
+    </div>`;
+  });
+
+  // Cards customizados
+  regrasCustom.forEach(rc => {
+    const key = 'custom_' + rc.id;
+    const rows = _qualResultados[key] || [];
+    const cor = QUAL_CORES[rc.cor] || QUAL_CORES.vermelho;
+    const pct = _qualBase && _qualBase.length ? Math.round(rows.length / _qualBase.length * 100) : 0;
+    html += `<div class="fat-card" style="border:1.5px solid ${cor.borda};background:${cor.bg};cursor:pointer;position:relative" onclick="qualAbrirModal('${key}')">
+      <div style="position:absolute;top:10px;right:10px;display:flex;gap:4px">
+        <button onclick="event.stopPropagation();qualEditarRegra('${rc.id}')" style="padding:2px 7px;font-size:10px;border:1px solid ${cor.borda};border-radius:5px;cursor:pointer;background:rgba(255,255,255,.7);color:${cor.val};font-family:inherit">Editar</button>
+        <button onclick="event.stopPropagation();qualRemoverRegra('${rc.id}')" style="padding:2px 7px;font-size:10px;border:1px solid #fca5a5;border-radius:5px;cursor:pointer;background:rgba(255,255,255,.7);color:#dc2626;font-family:inherit">X</button>
+      </div>
+      <div style="margin-bottom:8px;padding-right:80px">
+        <div style="font-size:13px;font-weight:700;color:var(--verde)">${rc.nome}</div>
+        <div style="font-size:10px;color:var(--chumbo);margin-top:2px">${rc.coluna} ${rc.tipo === 'vazio' ? '= vazio/zerado' : rc.tipo === 'diferente' ? '!= "'+rc.valor+'"' : rc.tipo === 'igual' ? '= "'+rc.valor+'"' : 'nao contem "'+rc.valor+'"'}</div>
+      </div>
+      <div style="font-size:36px;font-weight:800;color:${rows.length===0?'#16a34a':cor.val};line-height:1;margin-bottom:4px">${rows.length}</div>
+      <div style="font-size:10px;color:var(--chumbo)">${pct}% dos registros</div>
+      <div style="margin-top:10px;display:flex;gap:6px">
+        <button onclick="event.stopPropagation();qualAbrirModal('${key}')" style="flex:1;padding:6px;border:1.5px solid ${cor.borda};border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;background:transparent;color:${cor.val};font-family:inherit">Ver casos</button>
+        <button onclick="event.stopPropagation();qualExportarDireto('${key}')" style="padding:6px 10px;border:1.5px solid ${cor.borda};border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;background:transparent;color:${cor.val};font-family:inherit" title="Exportar Excel">xls</button>
+      </div>
+    </div>`;
+  });
+
+  cont.innerHTML = html || '<div style="grid-column:1/-1;font-size:12px;color:var(--chumbo);padding:40px 0;text-align:center;opacity:.6">Nenhuma regra configurada.</div>';
+  qualRenderRegrasLista();
+}
+
+function qualRenderRegrasLista() {
+  const cont = document.getElementById('qualRegrasLista');
+  const regras = qualCarregarRegrasCustom();
+  if (!regras.length) {
+    cont.innerHTML = '<p style="font-size:12px;color:var(--chumbo);opacity:.6">Nenhuma regra customizada configurada. Clique em "+ Nova regra" para adicionar.</p>';
+    return;
+  }
+  cont.innerHTML = regras.map(rc => {
+    const cor = QUAL_CORES[rc.cor] || QUAL_CORES.vermelho;
+    const descCond = rc.tipo === 'vazio' ? 'vazio / zerado' : rc.tipo === 'diferente' ? 'diferente de "'+rc.valor+'"' : rc.tipo === 'igual' ? 'igual a "'+rc.valor+'"' : 'nao contem "'+rc.valor+'"';
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border:1px solid var(--borda-l);border-radius:8px;margin-bottom:6px;background:var(--surface)">
+      <div>
+        <span style="font-size:12px;font-weight:600;color:var(--verde)">${rc.nome}</span>
+        <span style="font-size:11px;color:var(--chumbo);margin-left:10px">${rc.coluna} ${descCond}</span>
+      </div>
+      <div style="display:flex;gap:6px">
+        <button onclick="qualEditarRegra('${rc.id}')" style="padding:3px 10px;font-size:11px;border:1.5px solid var(--borda);border-radius:6px;cursor:pointer;background:transparent;font-family:inherit;color:var(--chumbo)">Editar</button>
+        <button onclick="qualRemoverRegra('${rc.id}')" style="padding:3px 10px;font-size:11px;border:1.5px solid #fca5a5;border-radius:6px;cursor:pointer;background:transparent;font-family:inherit;color:#dc2626">Remover</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function qualAbrirModal(ruleKey) {
+  _qualModalKey = ruleKey;
+  const rows = _qualResultados[ruleKey];
+  const modal = document.getElementById('qualModal');
+  const ttl = document.getElementById('qualModalTtl');
+  const body = document.getElementById('qualModalBody');
+
+  // Identifica nome da regra
+  const fixa = QUAL_REGRAS_FIXAS.find(r => r.id === ruleKey);
+  const regrasCustom = qualCarregarRegrasCustom();
+  const custom = regrasCustom.find(r => 'custom_' + r.id === ruleKey);
+  const nome = fixa ? fixa.nome : custom ? custom.nome : ruleKey;
+  ttl.textContent = nome + (rows ? ' (' + rows.length + ')' : '');
+
+  if (!rows || !rows.length) {
+    if (fixa && fixa.informativo) {
+      body.innerHTML = qualRenderModalNPU();
+    } else {
+      body.innerHTML = '<div style="text-align:center;padding:40px;color:#16a34a;font-size:13px;font-weight:600">Nenhuma ocorrencia encontrada. Regra OK.</div>';
+    }
+  } else if (fixa && fixa.informativo) {
+    body.innerHTML = qualRenderModalNPU();
+  } else {
+    body.innerHTML = qualRenderTabela(rows);
+  }
+
+  modal.classList.add('open');
+}
+
+function qualRenderModalNPU() {
+  const colNpu = qualDetectarColuna(_qualColunas, ['processo','npu','numerodoprocesso','numero_processo']);
+  if (!colNpu) return '<p style="font-size:12px;color:var(--chumbo);padding:16px">Coluna de processo/NPU nao encontrada na base importada.</p>';
+  const dist = {};
+  const porTipo = { Federal: [], Trabalhista: [], Estadual: [], 'Outro': [], 'Sem NPU': [] };
+  (_qualBase||[]).forEach(row => {
+    const t = qualTipoNPU(row[colNpu] || '') || 'Sem NPU';
+    if (!porTipo[t]) porTipo[t] = [];
+    porTipo[t].push(row);
+    dist[t] = (dist[t]||0) + 1;
+  });
+  const total = (_qualBase||[]).length;
+  let html = `<div style="padding:12px 0">
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-bottom:16px">`;
+  Object.entries(dist).forEach(([tipo, qtd]) => {
+    const pct = total ? Math.round(qtd/total*100) : 0;
+    html += `<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px;text-align:center">
+      <div style="font-size:24px;font-weight:800;color:#1d4ed8">${qtd}</div>
+      <div style="font-size:11px;font-weight:600;color:var(--chumbo)">${tipo}</div>
+      <div style="font-size:10px;color:var(--chumbo);opacity:.7">${pct}%</div>
+    </div>`;
+  });
+  html += '</div>';
+  // Tabela com os processos
+  const colsExibir = _qualColunas.slice(0,6);
+  html += `<table style="width:100%;border-collapse:collapse;font-size:11px">
+    <thead><tr style="border-bottom:2px solid var(--borda)">
+      <th style="text-align:left;padding:6px 10px;color:var(--chumbo)">Tipo</th>
+      ${colsExibir.map(c=>`<th style="text-align:left;padding:6px 10px;color:var(--chumbo)">${c}</th>`).join('')}
+    </tr></thead><tbody>`;
+  const ordem = ['Trabalhista','Federal','Estadual','Outro','Sem NPU'];
+  ordem.forEach(tipo => {
+    (porTipo[tipo]||[]).slice(0,200).forEach(row => {
+      html += `<tr style="border-bottom:1px solid var(--borda-l)">
+        <td style="padding:5px 10px;font-weight:600;font-size:10px;color:#1d4ed8;white-space:nowrap">${tipo}</td>
+        ${colsExibir.map(c=>`<td style="padding:5px 10px;font-size:10px">${row[c]||'-'}</td>`).join('')}
+      </tr>`;
+    });
+  });
+  html += '</tbody></table></div>';
+  return html;
+}
+
+function qualRenderTabela(rows) {
+  if (!rows || !rows.length) return '<p style="font-size:12px;color:var(--chumbo);padding:16px 0">Nenhuma ocorrencia.</p>';
+  const cols = _qualColunas.length ? _qualColunas : Object.keys(rows[0]);
+  const colsExib = cols.slice(0, 8);
+  let html = `<table style="width:100%;border-collapse:collapse;font-size:11px">
+    <thead><tr style="border-bottom:2px solid var(--borda)">
+      ${colsExib.map(c=>`<th style="text-align:left;padding:6px 10px;color:var(--chumbo);white-space:nowrap">${c}</th>`).join('')}
+    </tr></thead><tbody>`;
+  const exibir = rows.slice(0, 500);
+  exibir.forEach(row => {
+    html += `<tr style="border-bottom:1px solid var(--borda-l)">
+      ${colsExib.map(c=>`<td style="padding:5px 10px;font-size:10px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${String(row[c]||'').replace(/"/g,'&quot;')}">${row[c]||'-'}</td>`).join('')}
+    </tr>`;
+  });
+  if (rows.length > 500) html += `<tr><td colspan="${colsExib.length}" style="padding:8px 10px;font-size:10px;color:var(--chumbo);font-style:italic">Exibindo 500 de ${rows.length} registros. Use Exportar para ver todos.</td></tr>`;
+  html += '</tbody></table>';
+  return html;
+}
+
+function qualFecharModal() {
+  document.getElementById('qualModal').classList.remove('open');
+}
+
+function qualExportarModal() {
+  if (!_qualModalKey) return;
+  qualExportarDireto(_qualModalKey);
+}
+
+function qualExportarDireto(ruleKey) {
+  if (typeof XLSX === 'undefined') { alert('Biblioteca XLSX nao disponivel.'); return; }
+  const rows = _qualResultados[ruleKey];
+  if (!rows || !rows.length) { alert('Sem ocorrencias para exportar.'); return; }
+
+  const fixa = QUAL_REGRAS_FIXAS.find(r => r.id === ruleKey);
+  const regrasCustom = qualCarregarRegrasCustom();
+  const custom = regrasCustom.find(r => 'custom_' + r.id === ruleKey);
+  const nome = (fixa ? fixa.nome : custom ? custom.nome : ruleKey).replace(/[^a-zA-Z0-9]/g,'_');
+
+  const cols = _qualColunas.length ? _qualColunas : Object.keys(rows[0]);
+  const header = fixa && fixa.informativo
+    ? ['Tipo NPU', ...cols]
+    : cols;
+  const colNpu = qualDetectarColuna(_qualColunas, ['processo','npu','numerodoprocesso','numero_processo']);
+
+  const linhas = [header, ...rows.map(row => {
+    if (fixa && fixa.informativo) {
+      const tipo = colNpu ? qualTipoNPU(row[colNpu]||'') || 'Sem NPU' : 'Sem NPU';
+      return [tipo, ...cols.map(c => row[c]||'')];
+    }
+    return cols.map(c => row[c]||'');
+  })];
+
+  const ws = XLSX.utils.aoa_to_sheet(linhas);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Qualidade');
+  XLSX.writeFile(wb, 'qualidade_' + nome + '.xlsx');
+}
+
+function qualAbrirNovaRegra() {
+  _qualRegraEditId = null;
+  document.getElementById('qualModalRegraTtl').textContent = 'Nova regra de qualidade';
+  document.getElementById('qualRegraNome').value = '';
+  document.getElementById('qualRegraColuna').value = '';
+  document.getElementById('qualRegraTipo').value = 'vazio';
+  document.getElementById('qualRegraValor').value = '';
+  document.getElementById('qualRegraEditId').value = '';
+  document.querySelectorAll('input[name="qualRegraCor"]')[0].checked = true;
+  qualTipoRegraChange();
+  const hint = document.getElementById('qualRegraColunaHint');
+  if (hint && _qualColunas.length) hint.textContent = 'Colunas disponiveis: ' + _qualColunas.slice(0,12).join(', ') + (_qualColunas.length>12?'...':'');
+  document.getElementById('qualModalRegra').classList.add('open');
+}
+
+function qualEditarRegra(id) {
+  const regras = qualCarregarRegrasCustom();
+  const rc = regras.find(r => r.id === id);
+  if (!rc) return;
+  _qualRegraEditId = id;
+  document.getElementById('qualModalRegraTtl').textContent = 'Editar regra';
+  document.getElementById('qualRegraNome').value = rc.nome;
+  document.getElementById('qualRegraColuna').value = rc.coluna;
+  document.getElementById('qualRegraTipo').value = rc.tipo;
+  document.getElementById('qualRegraValor').value = rc.valor || '';
+  document.getElementById('qualRegraEditId').value = id;
+  const corInput = document.querySelector(`input[name="qualRegraCor"][value="${rc.cor}"]`);
+  if (corInput) corInput.checked = true;
+  qualTipoRegraChange();
+  document.getElementById('qualModalRegra').classList.add('open');
+}
+
+function qualRemoverRegra(id) {
+  if (!confirm('Remover esta regra?')) return;
+  const regras = qualCarregarRegrasCustom().filter(r => r.id !== id);
+  qualSalvarRegrasCustom(regras);
+  delete _qualResultados['custom_' + id];
+  qualRenderCards();
+}
+
+function qualTipoRegraChange() {
+  const tipo = document.getElementById('qualRegraTipo').value;
+  const wrap = document.getElementById('qualRegraValorWrap');
+  wrap.style.display = tipo === 'vazio' ? 'none' : 'flex';
+}
+
+function qualSalvarRegra() {
+  const nome = document.getElementById('qualRegraNome').value.trim();
+  const coluna = document.getElementById('qualRegraColuna').value.trim();
+  const tipo = document.getElementById('qualRegraTipo').value;
+  const valor = document.getElementById('qualRegraValor').value.trim();
+  const cor = document.querySelector('input[name="qualRegraCor"]:checked')?.value || 'vermelho';
+
+  if (!nome) { alert('Informe o nome da regra.'); return; }
+  if (!coluna) { alert('Informe o nome da coluna.'); return; }
+  if (tipo !== 'vazio' && !valor) { alert('Informe o valor de referencia.'); return; }
+
+  const regras = qualCarregarRegrasCustom();
+  const editId = _qualRegraEditId;
+
+  if (editId) {
+    const idx = regras.findIndex(r => r.id === editId);
+    if (idx >= 0) regras[idx] = { ...regras[idx], nome, coluna, tipo, valor, cor };
+  } else {
+    regras.push({ id: Date.now().toString(36), nome, coluna, tipo, valor, cor });
+  }
+
+  qualSalvarRegrasCustom(regras);
+  qualFecharModalRegra();
+
+  // Re-analisar regra customizada se base carregada
+  if (_qualBase) {
+    regras.forEach(rc => {
+      _qualResultados['custom_' + rc.id] = _qualBase.filter(row => qualAplicarRegraCustom(row, rc));
+    });
+    qualRenderCards();
+  } else {
+    qualRenderRegrasLista();
+  }
+}
+
+function qualFecharModalRegra() {
+  document.getElementById('qualModalRegra').classList.remove('open');
+}
+
+function qualInicializar() {
+  qualRenderRegrasLista();
+  if (_qualBase && Object.keys(_qualResultados).length) qualRenderCards();
+}
+
+// legado - mantido para compatibilidade com dashboard
+let _monResult = null, _monResolvidos = new Set();
 async function monCarregarResolvidos() {
   try {
     const saved = await fatIDB.get('monitor:resolvidos');
