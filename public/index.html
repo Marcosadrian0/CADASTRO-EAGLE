@@ -611,6 +611,7 @@ textarea{resize:vertical;min-height:52px}
         <input type="file" id="qualInputBase" accept=".csv,.xlsx,.xls" style="display:none" onchange="qualCarregarBase(this.files[0]).then(()=>{ if(_qualBase&&_qualBase.length&&!_qualAbas) qualAnalisar(); })">
       </label>
       <button onclick="qualAnalisar()" style="padding:8px 18px;background:var(--verde);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">Analisar</button>
+      <button onclick="qualLimparBase()" style="padding:8px 14px;background:none;border:1.5px solid var(--borda);border-radius:8px;font-size:11px;font-weight:600;color:var(--chumbo);cursor:pointer;font-family:inherit" title="Apaga a base acumulada e reinicia do zero">Limpar base</button>
     </div>
   </div>
 
@@ -8455,12 +8456,12 @@ const QUAL_REGRAS_FIXAS = [
     descricao: 'CPF vazio ou preenchido com zeros (ex: 000.000.000-00)',
     cor: 'vermelho',
     testar: (row, cols) => {
-      const col = qualDetectarColuna(cols, ['cpf']);
+      // Busca coluna de CPF com varios possiveis nomes
+      const col = qualDetectarColuna(cols, ['cpf','cpfautor','cpfprincipal','cpfcliente','cpfparte']);
       if (!col) return false;
-      const raw = String(row[col] || '').trim();
-      if (!raw) return true;
+      const raw = String(row[col] == null ? '' : row[col]).trim();
+      if (!raw || raw === '-') return true;
       const digits = raw.replace(/\D/g, '');
-      // Vazio, so zeros ou menos de 3 digitos reais
       return !digits || /^0+$/.test(digits) || digits.length < 3;
     }
   },
@@ -8646,10 +8647,49 @@ async function qualCarregarBase(file, abaIndex) {
       rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
       _qualColunas = rows.length ? Object.keys(rows[0]) : [];
     }
+    // Mescla com base acumulada existente (dedup por NPU)
+    let mergeInfo = '';
+    if (rows.length && _qualBase && _qualBase.length) {
+      const newCols = rows.length ? Object.keys(rows[0]) : [];
+      const oldCols = _qualBase.length ? Object.keys(_qualBase[0]) : [];
+      const colNpuNew = qualDetectarColuna(newCols, ['processo','npu','numerodoprocesso','numero_processo','numeroproc']);
+      const colNpuOld = qualDetectarColuna(oldCols, ['processo','npu','numerodoprocesso','numero_processo','numeroproc']);
+      if (colNpuNew) {
+        const mapa = new Map();
+        // Base antiga primeiro
+        (_qualBase || []).forEach(r => {
+          const npu = colNpuOld ? fatNormalizeNPU(String(r[colNpuOld] || '')) : null;
+          const k = npu && npu.length >= 15 ? npu : '__nokey_' + Math.random();
+          mapa.set(k, r);
+        });
+        let novos = 0, atualizados = 0;
+        rows.forEach(r => {
+          const npu = fatNormalizeNPU(String(r[colNpuNew] || ''));
+          if (npu && npu.length >= 15) {
+            if (mapa.has(npu)) { atualizados++; } else { novos++; }
+            mapa.set(npu, r);
+          } else {
+            mapa.set('__nokey_' + Math.random(), r);
+            novos++;
+          }
+        });
+        rows = Array.from(mapa.values());
+        mergeInfo = ' (+' + novos + ' novos, ' + atualizados + ' atualizados. Total acumulado: ' + rows.length + ')';
+      }
+    }
+    _qualColunas = rows.length ? Object.keys(rows[0]) : _qualColunas;
     _qualBase = rows;
-    qualStatus('Base carregada: ' + rows.length + ' registros (' + file.name + '). Clique em Analisar.');
+    // Persiste base acumulada no IndexedDB
+    try { await fatIDB.set('qual:base_sistema', { rows: _qualBase, cols: _qualColunas, arquivo: _qualNomeArquivo, ts: Date.now() }); } catch(e) { console.warn('[qual] IDB save error:', e); }
+    _basesCarregadas.sistema = true;
+    qualStatus('Base carregada: ' + rows.length + ' registros (' + file.name + ')' + mergeInfo + '. Clique em Analisar.');
     const hint = document.getElementById('qualRegraColunaHint');
     if (hint) hint.textContent = 'Colunas disponiveis: ' + _qualColunas.slice(0,12).join(', ') + (_qualColunas.length > 12 ? '...' : '');
+    // Log de diagnostico das colunas para debug no console
+    console.log('[qual] Colunas detectadas:', _qualColunas);
+    const colCpf = qualDetectarColuna(_qualColunas, ['cpf']);
+    const colCnpj = qualDetectarColuna(_qualColunas, ['cnpj']);
+    console.log('[qual] CPF col:', colCpf, '| CNPJ col:', colCnpj);
   } catch(e) {
     qualStatus('Erro ao ler arquivo: ' + e.message, true);
   }
@@ -8722,15 +8762,34 @@ function qualAnalisar() {
   qualSalvarHistorico({ total, registros: _qualBase.length, pendencias: pendencias.length, arquivo: _qualNomeArquivo || '' });
 
   let msg = 'Analise concluida: ' + total + ' ocorrencias em ' + _qualBase.length + ' registros.';
+  const colCpfDetect = qualDetectarColuna(_qualColunas, ['cpf','cpfautor','cpfprincipal']);
+  const colCnpjDetect = qualDetectarColuna(_qualColunas, ['cnpj']);
+  if (colCpfDetect) msg += ' CPF: coluna "' + colCpfDetect + '".';
+  if (colCnpjDetect) msg += ' CNPJ: coluna "' + colCnpjDetect + '".';
   if (avisos.length) msg += ' AVISO: colunas nao encontradas para: ' + avisos.join(', ') + '.';
   qualStatus(msg, avisos.length > 0);
+}
+
+async function qualLimparBase() {
+  if (!confirm('Apagar toda a base acumulada? Esta acao nao pode ser desfeita.')) return;
+  _qualBase = null;
+  _qualColunas = [];
+  _qualResultados = {};
+  _qualNomeArquivo = '';
+  _basesCarregadas.sistema = false;
+  try { await fatIDB.set('qual:base_sistema', null); } catch(e) {}
+  const cont = document.getElementById('qualCards');
+  if (cont) cont.innerHTML = '';
+  const resumo = document.getElementById('qualResumoGeral');
+  if (resumo) resumo.style.display = 'none';
+  qualStatus('Base apagada. Importe um novo arquivo para comecar.', false);
 }
 
 function qualDetectarColunasAusentes() {
   const ausentes = [];
   const checks = [
-    { regra: 'cpf_zerado',           palavras: ['cpf'],         label: 'CPF' },
-    { regra: 'cnpj_zerado',          palavras: ['cnpj'],        label: 'CNPJ' },
+    { regra: 'cpf_zerado',           palavras: ['cpf','cpfautor','cpfprincipal'],  label: 'CPF' },
+    { regra: 'cnpj_zerado',          palavras: ['cnpj'],                          label: 'CNPJ' },
     { regra: 'trabalhista_escritorio', palavras: ['escritorio','escritório'], label: 'Escritorio' },
     { regra: 'trabalhista_responsavel', palavras: ['responsavelexterno','responsavel_externo'], label: 'Responsavel Externo' },
     { regra: 'polo_passivo_vazio',   palavras: ['polopassivo','polo_passivo','reu'], label: 'Polo Passivo' },
@@ -9214,9 +9273,24 @@ function qualVerHistorico() {
   } catch {}
 }
 
-function qualInicializar() {
+async function qualInicializar() {
   qualRenderRegrasLista();
-  if (_qualBase && Object.keys(_qualResultados).length) qualRenderCards();
+  if (_qualBase && Object.keys(_qualResultados).length) {
+    qualRenderCards();
+    return;
+  }
+  // Carrega base acumulada do IndexedDB se existir
+  try {
+    const saved = await fatIDB.get('qual:base_sistema');
+    if (saved && saved.rows && saved.rows.length) {
+      _qualBase = saved.rows;
+      _qualColunas = saved.cols || (saved.rows.length ? Object.keys(saved.rows[0]) : []);
+      _qualNomeArquivo = saved.arquivo || '';
+      _basesCarregadas.sistema = true;
+      qualAnalisar();
+      qualStatus('Base acumulada: ' + _qualBase.length + ' registros (ultima atualizacao: ' + (saved.ts ? new Date(saved.ts).toLocaleDateString('pt-BR') : '?') + '). Importe novo arquivo para atualizar.');
+    }
+  } catch(e) { console.warn('[qual] IDB load error:', e); }
 }
 
 // =====================================================================
