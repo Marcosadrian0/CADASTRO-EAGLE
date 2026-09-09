@@ -608,7 +608,7 @@ textarea{resize:vertical;min-height:52px}
     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
       <label style="display:flex;align-items:center;gap:6px;padding:7px 14px;border:1.5px dashed var(--borda);border-radius:8px;cursor:pointer;font-size:12px;color:var(--chumbo);background:var(--off)">
         Base do sistema (.csv / .xlsx)
-        <input type="file" id="qualInputBase" accept=".csv,.xlsx,.xls" style="display:none" onchange="qualCarregarBase(this.files[0])">
+        <input type="file" id="qualInputBase" accept=".csv,.xlsx,.xls" style="display:none" onchange="qualCarregarBase(this.files[0]).then(()=>{ if(_qualBase&&_qualBase.length&&!_qualAbas) qualAnalisar(); })">
       </label>
       <button onclick="qualAnalisar()" style="padding:8px 18px;background:var(--verde);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">Analisar</button>
     </div>
@@ -9327,8 +9327,7 @@ async function basesProxySistema(input) {
   await qualCarregarBase(file);
   basesAtualizarStatus();
   input.value = '';
-  // Se estiver na aba qualidade, re-renderiza
-  if (document.getElementById('panel-monitor')?.classList.contains('active')) qualAnalisar();
+  if (_qualBase && _qualBase.length && !_qualAbas) qualAnalisar();
 }
 
 // legado - mantido para compatibilidade com dashboard
