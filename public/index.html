@@ -8452,25 +8452,30 @@ const QUAL_REGRAS_FIXAS = [
   {
     id: 'cpf_zerado',
     nome: 'CPF Zerado',
-    descricao: 'CPF preenchido com zeros ou vazio',
+    descricao: 'CPF vazio ou preenchido com zeros (ex: 000.000.000-00)',
     cor: 'vermelho',
     testar: (row, cols) => {
       const col = qualDetectarColuna(cols, ['cpf']);
       if (!col) return false;
-      const v = String(row[col] || '').replace(/[\.\-\s]/g,'').replace(/^0+$/, '0');
-      return !v || v === '0' || v === '00000000000' || v === '';
+      const raw = String(row[col] || '').trim();
+      if (!raw) return true;
+      const digits = raw.replace(/\D/g, '');
+      // Vazio, so zeros ou menos de 3 digitos reais
+      return !digits || /^0+$/.test(digits) || digits.length < 3;
     }
   },
   {
     id: 'cnpj_zerado',
     nome: 'CNPJ Zerado',
-    descricao: 'CNPJ preenchido com zeros ou vazio',
+    descricao: 'CNPJ vazio ou preenchido com zeros (ex: 00.000.000/0000-00)',
     cor: 'amarelo',
     testar: (row, cols) => {
       const col = qualDetectarColuna(cols, ['cnpj']);
       if (!col) return false;
-      const v = String(row[col] || '').replace(/[\.\-\/\s]/g,'').replace(/^0+$/, '0');
-      return !v || v === '0' || v === '00000000000000' || v === '';
+      const raw = String(row[col] || '').trim();
+      if (!raw) return true;
+      const digits = raw.replace(/\D/g, '');
+      return !digits || /^0+$/.test(digits) || digits.length < 3;
     }
   },
   {
