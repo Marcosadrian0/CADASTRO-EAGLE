@@ -81,13 +81,26 @@ FORMATOS DE DOCUMENTOS COMUNS:
 - Petição clássica: o autor se qualifica no primeiro parágrafo ("NOME, brasileiro(a), portador(a) do CPF...").
 - Portal TJSP/ESAJ: partes listadas no cabeçalho com labels "REQUERENTE:" e "REQUERIDO:".
 
+PADRÕES DE IDENTIFICAÇÃO DAS PARTES:
+- Autor: "NOME COMPLETO, brasileiro(a), portador(a) do RG... inscrito(a) no CPF... vem respeitosamente" — NOME COMPLETO antes da vírgula é o autor.
+- Autor: "NOME COMPLETO, portador(a) do CPF nº XXX.XXX.XXX-XX" — NOME antes de "portador" é o autor.
+- Autor: Após labels "REQUERENTE:", "AUTOR:", "EXEQUENTE:", "AGRAVANTE:" = nome do autor.
+- Réu: "em desfavor da empresa NOME DA EMPRESA, pessoa jurídica..." — NOME DA EMPRESA é o réu.
+- Réu: "em desfavor de NOME" — NOME é o réu (pessoa física ou jurídica).
+- Réu: "em face de NOME" — NOME é o réu.
+- Réu: Após labels "REQUERIDO:", "RÉU:", "EXECUTADO:", "AGRAVADO:" = nome do réu.
+
+REGRA ESPECIAL DE EMPRESA:
+- CNPJ 45.745.537/0001-19 corresponde a "Futuro Sociedade de Crédito Direto S/A" (mesmo que no documento apareça como "Eagle Sociedade de Crédito Direto", "Eagle SCD" ou similar).
+
 REGRAS ABSOLUTAS:
 1. Retorne SOMENTE o JSON, sem texto antes ou depois
 2. Campos não encontrados devem ser string vazia "" (nunca null)
 3. O array reus deve ter ao menos um item se houver réu identificado
 4. Infira tipo_justica a partir do dígito J do NPU quando possível
 5. "Por: NOME" no cabeçalho de portais = advogado, nunca autor
-6. Réus são pessoas jurídicas (empresas/bancos) ou físicas no polo passivo — leia todos os réus listados`;
+6. Réus são pessoas jurídicas (empresas/bancos) ou físicas no polo passivo — leia todos os réus listados
+7. O autor é sempre o polo ativo (quem propõe a ação), nunca o advogado nem o réu`;
 
   // ── Roteamento por tipo de chamada ─────────────────────────────────────────
   try {

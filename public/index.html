@@ -2619,9 +2619,9 @@ function extrairCampos(txt, seg) {
     }
   }
 
-  // Padrão 3: "NOME, portador(a) do CPF" ou "NOME, inscrito(a) no CPF"
+  // Padrão 3: "NOME, portador(a) do CPF" ou "NOME, inscrito(a) no CPF" ou "NOME, inscrito(a) no CPF sob o n°"
   if (!campos.autor_nome) {
-    const mPortCpf = txtPartes.match(/([A-ZÁÉÍÓÚÂÊÔÃÕÇ][A-ZÁÉÍÓÚÂÊÔÃÕÇ\s]{3,60}?),?\s*(?:portador[ao]?\s+d[ao]\s+CPF|inscrit[ao]\s+(?:no|na)\s+CPF)/i);
+    const mPortCpf = txtPartes.match(/([A-ZÁÉÍÓÚÂÊÔÃÕÇ][A-ZÁÉÍÓÚÂÊÔÃÕÇ\s]{3,60}?),?\s*(?:portador[ao]?\s+d[ao]\s+CPF|inscrit[ao]\s+(?:no|na|sob\s+o)\s+CPF)/i);
     if (mPortCpf) {
       const n = mPortCpf[1].trim().replace(/\s+/g,' ');
       if (!_FILTRO_AUTOR.test(n) && n.split(' ').length <= 7) campos.autor_nome = capitalizar(n);
@@ -2850,11 +2850,11 @@ function extrairCampos(txt, seg) {
       else reus.push({ nome: ultimaParte, cnpj });
     }
   }
-  // Complemento A: parser explícito do bloco "em face de:" para réus sem CNPJ
+  // Complemento A: parser explícito do bloco "em face de:" / "em desfavor de" para réus sem CNPJ
   // Preferir seg.partes (menos ruído) mas fallback para txt completo
   if (reus.length === 0 && !ehAgravo) {
     const srcEmFace = seg.partes || txt;
-    const mEmFace = srcEmFace.match(/em\s+face\s+d[eo][:\s]+([\s\S]{5,600}?)(?:\n\n\n|\n\n(?:[IVXLC]+[\.\-\s]|[A-ZÁÉÍÓÚÂÊÔÃÕÇ]{4,}\s*\n)|\.[\s]*(?:DOS?\s+FATOS|FATOS|RELATÓRIO|BREVE\s+RELATO|SÍNTESE\s+DOS\s+FATOS))/i);
+    const mEmFace = srcEmFace.match(/(?:em\s+face\s+d[eo]|em\s+desfavor\s+d[oa](?:\s+empresa)?)[:\s]+([\s\S]{5,600}?)(?:\n\n\n|\n\n(?:[IVXLC]+[\.\-\s]|[A-ZÁÉÍÓÚÂÊÔÃÕÇ]{4,}\s*\n)|\.[\s]*(?:DOS?\s+FATOS|FATOS|RELATÓRIO|BREVE\s+RELATO|SÍNTESE\s+DOS\s+FATOS))/i);
     if (mEmFace) {
       const blocoEmFace = mEmFace[1].replace(/\n/g,' ').replace(/\s{2,}/g,' ').trim();
       // Dividir por ";" ou " e " (conjunção entre réus)
