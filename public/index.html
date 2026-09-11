@@ -2838,6 +2838,12 @@ function extrairCampos(txt, seg) {
       // 4. Contém marcadores claros de texto corrido (verbos, conjunções subordinadas)
       const _STOP_REU = /\b(?:que|pelo|pela|pelos|pelas|para|com\s+o|sem\s+o|entre\s+o|após\s+o|quando\s+o|sendo\s+que|tendo\s+em|dado\s+que|caso\s+o|pois\s+o|conforme\s+o|mediante\s+o|perante\s+o|durante\s+o|contra\s+o)\b/i;
       if (_STOP_REU.test(ultimaParte)) continue;
+      // 4b. Contém palavras de qualificação pessoal = é texto do autor, não nome do réu
+      // Exceção: CNPJ conhecido pode ter nome errado mas será remapeado no post-processing
+      if (/\b(?:brasileir[ao]|casad[ao]|solteiro|divorciado|viúvo|maior\s+de\s+idade|residente|domiciliad|portador[ao]\s+do\s+RG|inscrit[ao]\s+no\s+CPF|portador[ao]\s+do\s+CPF)\b/i.test(ultimaParte)) {
+        if (cnpj !== '45.745.537/0001-19') continue;
+        ultimaParte = 'Futuro Sociedade de Crédito Direto S/A'; // corrige na hora
+      }
       // 5. Muito longo: tentar extrair razão social pelo padrão de empresa
       if (ultimaParte.length > 160) {
         const mEmp = ultimaParte.match(/([A-ZÁÉÍÓÚÂÊÔÃÕÇ][^\n;,–—]{3,80}?(?:S\.A\.?|LTDA\.?|EIRELI|S\/A|BANCO\b|FINANCEIRA\b|FUNDO\b|CRÉDITO\b|SOCIEDADE\b|CORRETORA\b|SEGUROS?\b))[^A-Z\n]{0,20}$/i);
@@ -2956,7 +2962,20 @@ function extrairCampos(txt, seg) {
     delete campos._reusPortal;
   }
 
-  campos.reus = reus;
+  // Post-processing: remapear CNPJs conhecidos primeiro, depois sanitizar nomes
+  reus.forEach(r => {
+    // CNPJ 45.745.537/0001-19 = Futuro Sociedade de Crédito Direto S/A (sempre, independente do nome extraído)
+    if (r.cnpj === '45.745.537/0001-19' || /EAGLE\s+(?:SCD|SOC)/i.test(r.nome)) {
+      r.nome = 'Futuro Sociedade de Crédito Direto S/A';
+      r.cnpj = '45.745.537/0001-19';
+      return;
+    }
+    // Nomes com qualificação pessoal não são razão social de réu
+    if (/\b(?:brasileir[ao]|casad[ao]|solteiro|divorciado|viúvo|residente|domiciliad)\b/i.test(r.nome)) {
+      r.nome = '';
+    }
+  });
+  campos.reus = reus.filter(r => r.nome && r.nome.length >= 3);
 
   // ── ADVOGADOS e OAB ────────────────────────────────────────────────────────
   // Captura "Por: NOME" de portais (PROJUDI, etc.) como advogado se OAB nao for encontrado
