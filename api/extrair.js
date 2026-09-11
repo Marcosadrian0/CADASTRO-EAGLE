@@ -76,11 +76,18 @@ AF DESCONTO IRREGULAR, AF/PLANO DESCONTO IRREGULAR, ANULATÓRIA PROCON, BANCO DO
 CAUSA RAIZ — escolha EXATAMENTE um dos valores abaixo, ou deixe vazio se não identificado:
 AF, CLIENTE NÃO RECONHECE A VENDA, CRÉDITO TRABALHADOR, DÉBITO EM CONTA - ASSISTÊNCIA VERBIN, IPTU, MULTA PROCON, NEGATIVA CANCELAMENTO, PROPOSTA COMERCIAL DIFERENTE, PRÓPRIO, RESERVA DE MARGEM, SUPERENDIVIDAMENTO, TERCEIRO, TRABALHISTA
 
+FORMATOS DE DOCUMENTOS COMUNS:
+- PROJUDI/portal judicial: a primeira página tem cabecalho com "Por: NOME DO ADVOGADO" — esse nome é o advogado, NUNCA o autor. O autor e réus estão nas páginas seguintes da petição.
+- Petição clássica: o autor se qualifica no primeiro parágrafo ("NOME, brasileiro(a), portador(a) do CPF...").
+- Portal TJSP/ESAJ: partes listadas no cabeçalho com labels "REQUERENTE:" e "REQUERIDO:".
+
 REGRAS ABSOLUTAS:
 1. Retorne SOMENTE o JSON, sem texto antes ou depois
 2. Campos não encontrados devem ser string vazia "" (nunca null)
 3. O array reus deve ter ao menos um item se houver réu identificado
-4. Infira tipo_justica a partir do dígito J do NPU quando possível`;
+4. Infira tipo_justica a partir do dígito J do NPU quando possível
+5. "Por: NOME" no cabeçalho de portais = advogado, nunca autor
+6. Réus são pessoas jurídicas (empresas/bancos) ou físicas no polo passivo — leia todos os réus listados`;
 
   // ── Roteamento por tipo de chamada ─────────────────────────────────────────
   try {

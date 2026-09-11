@@ -2142,10 +2142,18 @@ async function analisarPDF() {
 
     setStep(3);
 
-    if (texto.length < 80) {
-      // PDF escaneado: envia como base64 para Claude via API
+    // Detecta PDF sem conteudo textual real: escaneado puro (<80 chars)
+    // ou wrapper de portal (ex: PROJUDI) com texto de cabecalho mas paginas como imagem
+    // Criterio: menos de 150 chars por pagina em media = imagem dominante
+    const mediaCharsPorPagina = texto.length / total;
+    const ehEscaneado = texto.length < 80 || mediaCharsPorPagina < 150;
+
+    if (ehEscaneado) {
+      // PDF escaneado ou wrapper de portal: envia como base64 para Claude via API (OCR)
       setStep(3);
-      mostrarAlerta('ok', 'PDF escaneado detectado — enviando para analise com IA...');
+      mostrarAlerta('ok', texto.length < 80
+        ? 'PDF escaneado detectado — enviando para analise com IA...'
+        : 'PDF do portal detectado (imagens embutidas) — enviando para analise com IA...');
       try {
         const bytes = new Uint8Array(pdfArrayBuffer);
         let binary = '';
@@ -2159,14 +2167,14 @@ async function analisarPDF() {
         const npuValScan = document.getElementById('f_npu').value;
         if (npuValScan) tentarConsultaPublica(npuValScan);
       } catch(e) {
-        console.warn('Extracao PDF escaneado falhou:', e);
-        mostrarAlerta('err', 'PDF escaneado — nao foi possivel extrair texto. Complete os campos manualmente.');
+        console.warn('Extracao PDF escaneado/portal falhou:', e);
+        mostrarAlerta('err', 'Nao foi possivel extrair texto deste PDF. Complete os campos manualmente.');
       }
       document.getElementById('btnAnalisar').disabled = false;
       return;
     }
 
-    // PDF com texto: extracao local (rapida) + Claude (assertiva) em paralelo
+    // PDF com texto real: extracao local (rapida) + Claude (assertiva) em paralelo
     let camposLocal = {};
     try {
       camposLocal = extrairCamposComAprendizado(texto);
@@ -2560,6 +2568,13 @@ function extrairCampos(txt, seg) {
   // ── AUTOR e CPF ───────────────────────────────────────────────────────────
   const _FILTRO_AUTOR = /EXCELENTÍSSIMO|SENHOR|JUIZ|VARA|COMARCA|CONSTITUIÇÃO|CÓDIGO|ARTIGO|OUTORGANTE|PODER|TRIBUNAL|ESTADO|PROCESSO|JUSTIÇA/i;
 
+  // Captura nomes de advogado no formato "Por: NOME" (PROJUDI/portais)
+  // para evitar que sejam capturados como autor nos padroes abaixo
+  const _nomesPortalAdvogado = new Set();
+  for (const mPor of txt.matchAll(/\bPor:\s+([A-ZÁÉÍÓÚÂÊÔÃÕÇ][A-ZÁÉÍÓÚÂÊÔÃÕÇ\s]{3,60}?)(?:\n|$)/g)) {
+    _nomesPortalAdvogado.add(mPor[1].trim().toUpperCase());
+  }
+
   // Usar bloco de partes para extração direcionada (menos ruído do corpo da petição)
   const txtPartes = seg.partes || txt.substring(0, 3000);
 
@@ -2573,6 +2588,7 @@ function extrairCampos(txt, seg) {
     if (!nome || nome.length < 3) continue;
     if (_FILTRO_AUTOR.test(nome)) continue;
     if (/ADVOGAD/i.test(papel)) continue;
+    if (_nomesPortalAdvogado.has(nome.toUpperCase())) continue;
     if (/REQUERENTE|AGRAVANTE|EXEQUENTE|AUTOR/.test(papel) && !campos.autor_nome) {
       const words = nome.split(' ').filter(Boolean);
       if (words.length >= 2 && words.length <= 8) campos.autor_nome = capitalizar(nome);
@@ -2588,7 +2604,7 @@ function extrairCampos(txt, seg) {
   const mLabelAutor = txt.match(/(?:AGRAVANTE|EXEQUENTE|REQUERENTE|APELANTE|EMBARGANTE|IMPETRANTE|AUTOR[AE]?):\s*([A-ZÁÉÍÓÚÂÊÔÃÕÇ][A-ZÁÉÍÓÚÂÊÔÃÕÇ\s]{3,60}?)(?:\n|,|\s{2,}|AGRAVADO|REQUERIDO|EXECUTADO)/i);
   if (mLabelAutor) {
     const n = mLabelAutor[1].trim().replace(/\s+/g,' ');
-    if (!_FILTRO_AUTOR.test(n) && n.split(' ').length <= 7) campos.autor_nome = capitalizar(n);
+    if (!_FILTRO_AUTOR.test(n) && !_nomesPortalAdvogado.has(n.toUpperCase()) && n.split(' ').length <= 7) campos.autor_nome = capitalizar(n);
   }
 
   // Padrão 2: qualificacao com "brasileiro/a" (peticao inicial classica)
@@ -2943,6 +2959,11 @@ function extrairCampos(txt, seg) {
   campos.reus = reus;
 
   // ── ADVOGADOS e OAB ────────────────────────────────────────────────────────
+  // Captura "Por: NOME" de portais (PROJUDI, etc.) como advogado se OAB nao for encontrado
+  if (_nomesPortalAdvogado.size > 0 && !campos.advogado_nome) {
+    const primeiroAdv = [..._nomesPortalAdvogado][0];
+    if (primeiroAdv && primeiroAdv.split(' ').length >= 2) campos.advogado_nome = capitalizar(primeiroAdv);
+  }
   // Âncora em cada "OAB/" e olha 150 chars para trás — captura TODOS os advogados
   // OAB: aceita "OAB/SP nº 377.573" e "OAB/SP n° 015800" e "OAB/SP 015800"
   const oabAncora = /OAB[\/\-\s]([A-Z]{2})\s*(?:[Nn][.º°ºo]?\s*)?[º°]?\s*([\d.,]{4,10})/gi;
