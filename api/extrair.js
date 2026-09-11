@@ -45,32 +45,76 @@ export default async function handler(req, res) {
 
   const { tipo, pdf_b64, texto, instrucoes, prompt_aprendizado } = req.body || {};
 
+  // ── Sistema de contexto jurídico SBK ───────────────────────────────────────
+  const SYSTEM_JURIDICO = `Você é um especialista em análise de petições judiciais brasileiras trabalhando para o escritório SBK.
+Sua tarefa é extrair dados processuais do documento e retornar APENAS um JSON válido, sem markdown, sem explicações.
+
+CAMPOS E FORMATOS ESPERADOS:
+- npu: Número único CNJ no formato NNNNNNN-DD.AAAA.J.TT.OOOO (ex: 1234567-89.2024.8.26.0001)
+- uf: Sigla do estado (ex: SP, MG, RJ)
+- comarca: Município sede do tribunal (ex: São Paulo, Campinas)
+- data_ajuizamento: Data no formato DD/MM/AAAA
+- valor_causa: Valor em reais sem símbolo de moeda (ex: 15000.00)
+- vara_cartorio: Nome da vara ou cartório (ex: 3ª Vara Cível de São Paulo)
+- numero_origem: Número de origem ou processo anterior, se existir
+- tipo_justica: EXATAMENTE um de: ESTADUAL, FEDERAL, TRABALHISTA
+  (dica: use o dígito J do NPU — 4=FEDERAL, 5=TRABALHISTA, 8=ESTADUAL)
+- rito: EXATAMENTE um de: Procedimento Comum Cível, Juizado Especial Cível, Juizado Especial, Cumprimento de Sentença, Execução, Mandado de Segurança, Ação Civil Pública
+- fase_processual: EXATAMENTE um de: Conhecimento, Cumprimento de Sentença, Execução, Inicial, Recursal
+- tipo_documento: EXATAMENTE um de: Petição Inicial, Contestação, Recurso, Agravo, Embargos, Sentença
+- desconto_conta: "Sim" se há desconto em conta bancária ou margem consignada, "Não" caso contrário
+- autor_nome: Nome completo do autor/requerente principal
+- autor_cpf: CPF do autor no formato XXX.XXX.XXX-XX
+- advogado_nome: Nome do advogado do autor
+- advogado_uf: UF da OAB do advogado do autor
+- advogado_oab: Número da OAB do advogado do autor
+- reus: Array de objetos com nome e cnpj de cada réu/requerido
+
+OBJETO PRINCIPAL — escolha EXATAMENTE um dos valores abaixo, ou deixe vazio se não identificado:
+AF DESCONTO IRREGULAR, AF/PLANO DESCONTO IRREGULAR, ANULATÓRIA PROCON, BANCO DO BRASIL (JAIR), BANCO DO BRASIL (JURÍDICO), BANCO DO BRASIL (MATRIZ), BANCO ITAÚ (MATRIZ), BLOQUEIO DE MARGEM, BRADESCO (MATRIZ), CAIXA INTERNO, CARTÃO DE CRÉDITO CONSIGNADO, CRÉDITO TRABALHADOR, DÉBITO EM CONTA - ASSISTÊNCIA VERBIN, EMPRÉSTIMO CONSIGNADO, EXECUÇÃO DE TÍTULOS EXTRAJUDICIAIS, EXECUÇÃO FISCAL ESTADUAL, EXECUÇÃO FISCAL MUNICIPAL, FLUXO COM VERIFICAÇÃO, FLUXO SIMPLES, FUTURO NÃO É PARTE, HOMOLOGAÇÃO DE ACORDO, INDENIZATÓRIA, INSCRIÇÃO INDEVIDA SPC/SERASA, PLANO DESCONTO IRREGULAR, PRODUÇÃO DE PROVAS, REVISIONAL DE JUROS, SANTANDER (JURÍDICO), SEGURO PRESTAMISTA IRREGULAR, SINISTROS, SUPERENDIVIDAMENTO, TRABALHISTA FUNCIONÁRIO, TRABALHISTA TEMPORÁRIO, TRABALHISTA TERCEIRO, USUCAPIÃO
+
+CAUSA RAIZ — escolha EXATAMENTE um dos valores abaixo, ou deixe vazio se não identificado:
+AF, CLIENTE NÃO RECONHECE A VENDA, CRÉDITO TRABALHADOR, DÉBITO EM CONTA - ASSISTÊNCIA VERBIN, IPTU, MULTA PROCON, NEGATIVA CANCELAMENTO, PROPOSTA COMERCIAL DIFERENTE, PRÓPRIO, RESERVA DE MARGEM, SUPERENDIVIDAMENTO, TERCEIRO, TRABALHISTA
+
+REGRAS ABSOLUTAS:
+1. Retorne SOMENTE o JSON, sem texto antes ou depois
+2. Campos não encontrados devem ser string vazia "" (nunca null)
+3. O array reus deve ter ao menos um item se houver réu identificado
+4. Infira tipo_justica a partir do dígito J do NPU quando possível`;
+
   // ── Roteamento por tipo de chamada ─────────────────────────────────────────
   try {
-    if (tipo === 'extrair_pdf' && pdf_b64 && instrucoes) {
-      // Estratégia 1: PDF como documento base64
+    if (tipo === 'extrair_pdf' && pdf_b64) {
+      // PDF escaneado: envia como documento base64
+      const instrucaoFinal = `Extraia os dados processuais deste documento e retorne o JSON conforme as instruções do sistema:\n{"npu":"","uf":"","comarca":"","data_ajuizamento":"","valor_causa":"","vara_cartorio":"","numero_origem":"","tipo_justica":"","rito":"","fase_processual":"","tipo_documento":"","objeto_principal":"","causa_raiz":"","desconto_conta":"","autor_nome":"","autor_cpf":"","advogado_nome":"","advogado_uf":"","advogado_oab":"","reus":[{"nome":"","cnpj":""}]}`;
       return res.status(200).json(
         await chamarAnthropic(ANTHROPIC_KEY, {
           model: 'claude-sonnet-4-6',
           max_tokens: 2048,
+          system: SYSTEM_JURIDICO,
           messages: [{
             role: 'user',
             content: [
               { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: pdf_b64 } },
-              { type: 'text', text: instrucoes }
+              { type: 'text', text: instrucaoFinal }
             ]
           }]
-        }, true) // true = beta PDFs
+        }, true)
       );
     }
 
-    if (tipo === 'extrair_texto' && texto && instrucoes) {
-      // Estratégia 2: texto puro (fallback)
+    if (tipo === 'extrair_texto' && texto) {
+      // Texto extraído do PDF: análise com contexto completo
+      const textoTruncado = texto.length > 12000 ? texto.substring(0, 12000) + '\n[texto truncado]' : texto;
       return res.status(200).json(
         await chamarAnthropic(ANTHROPIC_KEY, {
           model: 'claude-sonnet-4-6',
           max_tokens: 2048,
-          messages: [{ role: 'user', content: instrucoes + '\n\nTEXTO:\n' + texto }]
+          system: SYSTEM_JURIDICO,
+          messages: [{
+            role: 'user',
+            content: `Extraia os dados processuais do texto abaixo e retorne o JSON:\n{"npu":"","uf":"","comarca":"","data_ajuizamento":"","valor_causa":"","vara_cartorio":"","numero_origem":"","tipo_justica":"","rito":"","fase_processual":"","tipo_documento":"","objeto_principal":"","causa_raiz":"","desconto_conta":"","autor_nome":"","autor_cpf":"","advogado_nome":"","advogado_uf":"","advogado_oab":"","reus":[{"nome":"","cnpj":""}]}\n\nTEXTO DA PETIÇÃO:\n${textoTruncado}`
+          }]
         })
       );
     }

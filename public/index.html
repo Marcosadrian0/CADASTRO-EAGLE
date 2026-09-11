@@ -2143,55 +2143,60 @@ async function analisarPDF() {
     setStep(3);
 
     if (texto.length < 80) {
-      // PDF escaneado — envia como base64 para Claude via API
+      // PDF escaneado: envia como base64 para Claude via API
       setStep(3);
-      mostrarAlerta('ok', 'PDF escaneado detectado — enviando para análise com IA...');
+      mostrarAlerta('ok', 'PDF escaneado detectado — enviando para analise com IA...');
       try {
         const bytes = new Uint8Array(pdfArrayBuffer);
         let binary = '';
         for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
         const pdf_b64 = btoa(binary);
-        const instrucoesPDF = `Analise esta petição judicial e extraia os dados processuais em JSON puro sem markdown:
-{"npu":"","uf":"","comarca":"","data_ajuizamento":"","valor_causa":"","vara_cartorio":"","numero_origem":"","tipo_justica":"","rito":"","fase_processual":"","tipo_documento":"","objeto_principal":"","causa_raiz":"","desconto_conta":"Sim|Não","autor_nome":"","autor_cpf":"","advogado_nome":"","advogado_uf":"","advogado_oab":"","reus":[{"nome":"","cnpj":""}]}`;
-        const dataIA = await chamarAPI('extrair_pdf', { pdf_b64, instrucoes: instrucoesPDF });
-        const rawIA = (dataIA.content?.[0]?.text || '').replace(/```json|```/g,'').trim();
-        const camposIA = JSON.parse(rawIA);
+        const dataIA = await chamarAPI('extrair_pdf', { pdf_b64 });
+        const camposIA = qualParseIAJson(dataIA);
         setStep(4);
         preencherFormulario(camposIA);
         mostrarAlerta('ok', 'PDF escaneado analisado com IA. Revise os campos preenchidos.');
         const npuValScan = document.getElementById('f_npu').value;
         if (npuValScan) tentarConsultaPublica(npuValScan);
       } catch(e) {
-        console.warn('Extração PDF escaneado falhou:', e);
-        mostrarAlerta('err', 'PDF escaneado — não foi possível extrair texto. Complete os campos manualmente.');
+        console.warn('Extracao PDF escaneado falhou:', e);
+        mostrarAlerta('err', 'PDF escaneado — nao foi possivel extrair texto. Complete os campos manualmente.');
       }
       document.getElementById('btnAnalisar').disabled = false;
       return;
     }
 
-    // Extrair e preencher campos
-    let campos;
+    // PDF com texto: extracao local (rapida) + Claude (assertiva) em paralelo
+    let camposLocal = {};
     try {
-      campos = extrairCamposComAprendizado(texto);
+      camposLocal = extrairCamposComAprendizado(texto);
     } catch(e) {
-      console.error('Erro na extração:', e);
-      const _txtFallback = preprocessarTexto(texto);
-      campos = extrairCampos(_txtFallback, segmentarPeticao(_txtFallback)); // fallback sem aprendizado
+      console.warn('Extracao local falhou:', e);
+      try {
+        const _txt = preprocessarTexto(texto);
+        camposLocal = extrairCampos(_txt, segmentarPeticao(_txt));
+      } catch(e2) { camposLocal = {}; }
     }
 
+    // Preenche primeiro com resultado local (resposta imediata ao usuario)
     setStep(4);
+    try { preencherFormulario(camposLocal); } catch(e) { console.warn('Preenchimento local:', e); }
+    mostrarAlerta('ok', 'Extraindo campos — aguardando analise com IA para maior assertividade...');
 
+    // Claude analisa o texto em paralelo e mescla os resultados
     try {
-      preencherFormulario(campos);
+      const dataIA = await chamarAPI('extrair_texto', { texto });
+      const camposIA = qualParseIAJson(dataIA);
+      // Mescla: Claude tem prioridade em campos que preencheu, local preenche lacunas
+      const camposMesclados = mesclarCamposIA(camposLocal, camposIA);
+      preencherFormulario(camposMesclados);
+      mostrarAlerta('ok', 'Campos preenchidos com IA. Revise e ajuste se necessario.');
     } catch(e) {
-      console.error('Erro no preenchimento:', e);
-      mostrarAlerta('err', 'Erro ao preencher formulário: ' + e.message);
-      document.getElementById('btnAnalisar').disabled = false;
-      return;
+      console.warn('Claude nao disponivel, usando extracao local:', e);
+      mostrarAlerta('ok', 'Campos preenchidos automaticamente (modo local). Revise e ajuste se necessario.');
     }
 
     document.getElementById('btnAnalisar').disabled = false;
-    mostrarAlerta('ok', 'Campos preenchidos automaticamente. Revise e ajuste se necessário.');
     const npuVal = document.getElementById('f_npu').value;
     if (npuVal) tentarConsultaPublica(npuVal);
 
@@ -2202,6 +2207,33 @@ async function analisarPDF() {
     console.error('Stack:', err.stack);
     mostrarAlerta('err', 'Erro ao processar o PDF: ' + (err.message || String(err)));
   }
+}
+
+// Extrai JSON da resposta da Anthropic API
+function qualParseIAJson(data) {
+  const raw = (data?.content?.[0]?.text || '').replace(/```json|```/g, '').trim();
+  // Isola o primeiro objeto JSON encontrado na resposta
+  const match = raw.match(/\{[\s\S]*\}/);
+  if (!match) throw new Error('Resposta IA sem JSON valido');
+  return JSON.parse(match[0]);
+}
+
+// Mescla campos: Claude tem prioridade sobre extracao local
+// Local preenche apenas campos que Claude deixou vazios
+function mesclarCamposIA(local, ia) {
+  const resultado = Object.assign({}, local);
+  const CAMPOS_TEXTO = ['npu','uf','comarca','data_ajuizamento','valor_causa','vara_cartorio',
+    'numero_origem','tipo_justica','rito','fase_processual','tipo_documento','objeto_principal',
+    'causa_raiz','desconto_conta','autor_nome','autor_cpf','advogado_nome','advogado_uf','advogado_oab'];
+  CAMPOS_TEXTO.forEach(k => {
+    const v = String(ia[k] || '').trim();
+    if (v) resultado[k] = v; // Claude vence se preencheu
+  });
+  // Reus: usa a lista do Claude se nao estiver vazia
+  if (Array.isArray(ia.reus) && ia.reus.length && ia.reus.some(r => r.nome)) {
+    resultado.reus = ia.reus;
+  }
+  return resultado;
 }
 
 const _MESES = {
