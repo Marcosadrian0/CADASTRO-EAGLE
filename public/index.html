@@ -2151,13 +2151,26 @@ async function analisarPDF() {
     if (ehEscaneado) {
       // PDF escaneado ou wrapper de portal: envia como base64 para Claude via API (OCR)
       setStep(3);
+
+      // Verificar tamanho: Vercel limita payload a ~4MB. PDFs maiores que 3MB em base64 (~4MB) sao rejeitados.
+      const tamanhoMB = pdfArrayBuffer.byteLength / (1024 * 1024);
+      if (tamanhoMB > 3) {
+        mostrarAlerta('err', 'PDF grande demais para analise automatica (' + tamanhoMB.toFixed(1) + ' MB). Reduza o arquivo para menos de 3 MB e tente novamente, ou preencha os campos manualmente.');
+        document.getElementById('btnAnalisar').disabled = false;
+        return;
+      }
+
       mostrarAlerta('ok', texto.length < 80
         ? 'PDF escaneado detectado — enviando para analise com IA...'
         : 'PDF do portal detectado (imagens embutidas) — enviando para analise com IA...');
       try {
+        // Conversao base64 em chunks para nao travar o browser em PDFs grandes
         const bytes = new Uint8Array(pdfArrayBuffer);
         let binary = '';
-        for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+        const CHUNK = 8192;
+        for (let i = 0; i < bytes.byteLength; i += CHUNK) {
+          binary += String.fromCharCode.apply(null, bytes.subarray(i, Math.min(i + CHUNK, bytes.byteLength)));
+        }
         const pdf_b64 = btoa(binary);
         const dataIA = await chamarAPI('extrair_pdf', { pdf_b64 });
         const camposIA = qualParseIAJson(dataIA);
@@ -2168,7 +2181,12 @@ async function analisarPDF() {
         if (npuValScan) tentarConsultaPublica(npuValScan);
       } catch(e) {
         console.warn('Extracao PDF escaneado/portal falhou:', e);
-        mostrarAlerta('err', 'Nao foi possivel extrair texto deste PDF. Complete os campos manualmente.');
+        const msgErro = e && e.message ? e.message : String(e);
+        if (/413|payload|size|large/i.test(msgErro)) {
+          mostrarAlerta('err', 'PDF muito grande para envio automatico. Reduza o arquivo e tente novamente.');
+        } else {
+          mostrarAlerta('err', 'Nao foi possivel analisar este PDF automaticamente. Verifique sua conexao e tente novamente, ou preencha os campos manualmente.');
+        }
       }
       document.getElementById('btnAnalisar').disabled = false;
       return;
