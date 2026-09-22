@@ -2159,24 +2159,28 @@ async function analisarPDF() {
       if (tamanhoMB > 3) {
         mostrarAlerta('ok', 'PDF grande (' + tamanhoMB.toFixed(1) + ' MB) — extraindo imagens das primeiras paginas para analise com IA...');
         try {
-          const MAX_PAGS_IMG = Math.min(total, 15);
+          // Limitar a 8 paginas, escala 1.0 e qualidade 50% para manter payload < 2MB
+          const MAX_PAGS_IMG = Math.min(total, 8);
           const imagens = [];
+          let totalBytes = 0;
           for (let p = 1; p <= MAX_PAGS_IMG; p++) {
             const page = await pdf.getPage(p);
-            const viewport = page.getViewport({ scale: 1.2 });
+            const viewport = page.getViewport({ scale: 1.0 });
             const canvas = document.createElement('canvas');
             canvas.width = viewport.width;
             canvas.height = viewport.height;
             await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
-            // JPEG 65% de qualidade: boa legibilidade para OCR, payload reduzido
-            const imgB64 = canvas.toDataURL('image/jpeg', 0.65).split(',')[1];
+            const imgB64 = canvas.toDataURL('image/jpeg', 0.50).split(',')[1];
+            totalBytes += imgB64.length;
+            // Parar se acumular mais de 3MB em base64 (payload Vercel ~4.5MB)
+            if (totalBytes > 3 * 1024 * 1024) break;
             imagens.push(imgB64);
           }
           const dataIA = await chamarAPI('extrair_imagens', { imagens });
           const camposIA = qualParseIAJson(dataIA);
           setStep(4);
           preencherFormulario(camposIA);
-          mostrarAlerta('ok', 'PDF analisado com IA (primeiras ' + MAX_PAGS_IMG + ' paginas). Revise os campos preenchidos.');
+          mostrarAlerta('ok', 'PDF analisado com IA (primeiras ' + imagens.length + ' paginas). Revise os campos preenchidos.');
           const npuValImg = document.getElementById('f_npu').value;
           if (npuValImg) tentarConsultaPublica(npuValImg);
         } catch(e) {
