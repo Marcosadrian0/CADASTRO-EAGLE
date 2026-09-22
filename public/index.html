@@ -2154,12 +2154,30 @@ async function analisarPDF() {
 
       const tamanhoMB = pdfArrayBuffer.byteLength / (1024 * 1024);
 
-      // PDFs grandes (>3MB): renderizar primeiras paginas como JPEG via canvas e enviar como imagens
-      // Evita o limite de payload do Vercel sem exigir que o usuario comprima o arquivo
+      // PDFs grandes (>3MB): prefere enviar o texto extraido se houver conteudo suficiente.
+      // Caso contrario, renderiza primeiras paginas como JPEG via canvas.
       if (tamanhoMB > 3) {
+        if (texto.length > 300) {
+          // Ha texto extraido suficiente (ex: capa PJe com partes e NPU) — usa extrair_texto
+          mostrarAlerta('ok', 'PDF grande (' + tamanhoMB.toFixed(1) + ' MB) — analisando texto extraido com IA...');
+          try {
+            const dataIA = await chamarAPI('extrair_texto', { texto });
+            const camposIA = qualParseIAJson(dataIA);
+            setStep(4);
+            preencherFormulario(camposIA);
+            mostrarAlerta('ok', 'PDF analisado com IA. Revise os campos preenchidos.');
+            const npuValTxt = document.getElementById('f_npu').value;
+            if (npuValTxt) tentarConsultaPublica(npuValTxt);
+          } catch(e) {
+            console.warn('Extracao PDF grande (texto) falhou:', e);
+            mostrarAlerta('err', 'Nao foi possivel analisar este PDF automaticamente (' + (e && e.message ? e.message.substring(0,80) : 'erro desconhecido') + '). Verifique sua conexao e tente novamente, ou preencha os campos manualmente.');
+          }
+          document.getElementById('btnAnalisar').disabled = false;
+          return;
+        }
+        // Sem texto suficiente: renderiza paginas como JPEG via canvas
         mostrarAlerta('ok', 'PDF grande (' + tamanhoMB.toFixed(1) + ' MB) — extraindo imagens das primeiras paginas para analise com IA...');
         try {
-          // Limitar a 8 paginas, escala 1.0 e qualidade 50% para manter payload < 2MB
           const MAX_PAGS_IMG = Math.min(total, 8);
           const imagens = [];
           let totalBytes = 0;
@@ -2172,8 +2190,7 @@ async function analisarPDF() {
             await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
             const imgB64 = canvas.toDataURL('image/jpeg', 0.50).split(',')[1];
             totalBytes += imgB64.length;
-            // Parar se acumular mais de 3MB em base64 (payload Vercel ~4.5MB)
-            if (totalBytes > 3 * 1024 * 1024) break;
+            if (totalBytes > 7 * 1024 * 1024) break;
             imagens.push(imgB64);
           }
           const dataIA = await chamarAPI('extrair_imagens', { imagens });
@@ -2185,7 +2202,6 @@ async function analisarPDF() {
           if (npuValImg) tentarConsultaPublica(npuValImg);
         } catch(e) {
           console.warn('Extracao PDF grande falhou:', e);
-          console.warn('Detalhe erro:', e && e.message);
           mostrarAlerta('err', 'Nao foi possivel analisar este PDF automaticamente (' + (e && e.message ? e.message.substring(0,80) : 'erro desconhecido') + '). Verifique sua conexao e tente novamente, ou preencha os campos manualmente.');
         }
         document.getElementById('btnAnalisar').disabled = false;
