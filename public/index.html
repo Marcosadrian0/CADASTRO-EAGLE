@@ -2062,8 +2062,10 @@ document.getElementById('fileInput').addEventListener('change', function() {
 });
 
 let pdfArrayBuffer = null;
+let pdfTamanhoBytes = 0;
 
 function carregarArquivo(file) {
+  pdfTamanhoBytes = file.size;
   document.getElementById('fileName').textContent = file.name;
   document.getElementById('fileSize').textContent = (file.size / 1024).toFixed(0) + ' KB';
   document.getElementById('fileCard').classList.add('show');
@@ -2152,7 +2154,7 @@ async function analisarPDF() {
       // PDF escaneado ou wrapper de portal: envia para Claude via API (OCR)
       setStep(3);
 
-      const tamanhoMB = pdfArrayBuffer.byteLength / (1024 * 1024);
+      const tamanhoMB = pdfTamanhoBytes / (1024 * 1024);
 
       // PDFs grandes (>3MB): prefere enviar o texto extraido se houver conteudo suficiente.
       // Caso contrario, renderiza primeiras paginas como JPEG via canvas.
