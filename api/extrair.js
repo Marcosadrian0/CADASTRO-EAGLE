@@ -7,7 +7,14 @@
 
 import { ipBloqueado } from './_ipGuard.js';
 
-export const config = { maxDuration: 60 };
+export const config = {
+  maxDuration: 60,
+  api: {
+    bodyParser: {
+      sizeLimit: '10mb'
+    }
+  }
+};
 
 // Rate limiting simples: máximo 10 req/min por IP
 const _rateLimitMap = new Map();

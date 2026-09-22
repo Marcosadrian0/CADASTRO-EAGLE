@@ -2185,7 +2185,8 @@ async function analisarPDF() {
           if (npuValImg) tentarConsultaPublica(npuValImg);
         } catch(e) {
           console.warn('Extracao PDF grande falhou:', e);
-          mostrarAlerta('err', 'Nao foi possivel analisar este PDF automaticamente. Verifique sua conexao e tente novamente, ou preencha os campos manualmente.');
+          console.warn('Detalhe erro:', e && e.message);
+          mostrarAlerta('err', 'Nao foi possivel analisar este PDF automaticamente (' + (e && e.message ? e.message.substring(0,80) : 'erro desconhecido') + '). Verifique sua conexao e tente novamente, ou preencha os campos manualmente.');
         }
         document.getElementById('btnAnalisar').disabled = false;
         return;
