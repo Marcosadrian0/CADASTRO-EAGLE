@@ -2149,13 +2149,40 @@ async function analisarPDF() {
     const ehEscaneado = texto.length < 80 || mediaCharsPorPagina < 150;
 
     if (ehEscaneado) {
-      // PDF escaneado ou wrapper de portal: envia como base64 para Claude via API (OCR)
+      // PDF escaneado ou wrapper de portal: envia para Claude via API (OCR)
       setStep(3);
 
-      // Verificar tamanho: Vercel limita payload a ~4MB. PDFs maiores que 3MB em base64 (~4MB) sao rejeitados.
       const tamanhoMB = pdfArrayBuffer.byteLength / (1024 * 1024);
+
+      // PDFs grandes (>3MB): renderizar primeiras paginas como JPEG via canvas e enviar como imagens
+      // Evita o limite de payload do Vercel sem exigir que o usuario comprima o arquivo
       if (tamanhoMB > 3) {
-        mostrarAlerta('err', 'PDF grande demais para analise automatica (' + tamanhoMB.toFixed(1) + ' MB). Reduza o arquivo para menos de 3 MB e tente novamente, ou preencha os campos manualmente.');
+        mostrarAlerta('ok', 'PDF grande (' + tamanhoMB.toFixed(1) + ' MB) — extraindo imagens das primeiras paginas para analise com IA...');
+        try {
+          const MAX_PAGS_IMG = Math.min(total, 15);
+          const imagens = [];
+          for (let p = 1; p <= MAX_PAGS_IMG; p++) {
+            const page = await pdf.getPage(p);
+            const viewport = page.getViewport({ scale: 1.2 });
+            const canvas = document.createElement('canvas');
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
+            await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+            // JPEG 65% de qualidade: boa legibilidade para OCR, payload reduzido
+            const imgB64 = canvas.toDataURL('image/jpeg', 0.65).split(',')[1];
+            imagens.push(imgB64);
+          }
+          const dataIA = await chamarAPI('extrair_imagens', { imagens });
+          const camposIA = qualParseIAJson(dataIA);
+          setStep(4);
+          preencherFormulario(camposIA);
+          mostrarAlerta('ok', 'PDF analisado com IA (primeiras ' + MAX_PAGS_IMG + ' paginas). Revise os campos preenchidos.');
+          const npuValImg = document.getElementById('f_npu').value;
+          if (npuValImg) tentarConsultaPublica(npuValImg);
+        } catch(e) {
+          console.warn('Extracao PDF grande falhou:', e);
+          mostrarAlerta('err', 'Nao foi possivel analisar este PDF automaticamente. Verifique sua conexao e tente novamente, ou preencha os campos manualmente.');
+        }
         document.getElementById('btnAnalisar').disabled = false;
         return;
       }
@@ -2164,7 +2191,7 @@ async function analisarPDF() {
         ? 'PDF escaneado detectado — enviando para analise com IA...'
         : 'PDF do portal detectado (imagens embutidas) — enviando para analise com IA...');
       try {
-        // Conversao base64 em chunks para nao travar o browser em PDFs grandes
+        // Conversao base64 em chunks para nao travar o browser
         const bytes = new Uint8Array(pdfArrayBuffer);
         let binary = '';
         const CHUNK = 8192;
@@ -2181,12 +2208,7 @@ async function analisarPDF() {
         if (npuValScan) tentarConsultaPublica(npuValScan);
       } catch(e) {
         console.warn('Extracao PDF escaneado/portal falhou:', e);
-        const msgErro = e && e.message ? e.message : String(e);
-        if (/413|payload|size|large/i.test(msgErro)) {
-          mostrarAlerta('err', 'PDF muito grande para envio automatico. Reduza o arquivo e tente novamente.');
-        } else {
-          mostrarAlerta('err', 'Nao foi possivel analisar este PDF automaticamente. Verifique sua conexao e tente novamente, ou preencha os campos manualmente.');
-        }
+        mostrarAlerta('err', 'Nao foi possivel analisar este PDF automaticamente. Verifique sua conexao e tente novamente, ou preencha os campos manualmente.');
       }
       document.getElementById('btnAnalisar').disabled = false;
       return;

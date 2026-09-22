@@ -43,7 +43,7 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'ANTHROPIC_API_KEY não configurada no Vercel.' });
   }
 
-  const { tipo, pdf_b64, texto, instrucoes, prompt_aprendizado } = req.body || {};
+  const { tipo, pdf_b64, imagens, texto, instrucoes, prompt_aprendizado } = req.body || {};
 
   // ── Sistema de contexto jurídico SBK ───────────────────────────────────────
   const SYSTEM_JURIDICO = `Você é um especialista em análise de petições judiciais brasileiras trabalhando para o escritório SBK.
@@ -135,6 +135,24 @@ REGRAS ABSOLUTAS:
             role: 'user',
             content: `Extraia os dados processuais do texto abaixo e retorne o JSON:\n{"npu":"","uf":"","comarca":"","data_ajuizamento":"","valor_causa":"","vara_cartorio":"","numero_origem":"","tipo_justica":"","rito":"","fase_processual":"","tipo_documento":"","objeto_principal":"","causa_raiz":"","desconto_conta":"","autor_nome":"","autor_cpf":"","advogado_nome":"","advogado_uf":"","advogado_oab":"","reus":[{"nome":"","cnpj":""}]}\n\nTEXTO DA PETIÇÃO:\n${textoTruncado}`
           }]
+        })
+      );
+    }
+
+    if (tipo === 'extrair_imagens' && Array.isArray(imagens) && imagens.length) {
+      // PDFs grandes: recebe array de JPEGs base64 (primeiras N paginas renderizadas via canvas)
+      const instrucaoFinal = `Extraia os dados processuais destas paginas e retorne o JSON conforme as instrucoes do sistema:\n{"npu":"","uf":"","comarca":"","data_ajuizamento":"","valor_causa":"","vara_cartorio":"","numero_origem":"","tipo_justica":"","rito":"","fase_processual":"","tipo_documento":"","objeto_principal":"","causa_raiz":"","desconto_conta":"","autor_nome":"","autor_cpf":"","advogado_nome":"","advogado_uf":"","advogado_oab":"","reus":[{"nome":"","cnpj":""}]}`;
+      const content = imagens.slice(0, 15).map(img => ({
+        type: 'image',
+        source: { type: 'base64', media_type: 'image/jpeg', data: img }
+      }));
+      content.push({ type: 'text', text: instrucaoFinal });
+      return res.status(200).json(
+        await chamarAnthropic(ANTHROPIC_KEY, {
+          model: 'claude-sonnet-4-6',
+          max_tokens: 2048,
+          system: SYSTEM_JURIDICO,
+          messages: [{ role: 'user', content }]
         })
       );
     }
